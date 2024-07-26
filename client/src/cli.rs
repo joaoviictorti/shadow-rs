@@ -107,6 +107,17 @@ pub enum Commands {
         #[arg(long)]
         restore: Option<usize>,
     },
+        
+    /// Operations related to Injection
+    Injection {
+        /// The process ID to injection.
+        #[arg(long, required = true)]
+        pid: u32,
+
+        /// Path containing the shellcode
+        #[arg(long, required = true)]
+        path: String
+    }
 }
 
 /// Enum representing the subcommands for process operations.

