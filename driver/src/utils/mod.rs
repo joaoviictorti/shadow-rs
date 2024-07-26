@@ -285,7 +285,6 @@ pub unsafe fn get_syscall_index(function_name: &str) -> Option<u16> {
     );
     if !NT_SUCCESS(status) {
         log::error!("ZwMapViewOfSection Failed With Status: {status}");
-        ZwUnmapViewOfSection(0xFFFFFFFFFFFFFFFF as *mut c_void, ntdll_addr as *mut c_void);
         ZwClose(section_handle);
         return None
     }
