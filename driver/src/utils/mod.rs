@@ -166,7 +166,7 @@ pub unsafe fn get_function_address(function_name: &str, dll_base: *mut c_void) -
 /// # Returns
 /// - `Option<*mut c_void>`: An optional pointer to the function's address, or None if the function is not found.
 ///
-pub unsafe fn get_function_address_asynckey(name: &str, dll_base: *mut c_void) -> Option<*mut c_void> {
+pub unsafe fn get_address_asynckey(name: &str, dll_base: *mut c_void) -> Option<*mut c_void> {
     let mut apc_state: KAPC_STATE = core::mem::zeroed(); 
     let pid = match get_process_by_name(obfstr!("winlogon.exe")) {
         Some(p) => p,

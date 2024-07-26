@@ -8,7 +8,7 @@ use {
         get_ks_byte, get_ks_down_bit,
         includes::MmCopyVirtualMemory,
         is_key_down, set_key_down,
-        utils::{get_function_address_asynckey, get_module_base_address, get_process_by_name},
+        utils::{get_address_asynckey, get_module_base_address, get_process_by_name},
     }, 
     wdk_sys::{
         ntddk::{
@@ -181,7 +181,7 @@ unsafe fn get_gafasynckeystate_address() -> Option<PVOID> {
         Some(addr) => addr,
         None => return None
     };
-    let function_address = match get_function_address_asynckey(obfstr!("NtUserGetAsyncKeyState"), module_address) {
+    let function_address = match get_address_asynckey(obfstr!("NtUserGetAsyncKeyState"), module_address) {
         Some(addr) => addr,
         None => return None,
     };
