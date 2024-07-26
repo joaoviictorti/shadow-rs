@@ -54,7 +54,7 @@ This project, called shadow-rs, is designed to create a rootkit in the Windows k
 - Driver (Hide / Unhide) ✅
 - Enumerate Driver ✅
  
-#### Driver Signature Enforcement
+#### Driver Signature Enforcement (DSE)
 - DSE (Enable / Disable) ✅
  
 #### Keylogger
