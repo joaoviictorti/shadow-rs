@@ -20,7 +20,7 @@
   * [Debug via Windbg](#debug-via-windbg)
   * [Create/Start Service](#createstart-service)
 * [Upcoming Features](#upcoming-Features)
-* [Credits / References](#references)
+* [Credits & References](#credits--references)
 
 ## Notice
 
