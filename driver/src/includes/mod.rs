@@ -2,11 +2,12 @@
 #![allow(dead_code)]
 
 use {
-    bitfield::bitfield,
+    bitfield::bitfield, 
+    ntapi::ntpsapi::PPS_ATTRIBUTE_LIST, 
     wdk_sys::{
-        ACCESS_MASK, KPROCESSOR_MODE, NTSTATUS, PACCESS_STATE, PCUNICODE_STRING, 
-        PEPROCESS, POBJECT_TYPE, PPEB, PSIZE_T, PUNICODE_STRING, 
-        PVOID, SIZE_T, _DRIVER_OBJECT, KIRQL, PKIRQL
+        ACCESS_MASK, KIRQL, KPROCESSOR_MODE, NTSTATUS, PACCESS_STATE, PCUNICODE_STRING, 
+        PEPROCESS, PKIRQL, POBJECT_ATTRIBUTES, POBJECT_TYPE, PPEB, PSIZE_T, PUNICODE_STRING, 
+        PVOID, SIZE_T, _DRIVER_OBJECT, HANDLE, PHANDLE
     }, 
     winapi::ctypes::c_void
 };
@@ -30,6 +31,20 @@ pub type DRIVER_INITIALIZE = core::option::Option<
         RegistryPath: PCUNICODE_STRING,
     ) -> NTSTATUS,
 >;
+
+pub type ZwCreateThreadExType = unsafe extern "system" fn (
+    ThreadHandle: PHANDLE,
+    DesiredAccess: ACCESS_MASK,
+    ObjectAttributes: POBJECT_ATTRIBUTES,
+    ProcessHandle: HANDLE,
+    StartRoutine: PVOID,
+    Argument: PVOID,
+    CreateFlags: SIZE_T,
+    ZeroBits: usize,
+    StackSize: usize,
+    MaximumStackSize: usize,
+    AttributeList: PPS_ATTRIBUTE_LIST
+) -> NTSTATUS;
 
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]
