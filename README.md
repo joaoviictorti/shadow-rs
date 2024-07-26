@@ -141,7 +141,7 @@ These are some of the features that will be added, but there are many more on th
 - APC ❌
 - NtCreateThreadEx ❌
 
-## Credits / References
+## Credits & References
 - https://leanpub.com/windowskernelprogrammingsecondedition
 - https://www.youtube.com/watch?v=t7Rx3crobZU&pp=ugMICgJwdBABGAHKBRBibGFja2hhdCByb290a2l0
 - https://github.com/memN0ps/eagle-rs
