@@ -43,10 +43,12 @@ This project, called shadow-rs, is designed to create a rootkit in the Windows k
 - Process Protection (Anti-Kill / Dumping) ✅
 - Elevate Process to System ✅
 - Terminate Process ✅
- 
+- Lists protected and hidden processes currently on the system ✅
+
 #### Thread
 - Thread (Hide / Unhide) ✅
 - Thread Protection (Anti-Kill) ✅
+- Lists protected and hidden threads currently on the system ✅
  
 #### Driver
 - Driver (Hide / Unhide) ✅
@@ -68,6 +70,9 @@ This project, called shadow-rs, is designed to create a rootkit in the Windows k
 
 #### Registry
 - Registry Protection (Anti-Deletion e Overwriting) ✅
+
+#### Others
+  - 
 
 ## Build Instructions
 
