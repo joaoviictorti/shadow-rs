@@ -11,13 +11,13 @@ use {
         ntexapi::{SystemModuleInformation, SystemProcessInformation, PSYSTEM_PROCESS_INFORMATION}, 
         ntzwapi::ZwQuerySystemInformation
     }, 
-    ntddk::{ZwCreateFile, ZwQueryInformationFile}, 
     obfstr::obfstr, 
     wdk_sys::{
         *,
         ntddk::{
             ExAllocatePool, ExFreePool, KeStackAttachProcess, KeUnstackDetachProcess, 
-            ZwMapViewOfSection, ZwOpenSection, ZwReadFile, ZwClose, ZwUnmapViewOfSection
+            ZwMapViewOfSection, ZwOpenSection, ZwReadFile, ZwClose, ZwUnmapViewOfSection,
+            ZwCreateFile, ZwQueryInformationFile
         },
         _FILE_INFORMATION_CLASS::FileStandardInformation,
         _POOL_TYPE::NonPagedPool, 
