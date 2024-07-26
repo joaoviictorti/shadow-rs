@@ -210,8 +210,6 @@ impl Driver {
             None => return STATUS_UNSUCCESSFUL,
         };
 
-        log::info!("function_address: {:?}", function_address);
-
         let function_bytes = core::slice::from_raw_parts(function_address as *const u8, 0x89);
 
         // mov ecx,ebp
