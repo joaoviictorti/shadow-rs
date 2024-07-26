@@ -352,17 +352,17 @@ pub unsafe fn find_zw_function(name: &str) -> Option<usize> {
     };
 
     let ssn_bytes = ssn.to_le_bytes();
-    let pattern = [
-        0x48, 0x8B, 0xC4,							  // mov rax, rsp
-        0xFA,										  // cli
-        0x48, 0x83, 0xEC, 0x10,						  // sub rsp, 10h
-        0x50,										  // push rax
-        0x9C,										  // pushfq
-        0x6A, 0x10,									  // push 10h
-        0x48, 0x8D, 0x05, 0xCC, 0xCC, 0xCC, 0xCC,	  // lea rax, KiServiceLinkage
-        0x50,										  // push rax
+    let pattern: [u8; 30] = [
+        0x48, 0x8B, 0xC4,            // mov rax, rsp
+        0xFA,                        // cli
+        0x48, 0x83, 0xEC, 0x10,      // sub rsp, 10h
+        0x50,                        // push rax
+        0x9C,                        // pushfq
+        0x6A, 0x10,                  // push 10h
+        0x48, 0x8D, 0x05, 0xCC, 0xCC, 0xCC, 0xCC, // lea rax, KiServiceLinkage
+        0x50,                        // push rax
         0xB8, ssn_bytes[0], ssn_bytes[1], 0xCC, 0xCC, // mov eax, <SSN>
-        0xE9, 0xCC, 0xCC, 0xCC, 0xCC				  // jmp KiServiceInternal
+        0xE9, 0xCC, 0xCC, 0xCC, 0xCC // jmp KiServiceInternal
     ];
     
     let dos_header = ntoskrnl_addr as *mut IMAGE_DOS_HEADER;
