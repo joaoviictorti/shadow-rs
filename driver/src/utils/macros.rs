@@ -89,6 +89,21 @@ macro_rules! handle_driver {
     }};
 }
 
+/// Macro to handle injection-related operations.
+///
+/// Executes the given action based on the provided parameters and returns the status.
+#[macro_export]
+macro_rules! handle_injection {
+    ($stack:expr, $action:expr, $type_:ty) => {{
+        let input_buffer = match crate::utils::get_input_buffer::<$type_>($stack) {
+            Ok(buffer) => buffer,
+            Err(status) => return status,
+        };
+
+        $action(input_buffer)
+    }};
+}
+
 /// Macro to handle registry-related operations.
 ///
 /// Executes the given action based on the provided parameters and returns the status.

