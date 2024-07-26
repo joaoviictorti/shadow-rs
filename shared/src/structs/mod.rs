@@ -3,19 +3,23 @@
 
 use crate::vars::Options;
 
-pub mod process_struct;
-pub mod thread_struct;
-pub mod callback_struct;
-pub mod driver_struct;
-pub mod registry_struct;
-pub mod module_struct;
+pub use {
+    process::*,
+    driver::*,
+    thread::*,
+    callback::*,
+    registry::*,
+    module::*,
+    injection::*,
+};
 
-pub use process_struct::*;
-pub use driver_struct::*;
-pub use thread_struct::*;
-pub use callback_struct::*;
-pub use registry_struct::*;
-pub use module_struct::*;
+pub mod process;
+pub mod thread;
+pub mod callback;
+pub mod driver;
+pub mod registry;
+pub mod module;
+pub mod injection;
 
 // Custom LIST_ENTRY
 #[repr(C)]
