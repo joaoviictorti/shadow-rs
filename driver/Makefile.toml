@@ -1,0 +1,16 @@
+extend = "target/rust-driver-makefile.toml"
+
+[env]
+CARGO_MAKE_EXTEND_WORKSPACE_MAKEFILE = true
+
+[config]
+load_script = '''
+#!@rust
+//! ```cargo
+//! [dependencies]
+//! wdk-build = { git = "https://github.com/joaoviictorti/windows-drivers-rs.git", branch = "master" }
+//! ```
+#![allow(unused_doc_comments)]
+
+wdk_build::cargo_make::load_rust_driver_makefile()?
+'''

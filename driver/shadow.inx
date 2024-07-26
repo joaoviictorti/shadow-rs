@@ -1,0 +1,62 @@
+;
+; shadow.inf
+;
+
+[Version]
+Signature   = "$WINDOWS NT$"
+Class       = System ; TODO: specify appropriate Class
+ClassGuid   = {4d36e97d-e325-11ce-bfc1-08002be10318} ; TODO: specify appropriate ClassGuid
+Provider    = %ManufacturerName%
+CatalogFile = shadow.cat
+DriverVer   = ; TODO: set DriverVer in stampinf property pages
+PnpLockdown = 1
+
+[DestinationDirs]
+DefaultDestDir = 13
+
+[SourceDisksNames]
+1 = %DiskName%,,,""
+
+[SourceDisksFiles]
+shadow.sys  = 1,,
+
+;*****************************************
+; Install Section
+;*****************************************
+
+[Manufacturer]
+%ManufacturerName% = Standard,NT$ARCH$.10.0...16299 ; %13% support introduced in build 16299
+
+[Standard.NT$ARCH$.10.0...16299]
+%shadow.DeviceDesc% = shadow_Device, Root\shadow ; TODO: edit hw-id
+
+[shadow_Device.NT]
+CopyFiles = File_Copy
+
+[File_Copy]
+shadow.sys
+
+;-------------- Service installation
+[shadow_Device.NT.Services]
+AddService = shadow,%SPSVCINST_ASSOCSERVICE%, shadow_Service_Inst
+
+; -------------- shadow driver install sections
+[shadow_Service_Inst]
+DisplayName    = %shadow.SVCDESC%
+ServiceType    = 1               ; SERVICE_KERNEL_DRIVER
+StartType      = 3               ; SERVICE_DEMAND_START
+ErrorControl   = 1               ; SERVICE_ERROR_NORMAL
+ServiceBinary  = %13%\shadow.sys
+
+[shadow_Device.NT.Wdf]
+KmdfService = shadow, shadow_wdfsect
+
+[shadow_wdfsect]
+KmdfLibraryVersion = $KMDFVERSION$
+
+[Strings]
+SPSVCINST_ASSOCSERVICE = 0x00000002
+ManufacturerName = "<Your manufacturer name>" ;TODO: Replace with your manufacturer name
+DiskName = "shadow Installation Disk"
+shadow.DeviceDesc = "shadow Device"
+shadow.SVCDESC = "shadow Service"
