@@ -72,6 +72,9 @@ This project, called shadow-rs, is designed to create a rootkit in the Windows k
 #### Registry
 - Registry Protection (Anti-Deletion e Overwriting) ✅
 
+#### Injection
+- Process Injection (ZwCreateThreadEx) ✅
+
 ## Build Instructions
 
 To build the project, ensure you have the Rust toolchain installed. 
@@ -133,13 +136,13 @@ These are some of the features that will be added, but there are many more on th
  
 #### Port
 - Hide port ❌
+
 #### File
 - Hide File / Directory ❌
 - Anti-Deletion e Overwriting ❌
  
 #### Injection
 - APC ❌
-- NtCreateThreadEx ❌
 
 ## Credits & References
 - https://leanpub.com/windowskernelprogrammingsecondedition
