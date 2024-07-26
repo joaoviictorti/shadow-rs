@@ -61,18 +61,16 @@ This project, called shadow-rs, is designed to create a rootkit in the Windows k
 - Keylogger (Start / Stop) ✅
  
 #### Callbacks
-- PsSetCreateProcessNotifyRoutine ✅
-- PsSetCreateThreadNotifyRoutine ✅
-- PsSetLoadImageNotifyRoutine ✅
+- List / Remove / Restore Callbacks 
+  - PsSetCreateProcessNotifyRoutine ✅
+  - PsSetCreateThreadNotifyRoutine ✅
+  - PsSetLoadImageNotifyRoutine ✅
 
 #### Module
 - Enumerate Module ✅
 
 #### Registry
 - Registry Protection (Anti-Deletion e Overwriting) ✅
-
-#### Others
-  - 
 
 ## Build Instructions
 
