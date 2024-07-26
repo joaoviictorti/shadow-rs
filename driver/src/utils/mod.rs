@@ -261,15 +261,7 @@ pub unsafe fn get_process_by_name(process_name: &str) -> Option<usize> {
 pub unsafe fn get_syscall_index(function_name: &str) -> Option<u16> {
     let mut section_handle = null_mut();
     let ntdll = crate::utils::uni::str_to_unicode("\\KnownDlls\\ntdll.dll");
-    let mut obj_attr = OBJECT_ATTRIBUTES {
-        ObjectName: &mut ntdll.to_unicode(),
-        SecurityDescriptor: null_mut(),
-        SecurityQualityOfService: null_mut(),
-        RootDirectory: null_mut(),
-        Attributes: OBJ_CASE_INSENSITIVE,
-        Length: size_of::<OBJECT_ATTRIBUTES>() as u32
-    };
-
+    let mut obj_attr = InitializeObjectAttributes(Some(&mut ntdll.to_unicode()), OBJ_CASE_INSENSITIVE, None, None, None);
     let mut status = ZwOpenSection(&mut section_handle, SECTION_MAP_READ | SECTION_QUERY, &mut obj_attr);
     if !NT_SUCCESS(status) {
         log::error!("ZwOpenSection Failed With Status: {status}");
