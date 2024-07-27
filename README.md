@@ -93,7 +93,7 @@ cargo make default --release --features mapper
 #### Client
 To build the client, first go into the `client` folder, then run the following command:
 ```sh
-cargo build --releease
+cargo build --release
 ```
 
 Since some rootkit features are not supported due to manual driver mapping, use the following command to build the client with only the commands that can be performed with manual mapping:
