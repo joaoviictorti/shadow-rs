@@ -261,10 +261,10 @@ pub unsafe fn get_process_by_name(process_name: &str) -> Option<usize> {
 /// Retrieves the syscall index for a given function name.
 ///
 /// # Parameters
-/// * `function_name` - The name of the function to retrieve the syscall index for.
+/// - `function_name`: The name of the function to retrieve the syscall index for.
 ///
 /// # Returns
-/// `Option<u16>` - The syscall index if found, or `None` if an error occurs or the function is not found.
+/// - `Option<u16>`: The syscall index if found, or `None` if an error occurs or the function is not found.
 /// 
 pub unsafe fn get_syscall_index(function_name: &str) -> Option<u16> {
     let mut section_handle = null_mut();
@@ -396,14 +396,14 @@ pub unsafe fn find_zw_function(name: &str) -> Option<usize> {
 /// Initializes the OBJECT_ATTRIBUTES structure.
 ///
 /// # Parameters
-/// * `object_name` - The name of the object (optional).
-/// * `attributes` - The attributes of the object.
-/// * `root_directory` - The root directory (optional).
-/// * `security_descriptor` - The security descriptor (optional).
-/// * `security_quality_of_service` - The security quality of service (optional).
+/// - `object_name`: The name of the object (optional).
+/// - `attributes`: The attributes of the object.
+/// - `root_directory`: The root directory (optional).
+/// - `security_descriptor`: The security descriptor (optional).
+/// - `security_quality_of_service`: The security quality of service (optional).
 ///
 /// # Returns
-/// `OBJECT_ATTRIBUTES` - The initialized OBJECT_ATTRIBUTES structure
+/// - `OBJECT_ATTRIBUTES`>: The initialized OBJECT_ATTRIBUTES structure
 /// 
 #[allow(non_snake_case)]
 pub fn InitializeObjectAttributes(
@@ -426,10 +426,10 @@ pub fn InitializeObjectAttributes(
 /// Reads the content of a file given its path.
 ///
 /// # Arguments
-/// * `path` - The path to the file.
+/// - `path`: The path to the file.
 ///
 /// # Returns
-/// `Result<Vec<u8>, NTSTATUS>` - The content of the file as a vector of bytes if successful, or an NTSTATUS error code if an error occurs.
+/// - `Result<Vec<u8>, NTSTATUS>`: The content of the file as a vector of bytes if successful, or an NTSTATUS error code if an error occurs.
 /// 
 pub fn read_file(path: &String) -> Result<Vec<u8>, NTSTATUS> {
     let mut path_nt = String::new();
