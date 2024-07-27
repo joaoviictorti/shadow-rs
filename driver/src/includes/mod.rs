@@ -7,7 +7,7 @@ use {
     wdk_sys::{
         ACCESS_MASK, KIRQL, KPROCESSOR_MODE, NTSTATUS, PACCESS_STATE, PCUNICODE_STRING, 
         PEPROCESS, PKIRQL, POBJECT_ATTRIBUTES, POBJECT_TYPE, PPEB, PSIZE_T, PUNICODE_STRING, 
-        PVOID, SIZE_T, _DRIVER_OBJECT, HANDLE, PHANDLE
+        PVOID, SIZE_T, _DRIVER_OBJECT, HANDLE, PHANDLE, ULONG, PULONG
     }, 
     winapi::ctypes::c_void
 };
@@ -44,6 +44,14 @@ pub type ZwCreateThreadExType = unsafe extern "system" fn (
     StackSize: usize,
     MaximumStackSize: usize,
     AttributeList: PPS_ATTRIBUTE_LIST
+) -> NTSTATUS;
+
+pub type ZwProtectVirtualMemoryType = unsafe extern "system" fn (
+    ProcessHandle: HANDLE,
+    BaseAddress: *mut PVOID,
+    RegionSize: PSIZE_T,
+    NewProtect: ULONG,
+    OldProtect: PULONG
 ) -> NTSTATUS;
 
 #[repr(C)]
