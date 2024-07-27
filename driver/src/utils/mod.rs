@@ -403,7 +403,7 @@ pub unsafe fn find_zw_function(name: &str) -> Option<usize> {
 /// - `security_quality_of_service`: The security quality of service (optional).
 ///
 /// # Returns
-/// - `OBJECT_ATTRIBUTES`>: The initialized OBJECT_ATTRIBUTES structure
+/// - `OBJECT_ATTRIBUTES`: The initialized OBJECT_ATTRIBUTES structure
 /// 
 #[allow(non_snake_case)]
 pub fn InitializeObjectAttributes(
@@ -425,7 +425,7 @@ pub fn InitializeObjectAttributes(
 
 /// Reads the content of a file given its path.
 ///
-/// # Arguments
+/// # Parameters
 /// - `path`: The path to the file.
 ///
 /// # Returns
