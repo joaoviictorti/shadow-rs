@@ -8,7 +8,7 @@ load_script = '''
 #!@rust
 //! ```cargo
 //! [dependencies]
-//! wdk-build = { git = "https://github.com/joaoviictorti/windows-drivers-rs.git", branch = "master" }
+//! wdk-build = "0.2.0"
 //! ```
 #![allow(unused_doc_comments)]
 
