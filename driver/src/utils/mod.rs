@@ -214,15 +214,15 @@ pub unsafe fn get_address_asynckey(name: &str, dll_base: *mut c_void) -> Option<
 pub unsafe fn get_process_by_name(process_name: &str) -> Option<usize> {
     let mut return_bytes = 0;
     ZwQuerySystemInformation(SystemProcessInformation, null_mut(), 0, &mut return_bytes);
-    let infor_process = ExAllocatePool(NonPagedPool, return_bytes as u64) as PSYSTEM_PROCESS_INFORMATION;
-    if infor_process.is_null() {
+    let info_process = ExAllocatePool(NonPagedPool, return_bytes as u64) as PSYSTEM_PROCESS_INFORMATION;
+    if info_process.is_null() {
         log::error!("ExAllocatePool Failed");
         return None;
     }
 
     let status = ZwQuerySystemInformation(
         SystemProcessInformation,
-        infor_process as *mut winapi::ctypes::c_void,
+        info_process as *mut winapi::ctypes::c_void,
         return_bytes,
         &mut return_bytes,
     );
@@ -231,7 +231,7 @@ pub unsafe fn get_process_by_name(process_name: &str) -> Option<usize> {
         return None;
     }
 
-    let mut process_info = infor_process;
+    let mut process_info = info_process;
 
     loop {
         if !(*process_info).ImageName.Buffer.is_null() {
@@ -242,7 +242,7 @@ pub unsafe fn get_process_by_name(process_name: &str) -> Option<usize> {
             let name = String::from_utf16_lossy(image_name);
             if name == process_name {
                 let pid = (*process_info).UniqueProcessId as usize;
-                ExFreePool(infor_process as *mut _);
+                ExFreePool(info_process as *mut _);
                 return Some(pid);
             }
         }
@@ -254,7 +254,7 @@ pub unsafe fn get_process_by_name(process_name: &str) -> Option<usize> {
         process_info = (process_info as *const u8).add((*process_info).NextEntryOffset as usize) as PSYSTEM_PROCESS_INFORMATION;
     }
 
-    ExFreePool(infor_process as _);
+    ExFreePool(info_process as _);
     None
 }
 
