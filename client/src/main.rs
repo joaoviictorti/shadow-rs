@@ -12,7 +12,7 @@ use {
     }, 
     thread::{enumerate_thread, hide_unhide_thread},
     callback::{enumerate_callback, remove_callback, restore_callback},
-    injection::injection_thread,
+    injection::{injection_thread, injection_apc},
 };
 
 #[cfg(not(feature = "mapper"))]
@@ -69,10 +69,10 @@ fn main() {
                     eprintln!("[-] No action provided");
                 }
             },
-            ProcessCommands::Enumerate { list, option } => {
+            ProcessCommands::Enumerate { list, type_ } => {
                 println!("[+] Enumerate Process");
                 if *list {
-                    enumerate_process(IOCTL_ENUMERATION_PROCESS, option);
+                    enumerate_process(IOCTL_ENUMERATION_PROCESS, type_);
                 }
             }
         },
@@ -95,10 +95,10 @@ fn main() {
                     eprintln!("[-] No action provided");
                 }
             },
-            ThreadCommands::Enumerate { list, option } => {
+            ThreadCommands::Enumerate { list, type_ } => {
                 println!("[+] Enumerate Thread");
                 if *list {
-                    enumerate_thread(IOCTL_ENUMERATION_THREAD, option);
+                    enumerate_thread(IOCTL_ENUMERATION_THREAD, type_);
                 }
             }
         },
@@ -197,8 +197,15 @@ fn main() {
                 },
             }
         },
-        Commands::Injection { pid, path } => {
-            injection_thread(IOCTL_INJECTION, pid, path);
+        Commands::Injection { pid, path, type_ } => {
+            match type_ {
+                cli::Injection::Thread => {
+                    injection_thread(IOCTL_INJECTION_THREAD, pid, path);
+                },
+                cli::Injection::APC => {
+                    injection_apc(IOCTL_INJECTION_APC, pid, path);
+                }
+            }
         }
     }
 }
