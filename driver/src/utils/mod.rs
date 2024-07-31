@@ -4,7 +4,7 @@ use {
     core::{
         ffi::{c_void, CStr}, 
         mem::{size_of, zeroed}, 
-        ptr::{null_mut, read},
+        ptr::{null_mut, read, read_unaligned},
         fmt::Write
     }, 
     ntapi::{
@@ -17,7 +17,7 @@ use {
         ntddk::{
             ExAllocatePool, ExFreePool, KeStackAttachProcess, KeUnstackDetachProcess, 
             ZwMapViewOfSection, ZwOpenSection, ZwReadFile, ZwClose, ZwUnmapViewOfSection,
-            ZwCreateFile, ZwQueryInformationFile
+            ZwCreateFile, ZwQueryInformationFile, PsIsThreadTerminating
         },
         _FILE_INFORMATION_CLASS::FileStandardInformation,
         _POOL_TYPE::NonPagedPool, 
@@ -93,7 +93,6 @@ pub unsafe fn get_module_base_address(module_name: &str) -> Option<*mut c_void> 
     ZwQuerySystemInformation(SystemModuleInformation, null_mut(), 0, &mut return_bytes);
 
     let info_module = ExAllocatePool(NonPagedPool, return_bytes as u64) as *mut SystemModuleInformation;
-
     if info_module.is_null() {
         log::error!("ExAllocatePool Failed");
         return None;
@@ -141,14 +140,23 @@ pub unsafe fn get_function_address(function_name: &str, dll_base: *mut c_void) -
     let nt_header = (dll_base as usize + (*dos_header).e_lfanew as usize) as *mut IMAGE_NT_HEADERS64;
 
     let export_directory = (dll_base as usize + (*nt_header).OptionalHeader.DataDirectory[0].VirtualAddress as usize) as *const IMAGE_EXPORT_DIRECTORY;
-    let names = (dll_base as usize + (*export_directory).AddressOfNames as usize) as *const u32;
-    let ordinals = (dll_base as usize + (*export_directory).AddressOfNameOrdinals as usize) as *const u16;
-    let addresss = (dll_base as usize + (*export_directory).AddressOfFunctions as usize) as *const u32;
+    let names = core::slice::from_raw_parts(
+        (dll_base as usize + (*export_directory).AddressOfNames as usize) as *const u32,
+        (*export_directory).NumberOfNames as _,
+    );
+    let functions = core::slice::from_raw_parts(
+        (dll_base as usize + (*export_directory).AddressOfFunctions as usize) as *const u32,
+        (*export_directory).NumberOfFunctions as _,
+    );
+    let ordinals = core::slice::from_raw_parts(
+        (dll_base as usize + (*export_directory).AddressOfNameOrdinals as usize) as *const u16,
+        (*export_directory).NumberOfNames as _,
+    );
 
     for i in 0..(*export_directory).NumberOfNames as isize {
-        let name = CStr::from_ptr((dll_base as usize + *names.offset(i) as usize) as *const i8).to_str().ok()?;
-        let ordinal = *ordinals.offset(i);
-        let address = (dll_base as usize + *addresss.offset(ordinal as isize) as usize) as *mut c_void;
+        let name = CStr::from_ptr((dll_base as usize + names[i as usize] as usize) as *const i8).to_str().ok()?;
+        let ordinal = ordinals[i as usize] as usize;
+        let address = (dll_base as usize + functions[ordinal] as usize) as *mut c_void;
         if name == function_name {
             return Some(address);
         }
@@ -180,18 +188,28 @@ pub unsafe fn get_address_asynckey(name: &str, dll_base: *mut c_void) -> Option<
 
     KeStackAttachProcess(target.e_process, &mut apc_state);
 
+    let dll_base = dll_base as usize;
     let dos_header = dll_base as *mut IMAGE_DOS_HEADER;
-    let nt_header = (dll_base as usize + (*dos_header).e_lfanew as usize) as *mut IMAGE_NT_HEADERS64;
+    let nt_header = (dll_base + (*dos_header).e_lfanew as usize) as *mut IMAGE_NT_HEADERS64;
 
-    let export_directory = (dll_base as usize + (*nt_header).OptionalHeader.DataDirectory[0].VirtualAddress as usize) as *const IMAGE_EXPORT_DIRECTORY;
-    let names = (dll_base as usize + (*export_directory).AddressOfNames as usize) as *const u32;
-    let ordinals = (dll_base as usize + (*export_directory).AddressOfNameOrdinals as usize) as *const u16;
-    let addresss = (dll_base as usize + (*export_directory).AddressOfFunctions as usize) as *const u32;
+    let export_directory = (dll_base + (*nt_header).OptionalHeader.DataDirectory[0].VirtualAddress as usize) as *const IMAGE_EXPORT_DIRECTORY;
+    let names = core::slice::from_raw_parts(
+        (dll_base + (*export_directory).AddressOfNames as usize) as *const u32,
+        (*export_directory).NumberOfNames as _,
+    );
+    let functions = core::slice::from_raw_parts(
+        (dll_base + (*export_directory).AddressOfFunctions as usize) as *const u32,
+        (*export_directory).NumberOfFunctions as _,
+    );
+    let ordinals = core::slice::from_raw_parts(
+        (dll_base + (*export_directory).AddressOfNameOrdinals as usize) as *const u16,
+        (*export_directory).NumberOfNames as _,
+    );
 
     for i in 0..(*export_directory).NumberOfNames as isize {
-        let name_module = CStr::from_ptr((dll_base as usize + *names.offset(i) as usize) as *const i8).to_str().ok()?;
-        let ordinal = *ordinals.offset(i);
-        let address = (dll_base as usize + *addresss.offset(ordinal as isize) as usize) as *mut c_void;
+        let name_module = CStr::from_ptr((dll_base + names[i as usize] as usize) as *const i8).to_str().ok()?;
+        let ordinal = ordinals[i as usize] as usize;
+        let address = (dll_base + functions[ordinal] as usize) as *mut c_void;
         if name_module == name {
             KeUnstackDetachProcess(&mut apc_state);
             return Some(address);
@@ -302,15 +320,24 @@ pub unsafe fn get_syscall_index(function_name: &str) -> Option<u16> {
 
     let ntdll_addr = ntdll_addr as usize;
     let export_directory = (ntdll_addr + (*nt_header).OptionalHeader.DataDirectory[0].VirtualAddress as usize) as *const IMAGE_EXPORT_DIRECTORY;
-    let names = (ntdll_addr + (*export_directory).AddressOfNames as usize) as *const u32;
-    let ordinals = (ntdll_addr + (*export_directory).AddressOfNameOrdinals as usize) as *const u16;
-    let addresss = (ntdll_addr + (*export_directory).AddressOfFunctions as usize) as *const u32;
+    let names = core::slice::from_raw_parts(
+        (ntdll_addr + (*export_directory).AddressOfNames as usize) as *const u32,
+        (*export_directory).NumberOfNames as _,
+    );
+    let functions = core::slice::from_raw_parts(
+        (ntdll_addr + (*export_directory).AddressOfFunctions as usize) as *const u32,
+        (*export_directory).NumberOfFunctions as _,
+    );
+    let ordinals = core::slice::from_raw_parts(
+        (ntdll_addr + (*export_directory).AddressOfNameOrdinals as usize) as *const u16,
+        (*export_directory).NumberOfNames as _,
+    );
 
     for i in 0..(*export_directory).NumberOfNames as isize {
-        let name_module = CStr::from_ptr((ntdll_addr + *names.offset(i) as usize) as *const i8).to_str().ok()?;
-        let ordinal = *ordinals.offset(i);
-        let address = (ntdll_addr + *addresss.offset(ordinal as isize) as usize) as *const u8;
-        if name_module == function_name {
+        let name = CStr::from_ptr((ntdll_addr + names[i as usize] as usize) as *const i8).to_str().ok()?;
+        let ordinal = ordinals[i as usize] as usize;
+        let address = (ntdll_addr + functions[ordinal] as usize) as *const u8;
+        if name == function_name {
 
             if read(address) == 0x4C
                 && read(address.add(1)) == 0x8B
@@ -391,6 +418,82 @@ pub unsafe fn find_zw_function(name: &str) -> Option<usize> {
     }
 
     return None
+}
+
+/// Find for a thread with an alertable status.
+/// 
+/// # Parameters
+/// - `target_pid`: PID that will fetch the tids.
+///
+/// # Returns
+/// - `Option<*mut _KTHREAD>`: The KTHREAD of the thread found, or `None` if an error occurs or the thread is not found.
+/// 
+pub unsafe fn find_thread_alertable(target_pid: usize) -> Option<*mut _KTHREAD> {
+    let mut return_bytes = 0;
+    ZwQuerySystemInformation(SystemProcessInformation, null_mut(), 0, &mut return_bytes);
+    let info_process = ExAllocatePool(NonPagedPool, return_bytes as u64) as PSYSTEM_PROCESS_INFORMATION;
+    if info_process.is_null() {
+        log::error!("ExAllocatePool Failed");
+        return None;
+    }
+
+    RtlZeroMemory(info_process as *mut _, return_bytes as usize);
+
+    let status = ZwQuerySystemInformation(
+        SystemProcessInformation,
+        info_process as *mut winapi::ctypes::c_void,
+        return_bytes,
+        &mut return_bytes,
+    );
+    if !NT_SUCCESS(status) {
+        log::error!("ZwQuerySystemInformation Failed With Status: {status}");
+        return None;
+    }
+
+    let mut process_info = info_process;
+    while (*process_info).NextEntryOffset != 0 {
+        let pid = (*process_info).UniqueProcessId as usize;
+        if pid == target_pid {
+            let threads_slice = core::slice::from_raw_parts(
+                (*process_info).Threads.as_ptr(),
+                (*process_info).NumberOfThreads as usize,
+            );
+
+            for &thread in threads_slice {
+                let thread_id = thread.ClientId.UniqueThread as usize;
+                let target_thread = match crate::thread::Thread::new(thread_id) {
+                    Some(e_thread) => e_thread,
+                    None => continue,
+                };
+
+                if PsIsThreadTerminating(target_thread.e_thread) == 1 {
+                    continue;
+                }
+
+                let is_alertable = read_unaligned(target_thread.e_thread.cast::<u8>().offset(0x74) as *const u64) & 0x10;
+                let is_gui_thread = read_unaligned(target_thread.e_thread.cast::<u8>().offset(0x78) as *const u64) & 0x80;
+                let thread_kernel_stack = read_unaligned(target_thread.e_thread.cast::<u8>().offset(0x58) as *const u64);
+                let thread_context_stack = read_unaligned(target_thread.e_thread.cast::<u8>().offset(0x268) as *const u64);
+
+                if is_alertable == 0 && is_gui_thread != 0 && thread_kernel_stack == 0 && thread_context_stack == 0 {
+                    continue;
+                }
+
+                log::info!("Thread Found: {thread_id}");
+                return Some(target_thread.e_thread)
+            }
+        }
+        
+        if (*process_info).NextEntryOffset == 0 {
+            break;
+        }
+
+        process_info = (process_info as *const u8).add((*process_info).NextEntryOffset as usize) as PSYSTEM_PROCESS_INFORMATION;
+    }
+
+    ExFreePool(info_process as *mut _);
+
+    None
 }
 
 /// Initializes the OBJECT_ATTRIBUTES structure.
