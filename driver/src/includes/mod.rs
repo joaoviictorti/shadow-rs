@@ -5,9 +5,10 @@ use {
     bitfield::bitfield, 
     ntapi::ntpsapi::PPS_ATTRIBUTE_LIST, 
     wdk_sys::{
-        ACCESS_MASK, KIRQL, KPROCESSOR_MODE, NTSTATUS, PACCESS_STATE, PCUNICODE_STRING, 
-        PEPROCESS, PKIRQL, POBJECT_ATTRIBUTES, POBJECT_TYPE, PPEB, PSIZE_T, PUNICODE_STRING, 
-        PVOID, SIZE_T, _DRIVER_OBJECT, HANDLE, PHANDLE, ULONG, PULONG
+        ACCESS_MASK, HANDLE, KIRQL, KPROCESSOR_MODE, NTSTATUS, PACCESS_STATE, 
+        PCUNICODE_STRING, PEPROCESS, PETHREAD, PHANDLE, PKAPC, PKIRQL, POBJECT_ATTRIBUTES, 
+        POBJECT_TYPE, PPEB, PRKAPC, PSIZE_T, PULONG, PUNICODE_STRING, PVOID, SIZE_T, ULONG, 
+        _DRIVER_OBJECT, KPRIORITY
     }, 
     winapi::ctypes::c_void
 };
@@ -23,6 +24,28 @@ pub struct PROCESS_SIGNATURE {
     pub signature_level: u8,
     pub section_seginature_level: u8,
     pub protection: PS_PROTECTION,
+}
+
+#[repr(C)]
+#[derive(Debug, Clone, Copy)]
+pub struct SystemModule {
+    pub section: *mut c_void,
+    pub mapped_base: *mut c_void,
+    pub image_base: *mut c_void,
+    pub size: u32,
+    pub flags: u32,
+    pub index: u8,
+    pub name_length: u8,
+    pub load_count: u8,
+    pub path_length: u8,
+    pub image_name: [u8; 256],
+}
+
+#[repr(C)]
+#[derive(Debug, Clone, Copy)]
+pub struct SystemModuleInformation {
+    pub modules_count: u32,
+    pub modules: [SystemModule; 256],
 }
 
 pub type DRIVER_INITIALIZE = core::option::Option<
@@ -54,30 +77,28 @@ pub type ZwProtectVirtualMemoryType = unsafe extern "system" fn (
     OldProtect: PULONG
 ) -> NTSTATUS;
 
-#[repr(C)]
-#[derive(Debug, Clone, Copy)]
-pub struct SystemModule {
-    pub section: *mut c_void,
-    pub mapped_base: *mut c_void,
-    pub image_base: *mut c_void,
-    pub size: u32,
-    pub flags: u32,
-    pub index: u8,
-    pub name_length: u8,
-    pub load_count: u8,
-    pub path_length: u8,
-    pub image_name: [u8; 256],
-}
+pub type PKRUNDOWN_ROUTINE = Option<unsafe extern "system" fn(
+    apc: PKAPC,
+) -> NTSTATUS>;
 
-#[repr(C)]
-#[derive(Debug, Clone, Copy)]
-pub struct SystemModuleInformation {
-    pub modules_count: u32,
-    pub modules: [SystemModule; 256],
-}
+pub type PKNORMAL_ROUTINE =  Option<unsafe extern "system" fn(
+    normal_context: *mut PVOID,
+    system_argument1: *mut PVOID,
+    system_argument2: *mut PVOID
+) -> NTSTATUS>;
+
+pub type PKKERNEL_ROUTINE = unsafe extern "system" fn(
+    apc: PKAPC,
+    normal_routine: *mut PKNORMAL_ROUTINE,
+    normal_context: *mut PVOID,
+    system_argument1: *mut PVOID,
+    system_argument2: *mut PVOID 
+);
 
 extern "system" {
     pub fn PsGetProcessPeb(ProcessId: PEPROCESS) -> PPEB;
+   
+    pub fn PsGetCurrentThread() -> PETHREAD;
     
     pub fn IoCreateDriver(
         driver_name: PUNICODE_STRING,
@@ -106,4 +127,34 @@ extern "system" {
     );
 
     pub fn KeRaiseIrql(new_irql: KIRQL, old_irql: PKIRQL);
+
+    pub fn KeInitializeApc(
+        apc: PRKAPC,
+        thread: PETHREAD,
+        environment: KAPC_ENVIROMENT,
+        kernel_routine: PKKERNEL_ROUTINE,
+        rundown_routine: PKRUNDOWN_ROUTINE,
+        normal_routine: PKNORMAL_ROUTINE,
+        apc_mode: KPROCESSOR_MODE,
+        normal_context: PVOID
+    );
+
+    pub fn KeTestAlertThread(
+        alert_mode: KPROCESSOR_MODE
+    );
+
+    pub fn KeInsertQueueApc(
+        apc: PRKAPC,
+        system_argument1: PVOID,
+        system_argument2: PVOID,
+        increment: KPRIORITY
+    ) -> bool;
+}
+
+#[repr(C)]
+pub enum KAPC_ENVIROMENT {
+    OriginalApcEnvironment,
+	AttachedApcEnvironment,
+	CurrentApcEnvironment,
+	InsertApcEnvironment
 }
