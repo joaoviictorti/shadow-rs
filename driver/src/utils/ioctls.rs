@@ -2,7 +2,7 @@ use {
     crate::{*,
         callbacks::Callback, driver::Driver,
         injection::InjectionShellcode, keylogger::set_keylogger_state, 
-        memory::Memory, module::Module, process::Process, thread::Thread
+        module::Module, process::Process, thread::Thread
     }, 
     alloc::boxed::Box, 
     core::mem::size_of, 
