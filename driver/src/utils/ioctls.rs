@@ -173,14 +173,14 @@ lazy_static! {
             }) as IoctlHandler);
         
             ioctls.insert(IOCTL_REGISTRY_PROTECTION_VALUE, Box::new(|irp: *mut IRP, stack: *mut IO_STACK_LOCATION | {
-                log::info!("Received IOCTL_REGISTRY_VALUE");
+                log::info!("Received IOCTL_REGISTRY_PROTECTION_VALUE");
                 let status = unsafe { handle_registry!(stack, Registry::add_remove_registry_toggle, TargetRegistry) };
                 unsafe { (*irp).IoStatus.Information = 0 };
                 status
             }) as IoctlHandler);
 
             ioctls.insert(IOCTL_REGISTRY_PROTECTION_KEY, Box::new(|irp: *mut IRP, stack: *mut IO_STACK_LOCATION | {
-                log::info!("Received IOCTL_REGISTRY_KEY");
+                log::info!("Received IOCTL_REGISTRY_PROTECTION_KEY");
                 let status = unsafe { handle_registry!(stack, Registry::add_remove_key_toggle, TargetRegistry) };
                 unsafe { (*irp).IoStatus.Information = 0 };
                 status
