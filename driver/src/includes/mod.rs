@@ -154,7 +154,7 @@ extern "system" {
 #[repr(C)]
 pub enum KAPC_ENVIROMENT {
     OriginalApcEnvironment,
-	AttachedApcEnvironment,
-	CurrentApcEnvironment,
-	InsertApcEnvironment
+    AttachedApcEnvironment,
+    CurrentApcEnvironment,
+    InsertApcEnvironment
 }

@@ -6,13 +6,13 @@ use {
     shared::structs::{ModuleInfo, TargetProcess}, 
     wdk_sys::{
         ntddk::{
-            ExAllocatePool, ExFreePool, IoGetCurrentProcess, KeStackAttachProcess, 
+            ExAllocatePool2, ExFreePool, IoGetCurrentProcess, KeStackAttachProcess, 
             KeUnstackDetachProcess,
         }, 
         KAPC_STATE, NTSTATUS, STATUS_INVALID_PARAMETER, 
-        STATUS_SUCCESS, STATUS_UNSUCCESSFUL, _MODE::KernelMode, _POOL_TYPE::NonPagedPool
+        STATUS_SUCCESS, STATUS_UNSUCCESSFUL, _MODE::KernelMode, POOL_FLAG_NON_PAGED
     }, 
-    winapi::{shared::ntdef::LIST_ENTRY, um::winnt::RtlZeroMemory}
+    winapi::shared::ntdef::LIST_ENTRY
 };
 
 /// Represents a module in the operating system.
@@ -35,14 +35,12 @@ impl Module {
         let pid = (*process).pid;
         let mut apc_state: KAPC_STATE = core::mem::zeroed();
         let temp_info_size =  256 * core::mem::size_of::<ModuleInfo>();
-        let temp_info = ExAllocatePool(NonPagedPool, temp_info_size as u64) as *mut ModuleInfo;
+        let temp_info = ExAllocatePool2(POOL_FLAG_NON_PAGED, temp_info_size as u64, u32::from_be_bytes(*b"btrd")) as *mut ModuleInfo;
 
         if temp_info.is_null() {
-            log::error!("ExAllocatePool Failed to Allocate Memory");
+            log::error!("ExAllocatePool2 Failed to Allocate Memory");
             return STATUS_UNSUCCESSFUL
         }
-
-        RtlZeroMemory(temp_info as *mut _, temp_info_size);
 
         let target = match Process::new(pid) {
             Some(p) => p,

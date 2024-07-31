@@ -15,12 +15,11 @@ use {
     wdk_sys::{
         *,
         ntddk::{
-            ExAllocatePool, ExFreePool, KeStackAttachProcess, KeUnstackDetachProcess, 
+            ExAllocatePool2, ExFreePool, KeStackAttachProcess, KeUnstackDetachProcess, 
             ZwMapViewOfSection, ZwOpenSection, ZwReadFile, ZwClose, ZwUnmapViewOfSection,
             ZwCreateFile, ZwQueryInformationFile, PsIsThreadTerminating
         },
         _FILE_INFORMATION_CLASS::FileStandardInformation,
-        _POOL_TYPE::NonPagedPool, 
         _SECTION_INHERIT::ViewUnmap
     }, 
     winapi::um::winnt::{
@@ -92,9 +91,9 @@ pub unsafe fn get_module_base_address(module_name: &str) -> Option<*mut c_void> 
     let mut return_bytes = 0;
     ZwQuerySystemInformation(SystemModuleInformation, null_mut(), 0, &mut return_bytes);
 
-    let info_module = ExAllocatePool(NonPagedPool, return_bytes as u64) as *mut SystemModuleInformation;
+    let info_module = ExAllocatePool2(POOL_FLAG_NON_PAGED, return_bytes as u64, u32::from_be_bytes(*b"ardl")) as *mut SystemModuleInformation;
     if info_module.is_null() {
-        log::error!("ExAllocatePool Failed");
+        log::error!("ExAllocatePool2 Failed");
         return None;
     }
 
@@ -232,9 +231,9 @@ pub unsafe fn get_address_asynckey(name: &str, dll_base: *mut c_void) -> Option<
 pub unsafe fn get_process_by_name(process_name: &str) -> Option<usize> {
     let mut return_bytes = 0;
     ZwQuerySystemInformation(SystemProcessInformation, null_mut(), 0, &mut return_bytes);
-    let info_process = ExAllocatePool(NonPagedPool, return_bytes as u64) as PSYSTEM_PROCESS_INFORMATION;
+    let info_process = ExAllocatePool2(POOL_FLAG_NON_PAGED, return_bytes as u64,  u32::from_be_bytes(*b"zerw")) as PSYSTEM_PROCESS_INFORMATION;
     if info_process.is_null() {
-        log::error!("ExAllocatePool Failed");
+        log::error!("ExAllocatePool2 Failed");
         return None;
     }
 
@@ -431,9 +430,9 @@ pub unsafe fn find_zw_function(name: &str) -> Option<usize> {
 pub unsafe fn find_thread_alertable(target_pid: usize) -> Option<*mut _KTHREAD> {
     let mut return_bytes = 0;
     ZwQuerySystemInformation(SystemProcessInformation, null_mut(), 0, &mut return_bytes);
-    let info_process = ExAllocatePool(NonPagedPool, return_bytes as u64) as PSYSTEM_PROCESS_INFORMATION;
+    let info_process = ExAllocatePool2(POOL_FLAG_NON_PAGED, return_bytes as u64,  u32::from_be_bytes(*b"oied")) as PSYSTEM_PROCESS_INFORMATION;
     if info_process.is_null() {
-        log::error!("ExAllocatePool Failed");
+        log::error!("ExAllocatePool2 Failed");
         return None;
     }
 
