@@ -72,8 +72,9 @@ This project, called shadow-rs, is designed to create a rootkit in the Windows k
 #### Registry
 - Registry Protection (Anti-Deletion e Overwriting) ✅
 
-#### Injection
+#### Injection Shellcode
 - Process Injection (ZwCreateThreadEx) ✅
+- APC Injection ✅
 
 ## Build Instructions
 
@@ -140,9 +141,6 @@ These are some of the features that will be added, but there are many more on th
 #### File
 - Hide File / Directory ❌
 - Anti-Deletion e Overwriting ❌
- 
-#### Injection
-- APC ❌
 
 ## Credits & References
 - https://leanpub.com/windowskernelprogrammingsecondedition
