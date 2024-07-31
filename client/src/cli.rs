@@ -107,17 +107,20 @@ pub enum Commands {
         #[arg(long)]
         restore: Option<usize>,
     },
-        
     /// Operations related to Injection
     Injection {
         /// The process ID to injection.
-        #[arg(long, required = true)]
+        #[arg(long, short, required = true)]
         pid: u32,
 
         /// Path containing the shellcode
         #[arg(long, required = true)]
-        path: String
-    }
+        path: String,
+
+        /// Type shellcode
+        #[arg(long, short, required = true)]
+        type_: Injection
+    },
 }
 
 /// Enum representing the subcommands for process operations.
@@ -181,9 +184,9 @@ pub enum ProcessCommands {
         /// Enumerate Processes.
         #[arg(long, required = true)]
         list: bool,
-        // Options Enumerate
-        #[arg(long, required = true)]
-        option: Options,
+        // Types Enumerate
+        #[arg(long, short, required = true)]
+        type_: Options,
     }
 }
 
@@ -220,9 +223,9 @@ pub enum ThreadCommands {
         /// Enumerate Processes.
         #[arg(long, required = true)]
         list: bool,
-        // Options Enumerate
-        #[arg(long, required = true)]
-        option: Options,
+        // Types Enumerate
+        #[arg(long, short, required = true)]
+        type_: Options,
     }
 }
 
@@ -235,6 +238,12 @@ pub enum PS_PROTECTED_TYPE {
     ProtectedLight = 1,
     /// Full protection.
     Protected = 2,
+}
+
+#[derive(clap::ValueEnum, Clone, Debug, Copy)]
+pub enum Injection {
+    Thread = 0,
+    APC = 1
 }
 
 /// Enum representing the signers for process protection.
