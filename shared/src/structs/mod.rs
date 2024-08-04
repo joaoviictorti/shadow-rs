@@ -23,6 +23,7 @@ pub mod injection;
 
 // Custom LIST_ENTRY
 #[repr(C)]
+#[derive(Debug, Clone, Copy)]
 pub struct LIST_ENTRY {
     pub Flink: *mut LIST_ENTRY,
     pub Blink: *mut LIST_ENTRY,

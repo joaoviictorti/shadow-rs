@@ -16,18 +16,11 @@ pub struct ProcessListInfo {
     pub pids: usize,
 }
 
-// Stores information about the target process.
+// Stores information about the target process
 #[repr(C)]
 #[derive(Debug, Default)]
 pub struct TargetProcess {
     pub pid: usize,
-}
-
-// Anti-create Process
-#[repr(C)]
-#[derive(Debug, Default)]
-pub struct AntiCreateProcess {
-    pub name: &'static str
 }
 
 // Process Info Hide

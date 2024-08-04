@@ -6,9 +6,11 @@ use {
     core::{ffi::c_void, ptr::null_mut, mem::{size_of, transmute}}, 
     crate::{
         includes::{
-            MmCopyVirtualMemory, KeInitializeApc, ZwCreateThreadExType, ZwProtectVirtualMemoryType,
-            KAPC_ENVIROMENT::OriginalApcEnvironment, PKNORMAL_ROUTINE, KeTestAlertThread,
-            PsGetCurrentThread, KeInsertQueueApc
+            types::{
+                ZwProtectVirtualMemoryType, ZwCreateThreadExType, PKNORMAL_ROUTINE
+            },
+            MmCopyVirtualMemory, KeInitializeApc, KeTestAlertThread, PsGetCurrentThread, KeInsertQueueApc,
+            enums::KAPC_ENVIROMENT::OriginalApcEnvironment,
         }, 
         process::Process,
         utils::{find_zw_function, read_file, InitializeObjectAttributes, find_thread_alertable} 

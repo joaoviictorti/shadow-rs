@@ -173,10 +173,16 @@ fn main() {
         Commands::Module { pid } => {
             enumerate_module(IOCTL_ENUMERATE_MODULE, pid);
         }
-        Commands::Callback { list, remove, restore, callback } => {
+        Commands::Callback { list, enumerate ,remove, restore, callback } => {
             if *list {
                 println!("[+] Enumerate Callback");
                 enumerate_callback(IOCTL_ENUMERATE_CALLBACK, callback);
+                return;
+            }
+            
+            if *enumerate {
+                println!("[+] Enumerate Removed Callback");
+                enumerate_callback(IOCTL_ENUMERATE_REMOVED_CALLBACK, callback);
                 return;
             }
 

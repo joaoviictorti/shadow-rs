@@ -1,3 +1,4 @@
+extern crate alloc;
 use crate::vars::Callbacks;
 
 // Callback Information for Enumeration (Output)
@@ -7,6 +8,8 @@ pub struct CallbackInfoOutput {
     pub address: usize,
     pub name: [u16; 256],
     pub index: u8,
+    pub pre_operation: usize,
+    pub post_operation: usize
 }
 
 // Callback Information for Action (Input)
@@ -15,13 +18,4 @@ pub struct CallbackInfoOutput {
 pub struct CallbackInfoInput {
     pub index: usize,
     pub callback: Callbacks
-}
-
-// 
-#[repr(C)]
-#[derive(Debug)]
-pub struct CallbackRestaure {
-    pub index: usize,
-    pub callback: Callbacks,
-    pub address: u64,
 }

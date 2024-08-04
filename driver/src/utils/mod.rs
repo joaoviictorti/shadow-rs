@@ -1,5 +1,5 @@
 use {
-    crate::{includes::SystemModuleInformation, process::Process}, 
+    crate::{includes::structs::SystemModuleInformation, process::Process}, 
     alloc::{string::String, vec, vec::Vec}, 
     core::{
         ffi::{c_void, CStr}, 
@@ -9,16 +9,13 @@ use {
     }, 
     ntapi::{
         ntexapi::{SystemModuleInformation, SystemProcessInformation, PSYSTEM_PROCESS_INFORMATION}, 
-        ntzwapi::ZwQuerySystemInformation
+        ntzwapi::ZwQuerySystemInformation,
+        ntldr::LDR_DATA_TABLE_ENTRY,
     }, 
     obfstr::obfstr, 
     wdk_sys::{
         *,
-        ntddk::{
-            ExAllocatePool2, ExFreePool, KeStackAttachProcess, KeUnstackDetachProcess, 
-            ZwMapViewOfSection, ZwOpenSection, ZwReadFile, ZwClose, ZwUnmapViewOfSection,
-            ZwCreateFile, ZwQueryInformationFile, PsIsThreadTerminating
-        },
+        ntddk::*,
         _FILE_INFORMATION_CLASS::FileStandardInformation,
         _SECTION_INHERIT::ViewUnmap
     }, 
@@ -611,6 +608,32 @@ pub fn read_file(path: &String) -> Result<Vec<u8>, NTSTATUS> {
     unsafe { ZwClose(h_file) };
 
     return Ok(shellcode)
+}
+
+/// Responsible for returning information on the modules loaded.
+///
+/// # Returns
+/// - `Option<(*mut LDR_DATA_TABLE_ENTRY, i32)> `: Returns a content containing LDR_DATA_TABLE_ENTRY and the return of how many loaded modules there are in PsLoadedModuleList.
+/// 
+pub fn return_module() -> Option<(*mut LDR_DATA_TABLE_ENTRY, i32)> {
+    let ps_module = crate::uni::str_to_unicode(obfstr!("PsLoadedModuleList"));
+    let func = unsafe { MmGetSystemRoutineAddress(&mut ps_module.to_unicode()) as *mut LDR_DATA_TABLE_ENTRY };
+
+    if func.is_null() {
+        log::error!("PsLoadedModuleList is null");
+        return None;
+    }
+
+    let mut list_entry = unsafe { (*func).InLoadOrderLinks.Flink as *mut LDR_DATA_TABLE_ENTRY };
+    let mut module_count = 0;
+
+    let start_entry = list_entry;
+    while !list_entry.is_null() && list_entry != func {
+        module_count += 1;
+        list_entry = unsafe { (*list_entry).InLoadOrderLinks.Flink as *mut LDR_DATA_TABLE_ENTRY };
+    }
+
+    Some((start_entry, module_count))
 }
 
 /// Validates if the given address is within the kernel memory range.

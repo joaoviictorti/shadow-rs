@@ -92,15 +92,19 @@ pub enum Commands {
     /// Operations related to Callback.
     Callback {
         /// Enumerate callback.
-        #[arg(long)]
+        #[arg(long, short)]
         list: bool,
         
+        /// Enumerate Removed callback.
+        #[arg(long, short)]
+        enumerate: bool,
+
         /// Remove callback.
         #[arg(long)]
         remove: Option<usize>,
         
         /// Select callback.
-        #[arg(long, required = true)]
+        #[arg(long, short, required = true)]
         callback: Callbacks,
 
         // Restore callback.
@@ -279,7 +283,13 @@ pub enum Callbacks {
     /// Callback for PsSetCreateThreadNotifyRoutine.
     Thread,
     /// Callback for PsSetLoadImageNotifyRoutine.
-    LoadImage
+    LoadImage,
+    /// Callback for CmRegisterCallbackEx
+    Registry,
+    /// Callback for ObProcess
+    ObProcess,
+    /// Callback for ObThread
+    ObThread,
 }
 
 impl Callbacks {
@@ -288,6 +298,9 @@ impl Callbacks {
             Callbacks::Process => shared::vars::Callbacks::PsSetCreateProcessNotifyRoutine,
             Callbacks::Thread => shared::vars::Callbacks::PsSetCreateThreadNotifyRoutine,
             Callbacks::LoadImage => shared::vars::Callbacks::PsSetLoadImageNotifyRoutine,
+            Callbacks::Registry => shared::vars::Callbacks::CmRegisterCallbackEx,
+            Callbacks::ObProcess => shared::vars::Callbacks::ObProcess,
+            Callbacks::ObThread => shared::vars::Callbacks::ObThread,
         }
     }
 }

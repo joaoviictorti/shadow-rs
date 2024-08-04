@@ -35,13 +35,24 @@ pub fn enumerate_callback(ioctl_code: u32, callback: &Callbacks) {
         for i in callback_info.iter() {
             if i.address > 0 {
                 let name = match String::from_utf16(&i.name) {
-                    Ok(name) => name,
+                    Ok(name) => name.trim_end_matches('\0').to_string(),
                     Err(err) => {
-                      eprintln!("[!] UTF-16 decoding error: {:?}", err);
-                      continue;
-                    }  
+                        eprintln!("[!] UTF-16 decoding error: {:?}", err);
+                        continue;
+                    }
                 };
                 println!("[{}] {:?} {}", i.index, i.address as *mut c_void, name);
+            }  else if i.post_operation > 0 || i.pre_operation > 0 {
+                let name = match String::from_utf16(&i.name) {
+                    Ok(name) => name.trim_end_matches('\0').to_string(),
+                    Err(err) => {
+                        eprintln!("[!] UTF-16 decoding error: {:?}", err);
+                        continue;
+                    }
+                };
+                println!("[{}] {}", i.index, name);
+                println!("\tpre_operation: {:?}", i.pre_operation as *mut c_void);
+                println!("\tpost_operation: {:?}", i.post_operation as *mut c_void);
             }
         }
     }
@@ -73,8 +84,6 @@ pub fn remove_callback(index: usize, ioctl_code: u32, callback: &Callbacks) {
 
     if status == 0 {
         eprintln!("[!] DeviceIoControl Failed with status: 0x{:08X}", status);
-    } else {
-        println!("[+] Remove Callback: {index}");
     }
 
     unsafe { 
@@ -104,8 +113,6 @@ pub fn restore_callback(index: usize, ioctl_code: u32, callback: &Callbacks) {
 
     if status == 0 {
         eprintln!("[!] DeviceIoControl Failed with status: 0x{:08X}", status);
-    } else {
-        println!("[+] Restore Callback: {index}");
     }
 
     unsafe { 

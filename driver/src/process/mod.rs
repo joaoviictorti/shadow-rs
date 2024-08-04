@@ -12,7 +12,7 @@ use {
         }, 
     }, 
     crate::{
-        includes::PROCESS_SIGNATURE,
+        includes::structs::PROCESS_SIGNATURE,
         utils::offsets::{get_offset_signature, get_offset_token, get_offset_unique_process_id},
     }, 
 };
