@@ -173,7 +173,6 @@ macro_rules! handle_callback {
         };
 
         let mut status = 0;
-
         match $ioctl {
             IOCTL_ENUMERATE_CALLBACK => {
                 status = match (*input_buffer).callback {
@@ -210,7 +209,6 @@ macro_rules! handle_callback {
         };
 
         let mut status = 0;
-
         match $ioctl {
             IOCTL_REMOVE_CALLBACK => {
                 status = match (*input_buffer).callback {
