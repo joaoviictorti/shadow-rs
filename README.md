@@ -147,8 +147,8 @@ These are some of the features that will be added, but there are many more on th
 - Minifilters ❌
 
 #### Injection
-- DLL Injection (ZwCreateThreadEx)
-- APC Injection - DLL
+- DLL Injection (ZwCreateThreadEx) ❌
+- APC Injection - DLL ❌
 
 #### Disable ETWTI ❌
 
