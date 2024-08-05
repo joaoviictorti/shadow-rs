@@ -53,6 +53,7 @@ This project, called shadow-rs, is designed to create a rootkit in the Windows k
 #### Driver
 - Driver (Hide / Unhide) ✅
 - Enumerate Driver ✅
+- Support for mapping the driver in memory ✅
  
 #### Driver Signature Enforcement (DSE)
 - DSE (Enable / Disable) ✅
@@ -67,6 +68,7 @@ This project, called shadow-rs, is designed to create a rootkit in the Windows k
   - PsSetLoadImageNotifyRoutine ✅
   - CmRegisterCallbackEx  ✅
   - ObRegisterCallbacks (PsProcessType / PsThreadType) ✅
+  - Listing currently removed callbacks ✅
 
 #### Module
 - Enumerate Module ✅
@@ -77,6 +79,7 @@ This project, called shadow-rs, is designed to create a rootkit in the Windows k
 #### Injection Shellcode
 - Process Injection (ZwCreateThreadEx) ✅
 - APC Injection ✅
+
 
 ## Build Instructions
 
