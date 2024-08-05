@@ -86,12 +86,12 @@ This project, called shadow-rs, is designed to create a rootkit in the Windows k
 To build the project, ensure you have the Rust toolchain installed. 
 
 #### Driver
-To build the driver, first go into the `driver` folder, then run the following command:
+To build the driver, first go to the `driver` folder and then run the following command (When you do the first build you have to be as administrator, but after that you won't need to):
 ```sh
 cargo make default --release
 ```
 
-This driver can be manually mapped using `kdmapper`, for example, to put the mapping support, use the command:
+This driver can be mapped using `kdmapper` among other exploit tools, for example, to put mapping support, use the command:
 ```sh
 cargo make default --release --features mapper
 ```
@@ -102,7 +102,7 @@ To build the client, first go into the `client` folder, then run the following c
 cargo build --release
 ```
 
-Since some rootkit features are not supported due to manual driver mapping, use the following command to build the client with only the commands that can be performed with manual mapping:
+Since some features of the rootkit are not supported due to the controller mapping, use the following command to build the client with only the commands that can be executed with the mapping:
 ```sh
 cargo build --release --features mapper
 ```
@@ -142,6 +142,17 @@ These are some of the features that will be added, but there are many more on th
 #### File
 - Hide File / Directory ❌
 - Anti-Deletion e Overwriting ❌
+
+#### Callback
+- Minifilters ❌
+
+#### Disable ETWTI ❌
+
+#### Disable WFP  ❌
+
+#### Removing mapped drivers from Big Pool ❌
+
+#### Mapping another driver in memory ❌
 
 ## Credits & References
 - https://leanpub.com/windowskernelprogrammingsecondedition
