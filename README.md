@@ -68,7 +68,7 @@ This project, called shadow-rs, is designed to create a rootkit in the Windows k
   - PsSetLoadImageNotifyRoutine ✅
   - CmRegisterCallbackEx  ✅
   - ObRegisterCallbacks (PsProcessType / PsThreadType) ✅
-  - Listing currently removed callbacks ✅
+- Listing currently removed callbacks ✅
 
 #### Module
 - Enumerate Module ✅
