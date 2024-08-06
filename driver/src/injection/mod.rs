@@ -27,7 +27,7 @@ use {
 
 mod callbacks;
 
-/// Represents shellcode injection
+/// Represents shellcode injection.
 pub struct InjectionShellcode;
 
 impl InjectionShellcode {
@@ -236,7 +236,7 @@ impl InjectionShellcode {
     }
 }
 
-/// Represents DLL injection
+/// Represents DLL injection.
 pub struct InjectionDLL;
 
 impl InjectionDLL {
