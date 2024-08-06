@@ -42,7 +42,7 @@ pub enum Commands {
 
         /// Name Driver
         #[arg(long, value_hint = ValueHint::FilePath, value_parser = validate_sys_extension)]
-        name: Option<String>
+        name: Option<String>,
     },
     /// Operations related to DSE (Driver Signature Enforcement).
     DSE {
@@ -113,6 +113,15 @@ pub enum Commands {
     },
     /// Operations related to Injection
     Injection {
+        /// Subcommands for thread operations.
+        #[command(subcommand)]
+        sub_command: InjectionCommands,
+    },
+}
+
+#[derive(Subcommand)]
+pub enum InjectionCommands {
+    DLL {
         /// The process ID to injection.
         #[arg(long, short, required = true)]
         pid: u32,
@@ -125,6 +134,20 @@ pub enum Commands {
         #[arg(long, short, required = true)]
         type_: Injection
     },
+
+    Shellcode {
+        /// The process ID to injection.
+        #[arg(long, short, required = true)]
+        pid: u32,
+
+        /// Path containing the dll
+        #[arg(long, required = true)]
+        path: String,
+
+        /// Type shellcode
+        #[arg(long, short, required = true)]
+        type_: Injection
+    }
 }
 
 /// Enum representing the subcommands for process operations.
