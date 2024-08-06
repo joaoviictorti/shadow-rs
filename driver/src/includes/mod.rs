@@ -199,7 +199,7 @@ extern "system" {
     
     pub fn IoCreateDriver(
         driver_name: PUNICODE_STRING,
-        driver_initialize: DRIVER_INITIALIZE,
+        driver_initialize: types::DRIVER_INITIALIZE,
     ) -> NTSTATUS;
 
     pub fn MmCopyVirtualMemory(
