@@ -135,10 +135,7 @@ pub mod structs {
 
 pub mod types {
     use super::*; 
-
-    // pub type OperationPre = unsafe extern "C" fn(*mut core::ffi::c_void, *mut OB_PRE_OPERATION_INFORMATION) -> i32;
-    // pub type OperationPost = unsafe extern "C" fn(*mut core::ffi::c_void, *mut _OB_POST_OPERATION_INFORMATION);    
-
+    
     pub type DRIVER_INITIALIZE = core::option::Option<unsafe extern "system" fn(
         DriverObject: &mut _DRIVER_OBJECT,
         RegistryPath: PCUNICODE_STRING,

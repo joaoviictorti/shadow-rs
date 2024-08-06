@@ -18,6 +18,7 @@ use {
     }, 
 };
 
+
 /// List of target drivers protected by a mutex.
 static DRIVER_INFO_HIDE: Lazy<Mutex<Vec<HiddenDriverInfo>>> = Lazy::new(|| Mutex::new(Vec::with_capacity(MAX_DRIVER))); 
 

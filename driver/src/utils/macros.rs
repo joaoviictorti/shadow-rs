@@ -102,10 +102,6 @@ macro_rules! handle_injection {
 
         $action(input_buffer)
     }};
-
-    ($action:expr) => {
-        $action()
-    }
 }
 
 /// Macro to handle registry-related operations.

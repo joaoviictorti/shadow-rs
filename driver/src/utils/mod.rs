@@ -1,16 +1,18 @@
 use {
-    crate::{includes::structs::SystemModuleInformation, process::Process}, 
+    crate::{includes::{structs::SystemModuleInformation, PsGetProcessPeb}, process::Process}, 
     alloc::{string::String, vec, vec::Vec}, 
     core::{
         ffi::{c_void, CStr}, 
         mem::{size_of, zeroed}, 
         ptr::{null_mut, read, read_unaligned},
-        fmt::Write
+        fmt::Write,
+        slice::from_raw_parts
     }, 
     ntapi::{
         ntexapi::{SystemModuleInformation, SystemProcessInformation, PSYSTEM_PROCESS_INFORMATION}, 
         ntzwapi::ZwQuerySystemInformation,
         ntldr::LDR_DATA_TABLE_ENTRY,
+        ntpebteb::PEB,
     }, 
     obfstr::obfstr, 
     wdk_sys::{
@@ -136,18 +138,9 @@ pub unsafe fn get_function_address(function_name: &str, dll_base: *mut c_void) -
     let nt_header = (dll_base as usize + (*dos_header).e_lfanew as usize) as *mut IMAGE_NT_HEADERS64;
 
     let export_directory = (dll_base as usize + (*nt_header).OptionalHeader.DataDirectory[0].VirtualAddress as usize) as *const IMAGE_EXPORT_DIRECTORY;
-    let names = core::slice::from_raw_parts(
-        (dll_base as usize + (*export_directory).AddressOfNames as usize) as *const u32,
-        (*export_directory).NumberOfNames as _,
-    );
-    let functions = core::slice::from_raw_parts(
-        (dll_base as usize + (*export_directory).AddressOfFunctions as usize) as *const u32,
-        (*export_directory).NumberOfFunctions as _,
-    );
-    let ordinals = core::slice::from_raw_parts(
-        (dll_base as usize + (*export_directory).AddressOfNameOrdinals as usize) as *const u16,
-        (*export_directory).NumberOfNames as _,
-    );
+    let names = from_raw_parts((dll_base as usize + (*export_directory).AddressOfNames as usize) as *const u32, (*export_directory).NumberOfNames as _);
+    let functions = from_raw_parts((dll_base as usize + (*export_directory).AddressOfFunctions as usize) as *const u32, (*export_directory).NumberOfFunctions as _);
+    let ordinals = from_raw_parts((dll_base as usize + (*export_directory).AddressOfNameOrdinals as usize) as *const u16,(*export_directory).NumberOfNames as _);
 
     for i in 0..(*export_directory).NumberOfNames as isize {
         let name = CStr::from_ptr((dll_base as usize + names[i as usize] as usize) as *const i8).to_str().ok()?;
@@ -189,18 +182,9 @@ pub unsafe fn get_address_asynckey(name: &str, dll_base: *mut c_void) -> Option<
     let nt_header = (dll_base + (*dos_header).e_lfanew as usize) as *mut IMAGE_NT_HEADERS64;
 
     let export_directory = (dll_base + (*nt_header).OptionalHeader.DataDirectory[0].VirtualAddress as usize) as *const IMAGE_EXPORT_DIRECTORY;
-    let names = core::slice::from_raw_parts(
-        (dll_base + (*export_directory).AddressOfNames as usize) as *const u32,
-        (*export_directory).NumberOfNames as _,
-    );
-    let functions = core::slice::from_raw_parts(
-        (dll_base + (*export_directory).AddressOfFunctions as usize) as *const u32,
-        (*export_directory).NumberOfFunctions as _,
-    );
-    let ordinals = core::slice::from_raw_parts(
-        (dll_base + (*export_directory).AddressOfNameOrdinals as usize) as *const u16,
-        (*export_directory).NumberOfNames as _,
-    );
+    let names = from_raw_parts((dll_base + (*export_directory).AddressOfNames as usize) as *const u32,(*export_directory).NumberOfNames as _);
+    let functions = from_raw_parts((dll_base + (*export_directory).AddressOfFunctions as usize) as *const u32,(*export_directory).NumberOfFunctions as _);
+    let ordinals = from_raw_parts((dll_base + (*export_directory).AddressOfNameOrdinals as usize) as *const u16, (*export_directory).NumberOfNames as _);
 
     for i in 0..(*export_directory).NumberOfNames as isize {
         let name_module = CStr::from_ptr((dll_base + names[i as usize] as usize) as *const i8).to_str().ok()?;
@@ -249,10 +233,7 @@ pub unsafe fn get_process_by_name(process_name: &str) -> Option<usize> {
 
     loop {
         if !(*process_info).ImageName.Buffer.is_null() {
-            let image_name = core::slice::from_raw_parts(
-                (*process_info).ImageName.Buffer,
-                ((*process_info).ImageName.Length / 2) as usize,
-            );
+            let image_name = from_raw_parts((*process_info).ImageName.Buffer, ((*process_info).ImageName.Length / 2) as usize);
             let name = String::from_utf16_lossy(image_name);
             if name == process_name {
                 let pid = (*process_info).UniqueProcessId as usize;
@@ -281,53 +262,19 @@ pub unsafe fn get_process_by_name(process_name: &str) -> Option<usize> {
 /// - `Option<u16>`: The syscall index if found, or `None` if an error occurs or the function is not found.
 /// 
 pub unsafe fn get_syscall_index(function_name: &str) -> Option<u16> {
-    let mut section_handle = null_mut();
-    let ntdll = crate::utils::uni::str_to_unicode("\\KnownDlls\\ntdll.dll");
-    let mut obj_attr = InitializeObjectAttributes(Some(&mut ntdll.to_unicode()), OBJ_CASE_INSENSITIVE, None, None, None);
-    let mut status = ZwOpenSection(&mut section_handle, SECTION_MAP_READ | SECTION_QUERY, &mut obj_attr);
-    if !NT_SUCCESS(status) {
-        log::error!("ZwOpenSection Failed With Status: {status}");
-        return None
-    }
+    let (section_handle, ntdll_addr) = match map_dll(obfstr!("\\KnownDlls\\ntdll.dll")) {
+        Some(infos) => infos,
+        None => return None
+    };
 
-    let mut large: LARGE_INTEGER = zeroed();
-    let mut ntdll_addr = null_mut();
-    let mut view_size = 0;
-    status = ZwMapViewOfSection(
-        section_handle, 
-        0xFFFFFFFFFFFFFFFF as *mut core::ffi::c_void, 
-        &mut ntdll_addr, 
-        0, 
-        0, 
-        &mut large, 
-        &mut view_size, 
-        ViewUnmap, 
-        0,
-        PAGE_READONLY,
-    );
-    if !NT_SUCCESS(status) {
-        log::error!("ZwMapViewOfSection Failed With Status: {status}");
-        ZwClose(section_handle);
-        return None
-    }
-
-    let dos_header = ntdll_addr as *mut IMAGE_DOS_HEADER;
-    let nt_header = (ntdll_addr as usize + (*dos_header).e_lfanew as usize) as *mut IMAGE_NT_HEADERS64;
+    let dos_header = ntdll_addr as *const IMAGE_DOS_HEADER;
+    let nt_header = (ntdll_addr as usize + (*dos_header).e_lfanew as usize) as *const IMAGE_NT_HEADERS64;
 
     let ntdll_addr = ntdll_addr as usize;
     let export_directory = (ntdll_addr + (*nt_header).OptionalHeader.DataDirectory[0].VirtualAddress as usize) as *const IMAGE_EXPORT_DIRECTORY;
-    let names = core::slice::from_raw_parts(
-        (ntdll_addr + (*export_directory).AddressOfNames as usize) as *const u32,
-        (*export_directory).NumberOfNames as _,
-    );
-    let functions = core::slice::from_raw_parts(
-        (ntdll_addr + (*export_directory).AddressOfFunctions as usize) as *const u32,
-        (*export_directory).NumberOfFunctions as _,
-    );
-    let ordinals = core::slice::from_raw_parts(
-        (ntdll_addr + (*export_directory).AddressOfNameOrdinals as usize) as *const u16,
-        (*export_directory).NumberOfNames as _,
-    );
+    let names = from_raw_parts((ntdll_addr + (*export_directory).AddressOfNames as usize) as *const u32, (*export_directory).NumberOfNames as _,);
+    let functions = from_raw_parts((ntdll_addr + (*export_directory).AddressOfFunctions as usize) as *const u32, (*export_directory).NumberOfFunctions as _,);
+    let ordinals = from_raw_parts((ntdll_addr + (*export_directory).AddressOfNameOrdinals as usize) as *const u16, (*export_directory).NumberOfNames as _);
 
     for i in 0..(*export_directory).NumberOfNames as isize {
         let name = CStr::from_ptr((ntdll_addr + names[i as usize] as usize) as *const i8).to_str().ok()?;
@@ -356,6 +303,129 @@ pub unsafe fn get_syscall_index(function_name: &str) -> Option<u16> {
     ZwUnmapViewOfSection(0xFFFFFFFFFFFFFFFF as *mut c_void, ntdll_addr as *mut c_void);
     ZwClose(section_handle);
     return None
+}
+
+/// Retrieves the address of a specified function within a module in the context of a target process.
+///
+/// # Parameters
+/// - `pid`: The process ID (PID) of the target process.
+/// - `module_name`: The name of the module (DLL) to be searched for. The search is case-insensitive.
+/// - `function_name`: The name of the function within the module to be found.
+/// 
+/// # Returns
+/// - `Option<*mut c_void>`: The address of the target function if found.
+/// 
+pub unsafe fn get_module_peb(pid: usize, module_name: &str, function_name: &str) -> Option<*mut c_void> {
+    let mut apc_state: KAPC_STATE = core::mem::zeroed();
+    let target = match Process::new(pid) {
+        Some(p) => p,
+        None => return None,
+    };
+
+    KeStackAttachProcess(target.e_process, &mut apc_state);
+    let target_peb = PsGetProcessPeb(target.e_process) as *mut PEB;
+    if target_peb.is_null() || (*target_peb).Ldr.is_null() {
+        KeUnstackDetachProcess(&mut apc_state);
+        return None;
+    }
+    
+    let current = &mut (*(*target_peb).Ldr).InLoadOrderModuleList as *mut winapi::shared::ntdef::LIST_ENTRY;
+    let mut next = (*(*target_peb).Ldr).InLoadOrderModuleList.Flink;      
+
+    while next != current {
+        if next.is_null() {
+            log::error!("Next LIST_ENTRY is null");
+            KeUnstackDetachProcess(&mut apc_state);
+            return None;
+        }
+
+        let list_entry = next as *mut LDR_DATA_TABLE_ENTRY;
+        if list_entry.is_null() {
+            log::error!("LDR_DATA_TABLE_ENTRY is null");
+            KeUnstackDetachProcess(&mut apc_state);
+            return None;
+        }
+
+        let buffer = core::slice::from_raw_parts(
+            (*list_entry).FullDllName.Buffer,
+            ((*list_entry).FullDllName.Length / 2) as usize,
+        );
+        if buffer.is_empty() {
+            log::error!("Buffer for module name is empty");
+            KeUnstackDetachProcess(&mut apc_state);
+            return None;
+        }
+
+        let dll_name = alloc::string::String::from_utf16(&buffer).ok()?;
+        if dll_name.to_lowercase().contains(module_name) {
+            let dll_base = (*list_entry).DllBase as usize;
+            let dos_header = dll_base as *mut IMAGE_DOS_HEADER;
+            let nt_header = (dll_base + (*dos_header).e_lfanew as usize) as *mut IMAGE_NT_HEADERS64;
+        
+            let export_directory = (dll_base + (*nt_header).OptionalHeader.DataDirectory[0].VirtualAddress as usize) as *mut IMAGE_EXPORT_DIRECTORY;
+            let names = from_raw_parts((dll_base + (*export_directory).AddressOfNames as usize) as *const u32,(*export_directory).NumberOfNames as _);
+            let functions = from_raw_parts((dll_base + (*export_directory).AddressOfFunctions as usize) as *const u32,(*export_directory).NumberOfFunctions as _);
+            let ordinals = from_raw_parts((dll_base + (*export_directory).AddressOfNameOrdinals as usize) as *const u16, (*export_directory).NumberOfNames as _);
+        
+            for i in 0..(*export_directory).NumberOfNames as isize {
+                let name_module = CStr::from_ptr((dll_base + names[i as usize] as usize) as *const i8).to_str().ok()?;
+                let ordinal = ordinals[i as usize] as usize;
+                let address = (dll_base + functions[ordinal] as usize) as *mut c_void;
+                if name_module == function_name {
+                    KeUnstackDetachProcess(&mut apc_state);
+                    return Some(address);
+                }
+            }
+        }
+
+        next = (*next).Flink;
+    }
+
+    KeUnstackDetachProcess(&mut apc_state);
+
+    None
+}
+
+/// Maps a DLL into memory.
+///
+/// # Parameters
+/// - `name`: The name of the DLL to be mapped.
+///
+/// # Returns
+/// - `Option<(HANDLE, *mut c_void)>`: Containing the handle to the section and a pointer to the mapped view if successful.
+///
+pub unsafe fn map_dll(name: &str) -> Option<(HANDLE, *mut c_void)> {
+    let mut section_handle = null_mut();
+    let dll = crate::utils::uni::str_to_unicode(name);
+    let mut obj_attr = InitializeObjectAttributes(Some(&mut dll.to_unicode()), OBJ_CASE_INSENSITIVE, None, None, None);
+    let mut status = ZwOpenSection(&mut section_handle, SECTION_MAP_READ | SECTION_QUERY, &mut obj_attr);
+    if !NT_SUCCESS(status) {
+        log::error!("ZwOpenSection Failed With Status: {status}");
+        return None
+    }
+
+    let mut large: LARGE_INTEGER = zeroed();
+    let mut addr = null_mut();
+    let mut view_size = 0;
+    status = ZwMapViewOfSection(
+        section_handle, 
+        0xFFFFFFFFFFFFFFFF as *mut core::ffi::c_void, 
+        &mut addr, 
+        0, 
+        0, 
+        &mut large, 
+        &mut view_size, 
+        ViewUnmap, 
+        0,
+        PAGE_READONLY,
+    );
+    if !NT_SUCCESS(status) {
+        log::error!("ZwMapViewOfSection Failed With Status: {status}");
+        ZwClose(section_handle);
+        return None
+    }
+
+    Some((section_handle, addr))
 }
 
 /// Finds the address of a specified Zw function.
@@ -390,9 +460,9 @@ pub unsafe fn find_zw_function(name: &str) -> Option<usize> {
         0xE9, 0xCC, 0xCC, 0xCC, 0xCC // jmp KiServiceInternal
     ];
     
-    let dos_header = ntoskrnl_addr as *mut IMAGE_DOS_HEADER;
-    let nt_header = (ntoskrnl_addr as usize + (*dos_header).e_lfanew as usize) as *mut IMAGE_NT_HEADERS64;
-    let section_header = (nt_header as usize + size_of::<IMAGE_NT_HEADERS64>()) as *mut IMAGE_SECTION_HEADER;
+    let dos_header = ntoskrnl_addr as *const IMAGE_DOS_HEADER;
+    let nt_header = (ntoskrnl_addr as usize + (*dos_header).e_lfanew as usize) as *const IMAGE_NT_HEADERS64;
+    let section_header = (nt_header as usize + size_of::<IMAGE_NT_HEADERS64>()) as *const IMAGE_SECTION_HEADER;
 
     for i in 0..(*nt_header).FileHeader.NumberOfSections as usize {
         let section = (*section_header.add(i)).Name;
@@ -427,7 +497,7 @@ pub unsafe fn find_zw_function(name: &str) -> Option<usize> {
 pub unsafe fn find_thread_alertable(target_pid: usize) -> Option<*mut _KTHREAD> {
     let mut return_bytes = 0;
     ZwQuerySystemInformation(SystemProcessInformation, null_mut(), 0, &mut return_bytes);
-    let info_process = ExAllocatePool2(POOL_FLAG_NON_PAGED, return_bytes as u64,  u32::from_be_bytes(*b"oied")) as PSYSTEM_PROCESS_INFORMATION;
+    let info_process = ExAllocatePool2(POOL_FLAG_NON_PAGED, return_bytes as u64, u32::from_be_bytes(*b"oied")) as PSYSTEM_PROCESS_INFORMATION;
     if info_process.is_null() {
         log::error!("ExAllocatePool2 Failed");
         return None;
@@ -450,11 +520,7 @@ pub unsafe fn find_thread_alertable(target_pid: usize) -> Option<*mut _KTHREAD> 
     while (*process_info).NextEntryOffset != 0 {
         let pid = (*process_info).UniqueProcessId as usize;
         if pid == target_pid {
-            let threads_slice = core::slice::from_raw_parts(
-                (*process_info).Threads.as_ptr(),
-                (*process_info).NumberOfThreads as usize,
-            );
-
+            let threads_slice = from_raw_parts((*process_info).Threads.as_ptr(), (*process_info).NumberOfThreads as usize,);
             for &thread in threads_slice {
                 let thread_id = thread.ClientId.UniqueThread as usize;
                 let target_thread = match crate::thread::Thread::new(thread_id) {
@@ -562,7 +628,6 @@ pub fn read_file(path: &String) -> Result<Vec<u8>, NTSTATUS> {
     };
     if !NT_SUCCESS(status) {
         log::error!("ZwCreateFile Failed With Status: {status}");
-        unsafe { ZwClose(h_file) };
         return Err(status);
     }
 

