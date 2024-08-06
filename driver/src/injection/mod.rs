@@ -26,13 +26,15 @@ use {
 };
 
 mod callbacks;
+
+/// Represents shellcode injection
 pub struct InjectionShellcode;
 
 impl InjectionShellcode {
     /// Injection Shellcode in Thread.
     ///
     /// # Parameters
-    /// - `target`: The identifier of the target process (PID) to injection shellcode.
+    /// - `target`: The target process identifier (PID) and the path containing the injection shellcode.
     ///
     /// # Return
     /// - `NTSTATUS`: A status code indicating success or failure of the operation.
@@ -132,7 +134,7 @@ impl InjectionShellcode {
     /// Injection Shellcode in APC.
     ///
     /// # Parameters
-    /// - `target`: The identifier of the target process (PID) to injection shellcode.
+    /// - `target`: The target process identifier (PID) and the path containing the injection shellcode.
     ///
     /// # Return
     /// - `NTSTATUS`: A status code indicating success or failure of the operation.
@@ -234,9 +236,18 @@ impl InjectionShellcode {
     }
 }
 
+/// Represents DLL injection
 pub struct InjectionDLL;
 
 impl InjectionDLL {
+    /// DLL Injection.
+    ///
+    /// # Parameters
+    /// - `target`: The target process identifier (PID) and the path containing the injection dll.
+    ///
+    /// # Return
+    /// - `NTSTATUS`: A status code indicating success or failure of the operation.
+    ///
     pub unsafe fn injection_dll_thread(target: *mut TargetInjection) -> NTSTATUS {
         let pid = (*target).pid;
         let path = (*target).path.as_bytes();
