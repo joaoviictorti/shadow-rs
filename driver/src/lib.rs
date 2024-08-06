@@ -185,8 +185,9 @@ pub unsafe extern "system" fn shadow_entry(
 /// - `IOCTL_REMOVE_CALLBACK`: Remove a callback.
 /// - `IOCTL_REGISTRY_PROTECTION_VALUE`: Adding protection for registry key values.
 /// - `IOCTL_REGISTRY_PROTECTION_KEY`: Added protection for registry keys
-/// - `IOCTL_INJECTION_THREAD`: Process injection using ZwCreateThreadEx.
-/// - `IOCTL_INJECTION_APC`: APC Injection.
+/// - `IOCTL_INJECTION_SHELLCODE_THREAD`: Process injection using ZwCreateThreadEx.
+/// - `IOCTL_INJECTION_SHELLCODE_APC`: APC Injection.
+/// - `IOCTL_INJECTION_DLL_THREAD`: DLL injection using ZwCreateThreadEx.
 /// 
 pub unsafe extern "C" fn device_control(_device: *mut DEVICE_OBJECT, irp: *mut IRP) -> NTSTATUS {
     let stack = (*irp).Tail.Overlay.__bindgen_anon_2.__bindgen_anon_1.CurrentStackLocation;
