@@ -79,7 +79,7 @@ This project, called shadow-rs, is designed to create a rootkit in the Windows k
 #### Injection
 - Process Injection - Shellcode (ZwCreateThreadEx) ✅
 - APC Injection - Shellcode ✅
-
+- DLL Injection (ZwCreateThreadEx) ✅
 
 ## Build Instructions
 
@@ -147,7 +147,6 @@ These are some of the features that will be added, but there are many more on th
 - Minifilters ❌
 
 #### Injection
-- DLL Injection (ZwCreateThreadEx) ❌
 - APC Injection - DLL ❌
 
 #### Disable ETWTI ❌
