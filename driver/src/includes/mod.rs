@@ -155,14 +155,6 @@ pub mod types {
         AttributeList: PPS_ATTRIBUTE_LIST
     ) -> NTSTATUS;
 
-    pub type ZwProtectVirtualMemoryType = unsafe extern "system" fn (
-        ProcessHandle: HANDLE,
-        BaseAddress: *mut PVOID,
-        RegionSize: PSIZE_T,
-        NewProtect: ULONG,
-        OldProtect: PULONG
-    ) -> NTSTATUS;
-
     pub type PKRUNDOWN_ROUTINE = Option<unsafe extern "system" fn(
         apc: PKAPC,
     ) -> NTSTATUS>;
@@ -246,4 +238,12 @@ extern "system" {
         system_argument2: PVOID,
         increment: KPRIORITY
     ) -> bool;
+
+    pub fn ZwProtectVirtualMemory(
+        ProcessHandle: HANDLE,
+        BaseAddress: *mut PVOID,
+        RegionSize: PSIZE_T,
+        NewProtect: ULONG,
+        OldProtect: PULONG
+    ) -> NTSTATUS;
 }

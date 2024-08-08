@@ -1,5 +1,4 @@
 use wdk_sys::{ntddk::{ExFreePool, PsIsThreadTerminating}, PKAPC, PVOID, _MODE::UserMode};
-
 use crate::includes::{types::PKNORMAL_ROUTINE, KeTestAlertThread, PsGetCurrentThread};
 
 pub unsafe extern "system" fn kernel_apc_callback(
