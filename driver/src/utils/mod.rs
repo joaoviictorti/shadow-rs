@@ -1,11 +1,22 @@
 use {
-    crate::{includes::{structs::SystemModuleInformation, PsGetProcessPeb}, process::Process}, 
+    crate::{
+        includes::{structs::SystemModuleInformation, PsGetProcessPeb}, process::Process
+    }, 
     alloc::{string::String, vec::Vec, vec}, 
     core::{
-        ffi::{c_void, CStr}, fmt::Write, mem::{size_of, zeroed}, ptr::{null_mut, read, read_unaligned}, slice::from_raw_parts
+        ffi::{c_void, CStr}, 
+        fmt::Write, 
+        mem::{size_of, zeroed}, 
+        ptr::{null_mut, read, read_unaligned}, 
+        slice::from_raw_parts
     }, 
     ntapi::{
-        ntexapi::{SystemModuleInformation, SystemProcessInformation, PSYSTEM_PROCESS_INFORMATION}, ntldr::LDR_DATA_TABLE_ENTRY, ntpebteb::PEB, ntzwapi::ZwQuerySystemInformation
+        ntexapi::{
+            SystemModuleInformation, SystemProcessInformation, PSYSTEM_PROCESS_INFORMATION
+        }, 
+        ntldr::LDR_DATA_TABLE_ENTRY, 
+        ntpebteb::PEB, 
+        ntzwapi::ZwQuerySystemInformation
     }, 
     obfstr::obfstr, 
     wdk_sys::{
