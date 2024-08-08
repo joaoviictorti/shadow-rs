@@ -1,9 +1,5 @@
 use {
-    core::ffi::c_void,
-    crate::driver::open_driver, 
-    shared::structs::TargetInjection, 
-    std::ptr::null_mut, 
-    windows_sys::Win32::{Foundation::CloseHandle, System::IO::DeviceIoControl}
+    crate::{driver::open_driver, utils::check_file}, core::ffi::c_void, shared::structs::TargetInjection, std::ptr::null_mut, windows_sys::Win32::{Foundation::CloseHandle, System::IO::DeviceIoControl}
 };
 
 pub fn injection_thread(ioctl_code: u32, pid: &u32, path: &String) {
@@ -13,6 +9,12 @@ pub fn injection_thread(ioctl_code: u32, pid: &u32, path: &String) {
         path: path.to_string(),
         pid: *pid as usize
     };   
+
+    if !check_file(path) {
+        eprintln!("File not found: {path}");
+        return;
+    }
+
     let mut return_buffer = 0;
     status = unsafe { 
             DeviceIoControl(
