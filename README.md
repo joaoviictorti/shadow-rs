@@ -131,9 +131,6 @@ You can use [Service Control Manager](https://docs.microsoft.com/en-us/windows/w
 
 These are some of the features that will be added, but there are many more on the way
 
-#### Registry
-- Hide Key and Values ❌
-
 #### Module
 - Hide Module ❌
  
