@@ -74,6 +74,7 @@ This project, called shadow-rs, is designed to create a rootkit in the Windows k
 - Enumerate Module ✅
 
 #### Registry
+- Hide Key and Values ✅
 - Registry Protection (Anti-Deletion e Overwriting) ✅
 
 #### Injection
