@@ -82,6 +82,13 @@ This project, called shadow-rs, is designed to create a rootkit in the Windows k
 - APC Injection - Shellcode ✅
 - DLL Injection (ZwCreateThreadEx) ✅
 
+## Misc
+
+The following functionalities are not "features", they are basically techniques that may be of interest to you to explore, understand and apply in the development of your driver.
+
+- Searching for a "Zw" api not exported from `ntoskrnl.exe` at runtime.
+- Reflective Loading.
+
 ## Build Instructions
 
 To build the project, ensure you have the Rust toolchain installed. 
