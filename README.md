@@ -12,6 +12,7 @@
 * [Legal notice](#legal-notice)
 * [Overview](#overview)
 * [Features](#contents)
+* [Misc](#misc)
 * [Build Instructions](#build-instructions)
   * [Driver](#driver)
   * [Client](#client)
