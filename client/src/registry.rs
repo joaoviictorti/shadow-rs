@@ -5,7 +5,7 @@ use {
     windows_sys::Win32::{Foundation::CloseHandle, System::IO::DeviceIoControl},
 };
 
-pub fn registry_protection_value(ioctl_code: u32, value: &String, key: &String, enable: bool) {
+pub fn registry_protection(ioctl_code: u32, value: &String, key: &String, enable: bool) {
     let h_file = open_driver().expect("Failed to open driver");
     let mut info_registry = TargetRegistry {
         enable,
@@ -29,7 +29,7 @@ pub fn registry_protection_value(ioctl_code: u32, value: &String, key: &String, 
     if status == 0 {
         eprintln!("[!] DeviceIoControl Failed with status: 0x{:08X}", status);
     } else {
-        println!("[+] Registry value operation succeeded!");
+        println!("[+] Registry protection succeeded!");
     }
 
     unsafe { 
@@ -37,11 +37,12 @@ pub fn registry_protection_value(ioctl_code: u32, value: &String, key: &String, 
     };
 }
 
-pub fn registry_protection_key(ioctl_code: u32, key: &String, enable: bool) {
+pub fn registry_hide(ioctl_code: u32, value: &String, key: &String, enable: bool) {
     let h_file = open_driver().expect("Failed to open driver");
     let mut info_registry = TargetRegistry {
         enable,
         key: key.to_string(),
+        value: value.to_string(),
         ..Default::default()
     };
     let mut return_buffer = 0;
@@ -61,7 +62,7 @@ pub fn registry_protection_key(ioctl_code: u32, key: &String, enable: bool) {
     if status == 0 {
         eprintln!("[!] DeviceIoControl Failed with status: 0x{:08X}", status);
     } else {
-        println!("[+] Registry key operation succeeded!");
+        println!("[+] Registry hide succeeded!");
     }
 
     unsafe { 

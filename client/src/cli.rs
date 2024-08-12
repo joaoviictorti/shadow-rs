@@ -67,21 +67,8 @@ pub enum Commands {
     /// Operations related to Registry.
     #[cfg(not(feature = "mapper"))]
     Registry {
-        /// name of the key to be protected
-        #[arg(short, long, required = true)]
-        key: String,
-        
-        /// name of the value key to be protected
-        #[arg(short, long)]
-        name: Option<String>,
-        
-        /// Add protection.
-        #[arg(short, long)]
-        add: bool,
-        
-        /// Remove protection.
-        #[arg(short, long)]
-        remove: bool,
+        #[command(subcommand)]
+        sub_command: RegistryCommands
     },
     /// Operations related to Module.
     Module {
@@ -116,6 +103,49 @@ pub enum Commands {
         /// Subcommands for thread operations.
         #[command(subcommand)]
         sub_command: InjectionCommands,
+    },
+}
+
+#[derive(Subcommand)]
+pub enum RegistryCommands {
+    /// Enable protection for the registry
+    Protect {
+        /// name of the key to be protected
+        #[arg(short, long, required = true)]
+        key: String,
+        
+        /// name of the value key to be protected
+        #[arg(short, long)]
+        name: Option<String>,
+        
+        /// Add protection.
+        #[arg(short, long)]
+        add: bool,
+        
+        /// Remove protection.
+        #[arg(short, long)]
+        remove: bool,
+    },
+    /// Hide the registry
+    Hide {
+        /// name of the key to be hide
+        #[arg(short, long, required = true)]
+        key: String,
+
+        /// name of the value to be hide
+        #[arg(short, long)]
+        value: Option<String>,
+    },
+
+    /// Unhide the registry
+    Unhide {
+        /// name of the key to be unhide
+        #[arg(short, long, required = true)]
+        key: String,
+
+        /// name of the value to be unhide
+        #[arg(short, long)]
+        value: Option<String>,
     },
 }
 

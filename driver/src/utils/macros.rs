@@ -110,7 +110,7 @@ macro_rules! handle_injection {
 #[cfg(not(feature = "mapper"))]
 #[macro_export]
 macro_rules! handle_registry {
-    ($irp:expr, $action:expr, $type_:ty, $information:expr) => {{
+    ($irp:expr, $action:expr, $type_:ty, $information:expr, $type_registry:ty) => {{
         let output_buffer = match crate::utils::get_output_buffer::<$type_>($irp) {
             Ok(buffer) => buffer, 
             Err(status) => return status,
@@ -119,13 +119,12 @@ macro_rules! handle_registry {
         $action(output_buffer, $information)
     }};
 
-    ($stack:expr, $action:expr, $type_:ty) => {{
+    ($stack:expr, $action:expr, $type_:ty, $type_registry:expr) => {{
         let input_buffer = match crate::utils::get_input_buffer::<$type_>($stack) {
             Ok(buffer) => buffer,
             Err(status) => return status,
         };
-
-        $action(input_buffer)
+        $action(input_buffer, $type_registry)
     }};
 }
 
@@ -146,6 +145,15 @@ macro_rules! handle_module {
         };
         
         $action(input_buffer, output_buffer, $information)
+    }};
+
+    ($stack:expr, $action:expr, $input_type:ty) => {{
+        let input_buffer = match crate::utils::get_input_buffer::<$input_type>($stack) {
+            Ok(buffer) => buffer,
+            Err(status) => return status,
+        };
+        
+        $action(input_buffer)
     }};
 }
 

