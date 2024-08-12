@@ -143,17 +143,16 @@ These are some of the features that will be added, but there are many more on th
 
 #### Callback
 - Minifilters ❌
+- WFP ❌
 
 #### Injection
 - APC Injection - DLL ❌
 
 #### Disable ETWTI ❌
 
-#### Disable WFP  ❌
+#### Removing mapped drivers from PiDDBCacheTable / MmUnloadedDrivers   ❌
 
 #### Removing mapped drivers from Big Pool ❌
-
-#### Mapping another driver in memory ❌
 
 ## Credits & References
 - https://leanpub.com/windowskernelprogrammingsecondedition
