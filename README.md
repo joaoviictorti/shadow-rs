@@ -157,8 +157,9 @@ These are some of the features that will be added, but there are many more on th
 - APC Injection - DLL ❌
 
 #### Disable ETWTI ❌
-
-#### Removing mapped drivers from PiDDBCacheTable / MmUnloadedDrivers   ❌
+#### Driver
+- Removing mapped drivers from PiDDBCacheTable ❌
+- Removing mapped drivers from MmUnloadedDrivers ❌
 
 #### Removing mapped drivers from Big Pool ❌
 
