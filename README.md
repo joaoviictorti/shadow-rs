@@ -39,49 +39,49 @@ This project, called shadow-rs, is designed to create a rootkit in the Windows k
 ## Features
  
 #### Process
-- Process (Hide / Unhide) ✅
-- Process Signature (PP / PPL) ✅
-- Process Protection (Anti-Kill / Dumping) ✅
-- Elevate Process to System ✅
-- Terminate Process ✅
-- Lists protected and hidden processes currently on the system ✅
+- Process (Hide / Unhide) 
+- Process Signature (PP / PPL) 
+- Process Protection (Anti-Kill / Dumping) 
+- Elevate Process to System 
+- Terminate Process 
+- Lists protected and hidden processes currently on the system 
 
 #### Thread
-- Thread (Hide / Unhide) ✅
-- Thread Protection (Anti-Kill) ✅
-- Lists protected and hidden threads currently on the system ✅
+- Thread (Hide / Unhide) 
+- Thread Protection (Anti-Kill) 
+- Lists protected and hidden threads currently on the system 
  
 #### Driver
-- Driver (Hide / Unhide) ✅
-- Enumerate Driver ✅
-- Support for mapping the driver in memory ✅
+- Driver (Hide / Unhide) 
+- Enumerate Driver 
+- Support for mapping the driver in memory 
  
 #### Driver Signature Enforcement (DSE)
-- DSE (Enable / Disable) ✅
+- DSE (Enable / Disable) 
  
 #### Keylogger
-- Keylogger (Start / Stop) ✅
+- Keylogger (Start / Stop) 
  
 #### Callbacks
 - List / Remove / Restore Callbacks 
-  - PsSetCreateProcessNotifyRoutine ✅
-  - PsSetCreateThreadNotifyRoutine ✅
-  - PsSetLoadImageNotifyRoutine ✅
-  - CmRegisterCallbackEx  ✅
-  - ObRegisterCallbacks (PsProcessType / PsThreadType) ✅
-- Listing currently removed callbacks ✅
+  - PsSetCreateProcessNotifyRoutine 
+  - PsSetCreateThreadNotifyRoutine 
+  - PsSetLoadImageNotifyRoutine 
+  - CmRegisterCallbackEx  
+  - ObRegisterCallbacks (PsProcessType / PsThreadType) 
+- Listing currently removed callbacks 
 
 #### Module
-- Enumerate Module ✅
+- Enumerate Module 
 
 #### Registry
-- Hide Key and Values ✅
-- Registry Protection (Anti-Deletion e Overwriting) ✅
+- Hide Key and Values 
+- Registry Protection (Anti-Deletion e Overwriting) 
 
 #### Injection
-- Process Injection - Shellcode (ZwCreateThreadEx) ✅
-- APC Injection - Shellcode ✅
-- DLL Injection (ZwCreateThreadEx) ✅
+- Process Injection - Shellcode (ZwCreateThreadEx) 
+- APC Injection - Shellcode 
+- DLL Injection (ZwCreateThreadEx) 
 
 ## Misc
 
