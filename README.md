@@ -156,12 +156,12 @@ These are some of the features that will be added, but there are many more on th
 #### Injection
 - APC Injection - DLL ❌
 
-#### Disable ETWTI ❌
+#### ETWTI 
+- Disable ETWTI ❌
+
 #### Driver
 - Removing mapped drivers from PiDDBCacheTable ❌
 - Removing mapped drivers from MmUnloadedDrivers ❌
-
-#### Removing mapped drivers from Big Pool ❌
 
 ## Credits & References
 - https://leanpub.com/windowskernelprogrammingsecondedition
