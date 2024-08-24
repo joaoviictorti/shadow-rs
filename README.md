@@ -6,11 +6,12 @@
 ![Stars](https://img.shields.io/github/stars/joaoviictorti/shadow-rs)
 ![License](https://img.shields.io/github/license/joaoviictorti/shadow-rs)
 
+This project, called shadow-rs, is designed to create a rootkit in the Windows kernel using the Rust language. The aim is to demonstrate advanced techniques for developing rootkits, taking advantage of the security and performance features of the Rust language.
+
 ## Summary
 
 * [Notice](#notice)
 * [Legal notice](#legal-notice)
-* [Overview](#overview)
 * [Features](#contents)
 * [Misc](#misc)
 * [Build Instructions](#build-instructions)
@@ -33,9 +34,6 @@
 > [!WARNING]  
 > This project is for educational and research purposes. Malicious use of the software is strictly prohibited and discouraged. I am not responsible for any damage caused by improper use of the software.
 
-## Overview
-
-This project, called shadow-rs, is designed to create a rootkit in the Windows kernel using the Rust language. The aim is to demonstrate advanced techniques for developing rootkits, taking advantage of the security and performance features of the Rust language.
 ## Features
  
 #### Process
