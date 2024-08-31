@@ -151,6 +151,8 @@ pub enum RegistryCommands {
 
 #[derive(Subcommand)]
 pub enum InjectionCommands {
+
+    /// DLL Injection
     DLL {
         /// The process ID to injection.
         #[arg(long, short, required = true)]
@@ -165,6 +167,7 @@ pub enum InjectionCommands {
         type_: Injection
     },
 
+    /// Shellcode Injection
     Shellcode {
         /// The process ID to injection.
         #[arg(long, short, required = true)]
@@ -299,7 +302,9 @@ pub enum PS_PROTECTED_TYPE {
 
 #[derive(clap::ValueEnum, Clone, Debug, Copy)]
 pub enum Injection {
+    /// Injection using Thread
     Thread = 0,
+    /// Injection using APC
     APC = 1,
 }
 
