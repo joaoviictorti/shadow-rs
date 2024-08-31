@@ -54,12 +54,14 @@ This project, called shadow-rs, is designed to create a rootkit in the Windows k
 - Enumerate Driver 
 - Support for mapping the driver in memory 
  
-#### Driver Signature Enforcement (DSE)
-- DSE (Enable / Disable) 
- 
-#### Keylogger
-- Keylogger (Start / Stop) 
- 
+#### Misc
+
+  - Driver Signature Enforcement (DSE)
+    - DSE (Enable / Disable) 
+  
+  - Keylogger
+    - Keylogger (Start / Stop) 
+
 #### Callbacks
 - List / Remove / Restore Callbacks 
   - PsSetCreateProcessNotifyRoutine 
@@ -154,8 +156,9 @@ These are some of the features that will be added, but there are many more on th
 #### Injection
 - APC Injection - DLL ❌
 
-#### ETWTI 
-- Disable ETWTI ❌
+#### Misc
+  - ETWTI 
+    - Disable ETWTI ❌
 
 #### Driver
 - Removing mapped drivers from PiDDBCacheTable ❌
