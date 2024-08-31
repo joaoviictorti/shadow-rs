@@ -1,11 +1,13 @@
-use alloc::boxed::Box;
-use hashbrown::HashMap;
-use shared::{
-    ioctls::{IOCTL_ENUMERATE_CALLBACK, IOCTL_ENUMERATE_REMOVED_CALLBACK, IOCTL_REMOVE_CALLBACK, IOCTL_RESTORE_CALLBACK}, 
-    structs::{CallbackInfoInput, CallbackInfoOutput}
+use {
+    alloc::boxed::Box,
+    hashbrown::HashMap,
+    shared::{
+        ioctls::{IOCTL_ENUMERATE_CALLBACK, IOCTL_ENUMERATE_REMOVED_CALLBACK, IOCTL_REMOVE_CALLBACK, IOCTL_RESTORE_CALLBACK}, 
+        structs::{CallbackInfoInput, CallbackInfoOutput}
+    },
+    wdk_sys::{IO_STACK_LOCATION, IRP},
+    crate::{handle_callback, utils::ioctls::IoctlHandler},
 };
-use wdk_sys::{IO_STACK_LOCATION, IRP};
-use crate::{handle_callback, utils::ioctls::IoctlHandler};
 
 pub fn get_callback_ioctls(ioctls: &mut HashMap<u32, IoctlHandler> ) {
 
