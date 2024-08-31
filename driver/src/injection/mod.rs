@@ -3,13 +3,11 @@
 use {
     crate::{
         includes::{
-            enums::KAPC_ENVIROMENT::OriginalApcEnvironment, 
-            types::{
+            enums::KAPC_ENVIROMENT::OriginalApcEnvironment, types::{
                 ZwCreateThreadExType, PKNORMAL_ROUTINE
-            }, 
-            KeInitializeApc, KeInsertQueueApc, MmCopyVirtualMemory, ZwProtectVirtualMemory 
+            }, KeInitializeApc, KeInsertQueueApc, MmCopyVirtualMemory,ZwProtectVirtualMemory
         }, 
-        process::Process,
+        process::Process, 
         utils::{
             find_thread_alertable, find_zw_function, 
             get_module_peb, read_file, InitializeObjectAttributes
@@ -29,6 +27,7 @@ use {
 };
 
 mod callbacks;
+pub mod ioctls;
 
 /// Represents shellcode injection.
 pub struct InjectionShellcode;

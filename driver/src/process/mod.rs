@@ -19,6 +19,7 @@ use {
 
 #[cfg(not(feature = "mapper"))]
 pub mod callback;
+pub mod ioctls;
 #[cfg(not(feature = "mapper"))]
 pub use callback::*;
 

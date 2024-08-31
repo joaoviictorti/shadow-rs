@@ -177,7 +177,7 @@ pub enum InjectionCommands {
         /// Type shellcode
         #[arg(long, short, required = true)]
         type_: Injection
-    }
+    },
 }
 
 /// Enum representing the subcommands for process operations.
@@ -300,7 +300,7 @@ pub enum PS_PROTECTED_TYPE {
 #[derive(clap::ValueEnum, Clone, Debug, Copy)]
 pub enum Injection {
     Thread = 0,
-    APC = 1
+    APC = 1,
 }
 
 /// Enum representing the signers for process protection.

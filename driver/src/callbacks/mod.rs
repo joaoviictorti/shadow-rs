@@ -16,6 +16,7 @@ use {
 };
 
 mod find_callback;
+pub mod ioctls;
 
 /// Variable that stores callbacks that have been removed.
 static mut INFO_CALLBACK_RESTAURE: Lazy<Mutex<Vec<CallbackRestaure>>> = Lazy::new(|| Mutex::new(Vec::with_capacity(40)));

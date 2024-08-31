@@ -20,12 +20,13 @@ use {
     }, 
     obfstr::obfstr, 
     wdk_sys::{
-        ntddk::*, _FILE_INFORMATION_CLASS::FileStandardInformation, _SECTION_INHERIT::ViewUnmap, *
+        ntddk::*, _FILE_INFORMATION_CLASS::FileStandardInformation, _SECTION_INHERIT::ViewUnmap,
+        _POOL_TYPE::NonPagedPool, *
     }, 
     winapi::um::winnt::{
         RtlZeroMemory, IMAGE_DOS_HEADER, IMAGE_EXPORT_DIRECTORY, 
         IMAGE_NT_HEADERS64, IMAGE_SECTION_HEADER
-    }, _POOL_TYPE::NonPagedPool,
+    },
 };
 
 #[cfg(not(test))]
@@ -412,6 +413,39 @@ pub unsafe fn get_module_peb(pid: usize, module_name: &str, function_name: &str)
 
     KeUnstackDetachProcess(&mut apc_state);
 
+    None
+}
+
+/// Scans memory for a specific pattern of bytes in a specific section.
+/// # Parameters
+/// - `base_addr`: The base address (in `usize` format) from which the scan should start.
+/// - `section_name`: The name of the section to scan. This string must match the name of the section you want to scan.
+/// - `pattern`: A slice of bytes (`&[u8]`) that represents the pattern you are searching for in memory.
+/// 
+/// # Returns
+/// - `Option<*const u8>`: The address of the target function if found.
+/// 
+pub unsafe fn scan_for_pattern(base_addr: usize, section_name: &str, pattern: &[u8]) -> Option<*const u8> {
+    let dos_header = base_addr as *const IMAGE_DOS_HEADER;
+    let nt_header = (base_addr + (*dos_header).e_lfanew as usize) as *const IMAGE_NT_HEADERS64;
+    let section_header = (nt_header as usize + size_of::<IMAGE_NT_HEADERS64>()) as *const IMAGE_SECTION_HEADER;
+
+    for i in 0..(*nt_header).FileHeader.NumberOfSections as usize {
+        let section = (*section_header.add(i)).Name;
+        let name = core::str::from_utf8(&section).unwrap().trim_matches('\0');
+        
+        if name == section_name {
+            let section_start = base_addr + (*section_header.add(i)).VirtualAddress as usize;
+            let section_size = *(*section_header.add(i)).Misc.VirtualSize() as usize;
+            let data = core::slice::from_raw_parts(section_start as *const u8, section_size);
+
+            if let Some(offset) = data.windows(pattern.len()).position(|window| {
+                window.iter().zip(pattern).all(|(d, p)| *p == 0xCC || *d == *p)
+            }) {
+                return Some((section_start + offset) as *const u8);
+            }
+        }
+    }
     None
 }
 

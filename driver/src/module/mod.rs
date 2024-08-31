@@ -15,6 +15,8 @@ use {
     winapi::shared::ntdef::LIST_ENTRY
 };
 
+pub mod ioctls;
+
 /// Represents a module in the operating system.
 pub struct Module;
 

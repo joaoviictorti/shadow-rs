@@ -165,6 +165,7 @@ macro_rules! handle_module {
 macro_rules! handle_callback {
     ($irp:expr, $stack:expr, $input_type:ty, $output_type:ty, $information:expr, $ioctl:expr) => {{
         use shared::vars::Callbacks;
+        use crate::callbacks::{Callback, CallbackRegistry, CallbackOb, CallbackList};
 
         let input_buffer = match crate::utils::get_input_buffer::<$input_type>($stack) {
             Ok(buffer) => buffer,
@@ -206,7 +207,8 @@ macro_rules! handle_callback {
     
     ($irp:expr, $type_:ty, $ioctl:expr) => {{
         use shared::vars::Callbacks;
-
+        use crate::callbacks::{Callback, CallbackRegistry, CallbackOb, CallbackList};
+        
         let input_buffer = match crate::utils::get_input_buffer::<$type_>($irp) {
             Ok(buffer) => buffer, 
             Err(status) => return status,

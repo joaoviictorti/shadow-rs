@@ -172,6 +172,33 @@ pub mod types {
         system_argument1: *mut PVOID,
         system_argument2: *mut PVOID 
     );
+
+    pub type ZwSuspendThreadType = unsafe extern "system" fn (
+        ThreadHandle: HANDLE,
+        PreviousSuspendCount: *mut u32,
+    ) -> NTSTATUS;
+
+    pub type ZwResumeThreadType = unsafe extern "system" fn(
+        ThreadHandle: HANDLE,
+        PreviousSuspendCount: *mut u32,
+    ) -> NTSTATUS;
+
+    pub type ZwCreateDebugObjectType = unsafe extern "system" fn(
+        DebugObjectHandle: *mut HANDLE,
+        DesiredAccess: ACCESS_MASK,
+        ObjectAttributes: *mut OBJECT_ATTRIBUTES,
+        Flags: BOOLEAN,
+    ) -> NTSTATUS;
+
+    pub type ZwDebugActiveProcessType = unsafe extern "system" fn(
+        ProcessHandle: HANDLE,
+        DebugObjectHandle: HANDLE,
+    ) -> NTSTATUS;
+
+    pub type ZwRemoveProcessDebugType = unsafe extern "system" fn(
+        ProcessHandle: HANDLE,
+        DebugObjectHandle: HANDLE,
+    ) -> NTSTATUS;
 }
 
 pub mod enums {
@@ -245,5 +272,24 @@ extern "system" {
         RegionSize: PSIZE_T,
         NewProtect: ULONG,
         OldProtect: PULONG
+    ) -> NTSTATUS;
+
+    pub fn ZwOpenThread(
+        handle: *mut HANDLE,
+        desired_access: ACCESS_MASK,
+        object_attributes: *mut OBJECT_ATTRIBUTES,
+        client_id: *mut CLIENT_ID
+    ) -> NTSTATUS;
+
+    pub fn PsGetContextThread(
+        Thread: PETHREAD,
+        ThreadContext: *mut CONTEXT,
+        Mode: KPROCESSOR_MODE
+    ) -> NTSTATUS;
+
+    pub fn PsSetContextThread(
+        Thread: PETHREAD,
+        ThreadContext: *mut CONTEXT,
+        Mode: KPROCESSOR_MODE
     ) -> NTSTATUS;
 }
