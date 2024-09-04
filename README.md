@@ -36,7 +36,7 @@ This project, called shadow-rs, is designed to create a rootkit in the Windows k
 
 ## Features
  
-#### Process
+### Process
 - Process (Hide / Unhide) 
 - Process Signature (PP / PPL) 
 - Process Protection (Anti-Kill / Dumping) 
@@ -44,17 +44,17 @@ This project, called shadow-rs, is designed to create a rootkit in the Windows k
 - Terminate Process 
 - Lists protected and hidden processes currently on the system 
 
-#### Thread
+### Thread
 - Thread (Hide / Unhide) 
 - Thread Protection (Anti-Kill) 
 - Lists protected and hidden threads currently on the system 
  
-#### Driver
+### Driver
 - Driver (Hide / Unhide) 
 - Enumerate Driver 
 - Support for mapping the driver in memory 
  
-#### Misc
+### Misc
 
   - Driver Signature Enforcement (DSE)
     - DSE (Enable / Disable) 
@@ -62,7 +62,7 @@ This project, called shadow-rs, is designed to create a rootkit in the Windows k
   - Keylogger
     - Keylogger (Start / Stop) 
 
-#### Callbacks
+### Callbacks
 - List / Remove / Restore Callbacks 
   - PsSetCreateProcessNotifyRoutine 
   - PsSetCreateThreadNotifyRoutine 
@@ -71,14 +71,14 @@ This project, called shadow-rs, is designed to create a rootkit in the Windows k
   - ObRegisterCallbacks (PsProcessType / PsThreadType) 
 - Listing currently removed callbacks 
 
-#### Module
+### Module
 - Enumerate Module 
 
-#### Registry
+### Registry
 - Hide Key and Values 
 - Registry Protection (Anti-Deletion e Overwriting) 
 
-#### Injection
+### Injection
 - Process Injection - Shellcode (ZwCreateThreadEx) 
 - APC Injection - Shellcode 
 - DLL Injection (ZwCreateThreadEx) 
@@ -139,28 +139,28 @@ You can use [Service Control Manager](https://docs.microsoft.com/en-us/windows/w
 
 These are some of the features that will be added, but there are many more on the way
 
-#### Module
+### Module
 - Hide Module ❌
  
-#### Port
+### Port
 - Hide port ❌
 
-#### File
+### File
 - Hide File / Directory ❌
 - Anti-Deletion e Overwriting ❌
 
-#### Callback
+### Callback
 - Minifilters ❌
 - WFP ❌
 
-#### Injection
+### Injection
 - APC Injection - DLL ❌
 
-#### Misc
+### Misc
   - ETWTI 
     - Disable ETWTI ❌
 
-#### Driver
+### Driver
 - Removing mapped drivers from PiDDBCacheTable ❌
 - Removing mapped drivers from MmUnloadedDrivers ❌
 
