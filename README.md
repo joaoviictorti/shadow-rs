@@ -140,29 +140,25 @@ You can use [Service Control Manager](https://docs.microsoft.com/en-us/windows/w
 These are some of the features that will be added, but there are many more on the way
 
 ### Module
-- Hide Module ❌
+- Hide Module
  
 ### Port
-- Hide port ❌
+- ❌ Hide port
 
 ### File
-- Hide File / Directory ❌
-- Anti-Deletion e Overwriting ❌
+- ❌ Hide File / Directory
+- ❌ Anti-Deletion e Overwriting
 
 ### Callback
-- Minifilters ❌
-- WFP ❌
+- ❌ Minifilters
+- ❌ WFP
 
 ### Injection
-- APC Injection - DLL ❌
+- ❌ APC Injection - DLL
 
 ### Misc
   - ETWTI 
-    - Disable ETWTI ❌
-
-### Driver
-- Removing mapped drivers from PiDDBCacheTable ❌
-- Removing mapped drivers from MmUnloadedDrivers ❌
+    - ❌ Disable ETWTI
 
 ## Credits & References
 - https://leanpub.com/windowskernelprogrammingsecondedition
