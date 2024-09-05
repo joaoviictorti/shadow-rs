@@ -140,7 +140,7 @@ You can use [Service Control Manager](https://docs.microsoft.com/en-us/windows/w
 These are some of the features that will be added, but there are many more on the way
 
 ### Module
-- Hide Module
+- ❌ Hide Module
  
 ### Port
 - ❌ Hide port
