@@ -149,7 +149,6 @@ These are some of the features that will be added, but there are many more on th
 
 ### Callback
 - ❌ Minifilters
-- ❌ WFP
 
 ### Injection
 - ❌ APC Injection - DLL

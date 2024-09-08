@@ -18,7 +18,6 @@ use {
 };
 
 pub mod ioctls;
-pub mod vad;
 
 /// Represents a module in the operating system.
 pub struct Module;
