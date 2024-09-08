@@ -4,7 +4,7 @@ use {
     lazy_static::lazy_static,
     wdk_sys::{IO_STACK_LOCATION, IRP, NTSTATUS},
     crate::{
-        callbacks::ioctls::get_callback_ioctls, 
+        callback::ioctls::get_callback_ioctls, 
         driver::ioctls::get_driver_ioctls, 
         process::ioctls::get_process_ioctls, 
         thread::ioctls::get_thread_ioctls,

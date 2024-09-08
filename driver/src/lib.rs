@@ -23,7 +23,7 @@ use {
 
 #[cfg(not(feature = "mapper"))]
 mod registry;
-mod callbacks;
+mod callback;
 mod misc;
 mod driver;
 mod includes;
