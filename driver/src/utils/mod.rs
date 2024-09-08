@@ -1,16 +1,16 @@
 use {
     obfstr::obfstr, 
-    handles::Handle, 
-    pool::PoolMemory,
-    winapi::um::winnt::{IMAGE_DOS_HEADER, IMAGE_EXPORT_DIRECTORY,IMAGE_NT_HEADERS64},
+    pool::PoolMemory, 
+    process_attach::ProcessAttach,
     crate::{includes::{structs::SystemModuleInformation, PsGetProcessPeb}, process::Process}, 
-    alloc::{string::String, vec::Vec},
+    alloc::{string::String, vec::Vec}, 
     core::{
         ffi::{c_void, CStr}, 
         mem::{size_of, zeroed}, 
         ptr::{null_mut, read_unaligned}, 
         slice::from_raw_parts
     }, 
+    handles::Handle, 
     ntapi::{
         ntexapi::{
             SystemModuleInformation, SystemProcessInformation, PSYSTEM_PROCESS_INFORMATION
@@ -22,6 +22,7 @@ use {
     wdk_sys::{
         ntddk::*, _FILE_INFORMATION_CLASS::FileStandardInformation, *
     }, 
+    winapi::um::winnt::{IMAGE_DOS_HEADER, IMAGE_EXPORT_DIRECTORY,IMAGE_NT_HEADERS64} 
 };
 
 #[cfg(not(test))]
@@ -42,6 +43,7 @@ pub mod patterns;
 pub mod address;
 pub mod handles;
 pub mod pool;
+pub mod process_attach;
 
 /// Retrieves the input buffer from the given IO stack location.
 ///
@@ -144,7 +146,7 @@ pub unsafe fn get_module_peb(pid: usize, module_name: &str, function_name: &str)
     let mut apc_state: KAPC_STATE = core::mem::zeroed();
     let target = Process::new(pid)?;
 
-    KeStackAttachProcess(target.e_process, &mut apc_state);
+    let attach_process = ProcessAttach::new(target.e_process);
     let target_peb = PsGetProcessPeb(target.e_process) as *mut PEB;
     if target_peb.is_null() || (*target_peb).Ldr.is_null() {
         KeUnstackDetachProcess(&mut apc_state);
@@ -157,14 +159,12 @@ pub unsafe fn get_module_peb(pid: usize, module_name: &str, function_name: &str)
     while next != current {
         if next.is_null() {
             log::error!("Next LIST_ENTRY is null");
-            KeUnstackDetachProcess(&mut apc_state);
             return None;
         }
 
         let list_entry = next as *mut LDR_DATA_TABLE_ENTRY;
         if list_entry.is_null() {
             log::error!("LDR_DATA_TABLE_ENTRY is null");
-            KeUnstackDetachProcess(&mut apc_state);
             return None;
         }
 
@@ -174,7 +174,6 @@ pub unsafe fn get_module_peb(pid: usize, module_name: &str, function_name: &str)
         );
         if buffer.is_empty() {
             log::error!("Buffer for module name is empty");
-            KeUnstackDetachProcess(&mut apc_state);
             return None;
         }
 
@@ -194,7 +193,6 @@ pub unsafe fn get_module_peb(pid: usize, module_name: &str, function_name: &str)
                 let ordinal = ordinals[i as usize] as usize;
                 let address = (dll_base + functions[ordinal] as usize) as *mut c_void;
                 if name_module == function_name {
-                    KeUnstackDetachProcess(&mut apc_state);
                     return Some(address);
                 }
             }
@@ -202,8 +200,6 @@ pub unsafe fn get_module_peb(pid: usize, module_name: &str, function_name: &str)
 
         next = (*next).Flink;
     }
-
-    KeUnstackDetachProcess(&mut apc_state);
 
     None
 }

