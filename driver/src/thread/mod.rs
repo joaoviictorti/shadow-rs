@@ -42,6 +42,7 @@ impl Thread {
     /// # Returns
     /// - `Option<Self>`: Returns `Some(Self)` if the process lookup is successful, otherwise `None`.
     ///
+    #[inline]
     pub fn new(tid: usize) -> Option<Self> {
         let mut thread = core::ptr::null_mut();
 

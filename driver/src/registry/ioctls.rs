@@ -1,10 +1,7 @@
 #![cfg(not(feature = "mapper"))]
 
 use {
-    crate::{
-        handle_registry,
-        registry::{Registry, utils::KeyListType}
-    },
+    crate::{handle_registry,registry::{Registry, utils::KeyListType}},
     shared::structs::TargetRegistry,
     crate::utils::ioctls::IoctlHandler, 
     alloc::boxed::Box, 

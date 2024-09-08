@@ -1,5 +1,3 @@
-extern crate alloc;
-
 use core::sync::atomic::AtomicPtr;
 use super::LIST_ENTRY;
 use ntapi::ntldr::LDR_DATA_TABLE_ENTRY;

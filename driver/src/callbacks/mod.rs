@@ -59,7 +59,7 @@ pub trait CallbackList {
     /// # Returns
     /// - `NTSTATUS`: Status of the operation. `STATUS_SUCCESS` if successful, `STATUS_UNSUCCESSFUL` otherwise.
     ///
-    unsafe fn enumerate_callback(target_callback: *mut CallbackInfoInput, callback_info: *mut CallbackInfoOutput, information: &mut usize) -> NTSTATUS;
+    unsafe fn enumerate_callback(target_callback: *mut CallbackInfoInput, callback_info: *mut CallbackInfoOutput, information: &mut usize) -> Result<(), NTSTATUS>;
 
     /// List of callbacks currently removed.
     /// 
@@ -71,7 +71,7 @@ pub trait CallbackList {
     /// # Returns
     /// - `NTSTATUS`: Status of the operation. `STATUS_SUCCESS` if successful, `STATUS_UNSUCCESSFUL` otherwise.
     ///
-    unsafe fn enumerate_removed_callback(target_callback: *mut CallbackInfoInput, callback_info: *mut CallbackInfoOutput, information: &mut usize) -> NTSTATUS;
+    unsafe fn enumerate_removed_callback(target_callback: *mut CallbackInfoInput, callback_info: *mut CallbackInfoOutput, information: &mut usize) -> Result<(), NTSTATUS>;
 }
 
 /// Structure representing the Callback.
@@ -126,17 +126,13 @@ impl CallbackList for Callback {
         STATUS_SUCCESS
     }
 
-    unsafe fn enumerate_callback(target_callback: *mut CallbackInfoInput, callback_info: *mut CallbackInfoOutput, information: &mut usize) -> NTSTATUS {
+    unsafe fn enumerate_callback(target_callback: *mut CallbackInfoInput, callback_info: *mut CallbackInfoOutput, information: &mut usize) -> Result<(), NTSTATUS> {
         let address = match find_callback_address(&(*target_callback).callback) {
             Some(CallbackResult::PsCreate(addr)) => addr,
-            _ => return STATUS_UNSUCCESSFUL,
+            _ => return Err(STATUS_UNSUCCESSFUL),
         };
 
-        let (mut ldr_data, module_count) = match return_module() {
-            Some(result) => result,
-            None => return STATUS_UNSUCCESSFUL
-        };
-
+        let (mut ldr_data, module_count) = return_module().ok_or(STATUS_UNSUCCESSFUL)?;
         let start_entry = ldr_data;
 
         for i in 0..64 {
@@ -182,17 +178,13 @@ impl CallbackList for Callback {
             ldr_data = start_entry;
         }
 
-        STATUS_SUCCESS
+        Ok(())
     }
     
-    unsafe fn enumerate_removed_callback(target_callback: *mut CallbackInfoInput, callback_info: *mut CallbackInfoOutput, information: &mut usize) -> NTSTATUS {
+    unsafe fn enumerate_removed_callback(target_callback: *mut CallbackInfoInput, callback_info: *mut CallbackInfoOutput, information: &mut usize) -> Result<(), NTSTATUS> {
         let callback_restaure = INFO_CALLBACK_RESTAURE.lock();
 
-        let (mut ldr_data, module_count) = match return_module() {
-            Some(result) => result,
-            None => return STATUS_UNSUCCESSFUL
-        };
-
+        let (mut ldr_data, module_count) = return_module().ok_or(STATUS_UNSUCCESSFUL)?;
         let start_entry = ldr_data;
 
         for (i, callback) in callback_restaure.iter().enumerate() {
@@ -230,7 +222,7 @@ impl CallbackList for Callback {
             ldr_data = start_entry;
         }
 
-        STATUS_SUCCESS
+        Ok(())
     }
 }
 
@@ -277,6 +269,7 @@ impl CallbackList for CallbackRegistry {
             log::error!("Callback not found for type {:?} at index {}", callback_type, index);
             return STATUS_UNSUCCESSFUL;
         }
+
         STATUS_SUCCESS
     }
 
@@ -329,18 +322,15 @@ impl CallbackList for CallbackRegistry {
         STATUS_UNSUCCESSFUL
     }
 
-    unsafe fn enumerate_callback(target_callback: *mut CallbackInfoInput, callback_info: *mut CallbackInfoOutput, information: &mut usize) -> NTSTATUS {
+    unsafe fn enumerate_callback(target_callback: *mut CallbackInfoInput, callback_info: *mut CallbackInfoOutput, information: &mut usize) -> Result<(), NTSTATUS> {
         let (callback_list_header, callback_count, callback_list_lock) = match find_callback_address(&(*target_callback).callback) {
             Some(CallbackResult::Registry(addr)) => addr,
-            _ => return STATUS_UNSUCCESSFUL,
+            _ => return Err(STATUS_UNSUCCESSFUL),
         };
 
         let count = *(callback_count as *mut u32) + 1;
         let mut pcm_callback = callback_list_header as *mut CM_CALLBACK;
-        let (mut ldr_data, module_count) = match return_module() {
-            Some(result) => result,
-            None => return STATUS_UNSUCCESSFUL
-        };
+        let (mut ldr_data, module_count) = return_module().ok_or(STATUS_UNSUCCESSFUL)?;
         let start_entry = ldr_data;
 
         ExAcquirePushLockExclusiveEx(callback_list_lock as _, 0);
@@ -388,16 +378,13 @@ impl CallbackList for CallbackRegistry {
 
         ExReleasePushLockExclusiveEx(callback_list_lock as _, 0);
 
-        STATUS_SUCCESS
+        Ok(())
     }
     
-    unsafe fn enumerate_removed_callback(target_callback: *mut CallbackInfoInput, callback_info: *mut CallbackInfoOutput, information: &mut usize) -> NTSTATUS {
+    unsafe fn enumerate_removed_callback(target_callback: *mut CallbackInfoInput, callback_info: *mut CallbackInfoOutput, information: &mut usize) -> Result<(), NTSTATUS> {
         let callback_restaure = INFO_CALLBACK_RESTAURE_REGISTRY.lock();
 
-        let (mut ldr_data, module_count) = match return_module() {
-            Some(result) => result,
-            None => return STATUS_UNSUCCESSFUL
-        };
+        let (mut ldr_data, module_count) = return_module().ok_or(STATUS_UNSUCCESSFUL)?;
 
         let start_entry = ldr_data;
 
@@ -434,7 +421,7 @@ impl CallbackList for CallbackRegistry {
             ldr_data = start_entry;
         }
 
-        STATUS_SUCCESS
+        Ok(())
     }
 }
 
@@ -534,10 +521,10 @@ impl CallbackList for CallbackOb {
         STATUS_UNSUCCESSFUL
     }
 
-    unsafe fn enumerate_callback(target_callback: *mut CallbackInfoInput, callback_info: *mut CallbackInfoOutput, information: &mut usize) -> NTSTATUS {
+    unsafe fn enumerate_callback(target_callback: *mut CallbackInfoInput, callback_info: *mut CallbackInfoOutput, information: &mut usize) -> Result<(), NTSTATUS> {
         let object_type = match find_callback_address(&(*target_callback).callback) {
             Some(CallbackResult::ObRegister(addr)) => addr,
-            _ => return STATUS_UNSUCCESSFUL,
+            _ => return Err(STATUS_UNSUCCESSFUL),
         };
 
         let current = &mut ((*object_type).callback_list) as *mut _ as *mut OBCALLBACK_ENTRY;
@@ -559,11 +546,7 @@ impl CallbackList for CallbackOb {
             next = (*next).callback_list.Flink as *mut OBCALLBACK_ENTRY;
         }
 
-        let (mut ldr_data, module_count) = match return_module() {
-            Some(result) => result,
-            None => return STATUS_UNSUCCESSFUL
-        };
-
+        let (mut ldr_data, module_count) = return_module().ok_or(STATUS_UNSUCCESSFUL)?;
         let start_entry = ldr_data;
         let mut current_index = 0;
 
@@ -612,17 +595,13 @@ impl CallbackList for CallbackOb {
             ldr_data = start_entry;
         }
 
-        STATUS_SUCCESS
+        Ok(())
     }
     
-    unsafe fn enumerate_removed_callback(target_callback: *mut CallbackInfoInput, callback_info: *mut CallbackInfoOutput, information: &mut usize) -> NTSTATUS {
+    unsafe fn enumerate_removed_callback(target_callback: *mut CallbackInfoInput, callback_info: *mut CallbackInfoOutput, information: &mut usize) -> Result<(), NTSTATUS> {
         let callback_restaure = INFO_CALLBACK_RESTAURE_OB.lock();
 
-        let (mut ldr_data, module_count) = match return_module() {
-            Some(result) => result,
-            None => return STATUS_UNSUCCESSFUL
-        };
-
+        let (mut ldr_data, module_count) = return_module().ok_or(STATUS_UNSUCCESSFUL)?;
         let start_entry = ldr_data;
 
         for (i, callback) in callback_restaure.iter().enumerate() {
@@ -661,6 +640,6 @@ impl CallbackList for CallbackOb {
             ldr_data = start_entry;
         }
 
-        STATUS_SUCCESS
+        Ok(())
     }
 }

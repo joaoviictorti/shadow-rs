@@ -174,3 +174,4 @@ These are some of the features that will be added, but there are many more on th
 - https://www.amazon.com.br/Rootkits-Subverting-Windows-Greg-Hoglund/dp/0321294319
 - https://github.com/mirror/reactos
 - https://github.com/Kharos102/ReadWriteDriverSample
+- https://imphash.medium.com/windows-process-internals-a-few-concepts-to-know-before-jumping-on-memory-forensics-part-4-16c47b89e826

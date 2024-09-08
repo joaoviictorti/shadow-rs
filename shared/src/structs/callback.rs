@@ -1,4 +1,3 @@
-extern crate alloc;
 use crate::vars::Callbacks;
 
 // Callback Information for Enumeration (Output)

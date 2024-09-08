@@ -166,6 +166,7 @@ macro_rules! handle_callback {
     ($irp:expr, $stack:expr, $input_type:ty, $output_type:ty, $information:expr, $ioctl:expr) => {{
         use shared::vars::Callbacks;
         use crate::callbacks::{Callback, CallbackRegistry, CallbackOb, CallbackList};
+        use wdk_sys::STATUS_UNSUCCESSFUL;
 
         let input_buffer = match crate::utils::get_input_buffer::<$input_type>($stack) {
             Ok(buffer) => buffer,
@@ -177,31 +178,26 @@ macro_rules! handle_callback {
             Err(status) => return status,
         };
 
-        let mut status = 0;
-        match $ioctl {
-            IOCTL_ENUMERATE_CALLBACK => {
-                status = match (*input_buffer).callback {
-                    Callbacks::PsSetCreateProcessNotifyRoutine => Callback::enumerate_callback(input_buffer, output_buffer, $information),
-                    Callbacks::PsSetCreateThreadNotifyRoutine => Callback::enumerate_callback(input_buffer, output_buffer, $information),
-                    Callbacks::PsSetLoadImageNotifyRoutine => Callback::enumerate_callback(input_buffer, output_buffer, $information),
-                    Callbacks::CmRegisterCallbackEx => CallbackRegistry::enumerate_callback(input_buffer, output_buffer, $information),
-                    Callbacks::ObProcess => CallbackOb::enumerate_callback(input_buffer, output_buffer, $information),
-                    Callbacks::ObThread => CallbackOb::enumerate_callback(input_buffer, output_buffer, $information),
-                };
+        let status = match $ioctl {
+            IOCTL_ENUMERATE_CALLBACK => match (*input_buffer).callback {
+                Callbacks::PsSetCreateProcessNotifyRoutine => Callback::enumerate_callback(input_buffer, output_buffer, $information),
+                Callbacks::PsSetCreateThreadNotifyRoutine => Callback::enumerate_callback(input_buffer, output_buffer, $information),
+                Callbacks::PsSetLoadImageNotifyRoutine => Callback::enumerate_callback(input_buffer, output_buffer, $information),
+                Callbacks::CmRegisterCallbackEx => CallbackRegistry::enumerate_callback(input_buffer, output_buffer, $information),
+                Callbacks::ObProcess => CallbackOb::enumerate_callback(input_buffer, output_buffer, $information),
+                Callbacks::ObThread => CallbackOb::enumerate_callback(input_buffer, output_buffer, $information),
             },
-            IOCTL_ENUMERATE_REMOVED_CALLBACK => {
-                status = match (*input_buffer).callback {
-                    Callbacks::PsSetCreateProcessNotifyRoutine => Callback::enumerate_removed_callback(input_buffer, output_buffer, $information),
-                    Callbacks::PsSetCreateThreadNotifyRoutine => Callback::enumerate_removed_callback(input_buffer, output_buffer, $information),
-                    Callbacks::PsSetLoadImageNotifyRoutine => Callback::enumerate_removed_callback(input_buffer, output_buffer, $information),
-                    Callbacks::CmRegisterCallbackEx => CallbackRegistry::enumerate_removed_callback(input_buffer, output_buffer, $information),
-                    Callbacks::ObProcess => CallbackOb::enumerate_removed_callback(input_buffer, output_buffer, $information),
-                    Callbacks::ObThread => CallbackOb::enumerate_removed_callback(input_buffer, output_buffer, $information),
-                };
+            IOCTL_ENUMERATE_REMOVED_CALLBACK => match (*input_buffer).callback {
+                Callbacks::PsSetCreateProcessNotifyRoutine => Callback::enumerate_removed_callback(input_buffer, output_buffer, $information),
+                Callbacks::PsSetCreateThreadNotifyRoutine => Callback::enumerate_removed_callback(input_buffer, output_buffer, $information),
+                Callbacks::PsSetLoadImageNotifyRoutine => Callback::enumerate_removed_callback(input_buffer, output_buffer, $information),
+                Callbacks::CmRegisterCallbackEx => CallbackRegistry::enumerate_removed_callback(input_buffer, output_buffer, $information),
+                Callbacks::ObProcess => CallbackOb::enumerate_removed_callback(input_buffer, output_buffer, $information),
+                Callbacks::ObThread => CallbackOb::enumerate_removed_callback(input_buffer, output_buffer, $information),
             },
-            _ => {}
-        }
-        
+            _ => Err(STATUS_UNSUCCESSFUL)
+        };
+
         status
     }};
     
@@ -238,7 +234,7 @@ macro_rules! handle_callback {
             },
             _ => {}
         }
-
+        
         status
     }};
 }

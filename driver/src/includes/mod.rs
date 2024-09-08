@@ -2,16 +2,19 @@
 #![allow(dead_code)]
 
 use {
-    bitfield::bitfield, 
-    ntapi::ntpsapi::PPS_ATTRIBUTE_LIST, 
-    shared::structs::LIST_ENTRY, 
     wdk_sys::*, 
-    winapi::ctypes::c_void
+    bitfield::bitfield, 
+    winapi::ctypes::c_void,
+    shared::structs::LIST_ENTRY,
+    ntapi::ntpsapi::PPS_ATTRIBUTE_LIST, 
 };
+
+pub mod vad;
 
 pub mod structs {
     use super::*;
     use shared::vars::Callbacks;
+    use core::mem::ManuallyDrop;
 
     #[repr(C)]
     pub struct FULL_OBJECT_TYPE {
@@ -100,19 +103,12 @@ pub mod structs {
         multiple_shared, set_multiple_shared: 3;
         shared, set_shared: 63, 4;
     }
-
-    #[repr(C)]
-    union ExPushLockUnion {
-        struct_data: core::mem::ManuallyDrop<_EX_PUSH_LOCK>,
-        value: u64,
-        ptr: *mut c_void,
-    }
     
     bitfield! {
         pub struct PS_PROTECTION(u8);
-        pub u8, type_, set_type_: 2, 0;   // 3 bits
-        pub u8, audit, set_audit: 3;      // 1 bit
-        pub u8, signer, set_signer: 7, 4; // 4 bits
+        pub u8, type_, set_type_: 2, 0;   
+        pub u8, audit, set_audit: 3;      
+        pub u8, signer, set_signer: 7, 4;
     }
 
     #[repr(C)]
@@ -130,6 +126,135 @@ pub mod structs {
         pub pre_operation: u64,
         pub post_operation: u64,
         pub entry: u64,
+    }
+
+    #[repr(C)]
+    pub struct MMVAD_SHORT {
+        pub vad_node: RTL_BALANCED_NODE,
+        pub starting_vpn: u32,
+        pub ending_vpn: u32,
+        pub starting_vpn_high: u8,
+        pub ending_vpn_high: u8,
+        pub commit_charge_high: u8,
+        pub spare_nt64_vad_uchar: u8,
+        pub reference_count: i32,
+        pub push_lock: usize,
+        pub u: Uunion,
+        pub u1: U1Union,
+        pub u5: U5Union,
+    }
+
+    #[repr(C)]
+    pub union Uunion {
+        pub long_flags: u32,
+        pub vad_flags: ManuallyDrop<MMVAD_FLAGS>,
+        pub private_vad_flags: ManuallyDrop<MM_PRIVATE_VAD_FLAGS>,
+        pub graphics_vad_flags: ManuallyDrop<MM_GRAPHICS_VAD_FLAGS>,
+        pub shared_vad_flags: ManuallyDrop<MM_SHARED_VAD_FLAGS>,
+        pub volatile_long: u32,
+    }
+
+    #[repr(C)]
+    pub union U1Union {
+        pub long_flags1: u32,
+        pub vad_flags1: ManuallyDrop<MMVAD_FLAGS1>,
+    }
+
+    #[repr(C)]
+    pub union U5Union {
+        pub event_list_ulong_ptr: u64,
+        pub starting_vpn_higher: u8,
+    }
+
+    bitfield! {
+        #[repr(C)]
+        pub struct MM_PRIVATE_VAD_FLAGS(u32);
+        impl Debug;
+        impl Default;
+        u32;
+        pub lock, set_lock: 1;
+        pub lock_contended, set_lock_contended: 1;
+        pub delete_in_progress, set_delete_in_progress: 1;
+        pub no_change, set_no_change: 1;
+        pub vad_type, set_vad_type: 6, 4;
+        pub protection, set_protection: 11, 7;
+        pub preferred_node, set_preferred_node: 18, 12;
+        pub page_size, set_page_size: 19, 20;
+        pub private_memory_always_set, set_private_memory: 21;
+        pub write_watch, set_write: 22;
+        pub fixed_large_page_size, set_page_large: 23;
+        pub zero_fill_pages_optional, set_zero_fill: 24;
+        pub graphics, set_graphics: 25;
+        pub enclave, set_enclave: 26;
+        pub shadow_stack, set_shadow_stack: 27;
+        pub physical_memory_pfns_referenced, set_physical: 28;
+    }
+
+    bitfield! {
+        #[repr(C)]
+        pub struct MM_SHARED_VAD_FLAGS(u32);
+        impl Debug;
+        impl Default;
+        u32;
+        pub lock, set_lock: 1;
+        pub lock_contended, set_lock_contended: 1;
+        pub delete_in_progress, set_delete_in_progress: 1;
+        pub no_change, set_no_change: 1;
+        pub vad_type, set_vad_type: 6, 4;
+        pub protection, set_protection: 11, 7;
+        pub preferred_node, set_preferred_node: 18, 12;
+        pub page_size, set_page_size: 19, 20;
+        pub private_memory_always_set, set_private_memory: 21;
+        pub private_fixup, set_private_fixup: 22;
+        pub hot_patch_state, set_hot_patch_state: 24, 23;
+    }
+
+    bitfield! {
+        #[repr(C)]
+        pub struct MMVAD_FLAGS(u32);
+        impl Debug;
+        u32;
+        pub lock, set_lock: 0;
+        pub lock_contended, set_lock_contended: 1;
+        pub delete_in_progress, set_delete_in_progress: 2;
+        pub no_change, set_no_change: 3;
+        pub vad_type, set_vad_type: 6, 4;
+        pub protection, set_protection: 11, 7;
+        pub preferred_node, set_preferred_node: 18, 12;
+        pub page_size, set_page_size: 19, 20;
+        pub private_memory, set_private_memory: 21;
+    }
+
+    bitfield! {
+        #[repr(C)]
+        pub struct MM_GRAPHICS_VAD_FLAGS(u32);
+        impl Debug;
+        impl Default;
+        u32;
+        pub lock, set_lock: 1;
+        pub lock_contended, set_lock_contended: 1;
+        pub delete_in_progress, set_delete_in_progress: 1;
+        pub no_change, set_no_change: 1;
+        pub vad_type, set_vad_type: 6, 4;
+        pub protection, set_protection: 11, 7;
+        pub preferred_node, set_preferred_node: 18, 12;
+        pub page_size, set_page_size: 19, 20;
+        pub private_memory_always_set, set_private_memory: 21;
+        pub write_watch, set_write: 22;
+        pub fixed_large_page_size, set_page_large: 23;
+        pub zero_fill_pages_optional, set_zero_fill: 24;
+        pub graphics_always_set, set_graphics: 25;
+        pub graphics_use_coherent, set_graphics_use: 26;
+        pub graphics_no_cache, set_graphics_no_cache: 27;
+        pub graphics_page_protection, set_graphics_page_protection: 30, 28;
+    }
+    
+    bitfield! {
+        #[repr(C)]
+        pub struct MMVAD_FLAGS1(u32);
+        impl Debug;
+        pub commit_charge, set_commit_charge: 30, 0;    
+        pub mem_commit, set_mem_commit: 31;
     }
 }
 
@@ -172,33 +297,6 @@ pub mod types {
         system_argument1: *mut PVOID,
         system_argument2: *mut PVOID 
     );
-
-    pub type ZwSuspendThreadType = unsafe extern "system" fn (
-        ThreadHandle: HANDLE,
-        PreviousSuspendCount: *mut u32,
-    ) -> NTSTATUS;
-
-    pub type ZwResumeThreadType = unsafe extern "system" fn(
-        ThreadHandle: HANDLE,
-        PreviousSuspendCount: *mut u32,
-    ) -> NTSTATUS;
-
-    pub type ZwCreateDebugObjectType = unsafe extern "system" fn(
-        DebugObjectHandle: *mut HANDLE,
-        DesiredAccess: ACCESS_MASK,
-        ObjectAttributes: *mut OBJECT_ATTRIBUTES,
-        Flags: BOOLEAN,
-    ) -> NTSTATUS;
-
-    pub type ZwDebugActiveProcessType = unsafe extern "system" fn(
-        ProcessHandle: HANDLE,
-        DebugObjectHandle: HANDLE,
-    ) -> NTSTATUS;
-
-    pub type ZwRemoveProcessDebugType = unsafe extern "system" fn(
-        ProcessHandle: HANDLE,
-        DebugObjectHandle: HANDLE,
-    ) -> NTSTATUS;
 }
 
 pub mod enums {
@@ -279,17 +377,5 @@ extern "system" {
         desired_access: ACCESS_MASK,
         object_attributes: *mut OBJECT_ATTRIBUTES,
         client_id: *mut CLIENT_ID
-    ) -> NTSTATUS;
-
-    pub fn PsGetContextThread(
-        Thread: PETHREAD,
-        ThreadContext: *mut CONTEXT,
-        Mode: KPROCESSOR_MODE
-    ) -> NTSTATUS;
-
-    pub fn PsSetContextThread(
-        Thread: PETHREAD,
-        ThreadContext: *mut CONTEXT,
-        Mode: KPROCESSOR_MODE
     ) -> NTSTATUS;
 }

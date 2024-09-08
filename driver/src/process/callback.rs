@@ -1,13 +1,13 @@
 #![cfg(not(feature = "mapper"))]
 
 use {
+    alloc::vec::Vec,
     core::ffi::c_void,
     spin::{Mutex, lazy::Lazy}, 
-    alloc::vec::Vec,
     shared::{structs::{ProcessListInfo, ProcessProtection}, vars::MAX_PIDS},
     winapi::um::winnt::{PROCESS_CREATE_THREAD, PROCESS_TERMINATE, PROCESS_VM_OPERATION, PROCESS_VM_READ},
     wdk_sys::{
-        ntddk::PsGetProcessId, PVOID,
+        ntddk::PsGetProcessId,
         _OB_PREOP_CALLBACK_STATUS::{self, OB_PREOP_SUCCESS},
         NTSTATUS, OB_PRE_OPERATION_INFORMATION, PEPROCESS,
         PROCESS_DUP_HANDLE, STATUS_SUCCESS, STATUS_UNSUCCESSFUL,
@@ -16,7 +16,7 @@ use {
 };
 
 /// Handle for the process callback registration.
-pub static mut CALLBACK_REGISTRATION_HANDLE_PROCESS: PVOID = core::ptr::null_mut();
+pub static mut CALLBACK_REGISTRATION_HANDLE_PROCESS: *mut c_void = core::ptr::null_mut();
 
 /// List of target PIDs protected by a mutex.
 static TARGET_PIDS: Lazy<Mutex<Vec<usize>>> = Lazy::new(|| Mutex::new(Vec::with_capacity(MAX_PIDS))); 

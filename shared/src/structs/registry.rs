@@ -1,5 +1,3 @@
-extern crate alloc;
-
 // Stores the target registry
 #[repr(C)]
 #[derive(Debug, Default)]

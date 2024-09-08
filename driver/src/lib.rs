@@ -171,13 +171,12 @@ pub unsafe extern "system" fn shadow_entry(
 pub unsafe extern "C" fn device_control(_device: *mut DEVICE_OBJECT, irp: *mut IRP) -> NTSTATUS {
     let stack = (*irp).Tail.Overlay.__bindgen_anon_2.__bindgen_anon_1.CurrentStackLocation;
     let control_code = (*stack).Parameters.DeviceIoControl.IoControlCode;
-    let status;
-
-    if let Some(handler) = IOCTL_MAP.get(&control_code) {
-        status = handler(irp, stack);
+    
+    let status = if let Some(handler) = IOCTL_MAP.get(&control_code) {
+        handler(irp, stack)
     } else {
-        status = STATUS_INVALID_DEVICE_REQUEST;
-    }
+        STATUS_INVALID_DEVICE_REQUEST
+    };
 
     (*irp).IoStatus.__bindgen_anon_1.Status = status;
     IofCompleteRequest(irp, IO_NO_INCREMENT as i8);
