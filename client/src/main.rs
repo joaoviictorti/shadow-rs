@@ -9,11 +9,17 @@ use {
     env_logger::Builder,
 };
 use modules::{
-    callback::{enumerate_callback, remove_callback, restore_callback}, driver::{enumerate_driver, unhide_hide_driver}, injection::{injection_apc, injection_thread}, misc::{dse, keylogger}, module::{enumerate_module, hide_module}, process::{
+    callback::{enumerate_callback, remove_callback, restore_callback}, 
+    driver::{enumerate_driver, unhide_hide_driver}, 
+    injection::{injection_apc, injection_thread}, 
+    misc::{dse, keylogger}, 
+    module::{enumerate_module, hide_module}, 
+    process::{
         elevate_process, 
         enumerate_process, hide_unhide_process, 
         signature_process, terminate_process
-    }, thread::{enumerate_thread, hide_unhide_thread}
+    }, 
+    thread::{enumerate_thread, hide_unhide_thread}
 };
 
 #[cfg(not(feature = "mapper"))]
