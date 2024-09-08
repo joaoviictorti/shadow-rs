@@ -72,6 +72,7 @@ This project, called shadow-rs, is designed to create a rootkit in the Windows k
 - ✅ Listing currently removed callbacks 
 
 ### Module
+- ✅ Hide Module
 - ✅ Enumerate Module 
 
 ### Registry
@@ -138,9 +139,6 @@ You can use [Service Control Manager](https://docs.microsoft.com/en-us/windows/w
 ## Upcoming Features
 
 These are some of the features that will be added, but there are many more on the way
-
-### Module
-- ❌ Hide Module
  
 ### Port
 - ❌ Hide port
