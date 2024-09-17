@@ -28,13 +28,11 @@ static TARGET_TIDS: Lazy<Mutex<Vec<usize>>> = Lazy::new(|| Mutex::new(Vec::with_
 /// - `NTSTATUS`: A status code indicating the success or failure of the operation.
 pub fn add_remove_thread_toggle(process: *mut ThreadProtection) -> NTSTATUS {
     let tid = unsafe { (*process).tid };
-    let status = if unsafe { (*process).enable } {
+    if unsafe { (*process).enable } {
         add_target_tid(tid)
     } else {
         remove_target_tid(tid)
-    };
-
-    status
+    }
 }
 
 /// Method for adding the list of threads that will have anti-kill / dumping protection.

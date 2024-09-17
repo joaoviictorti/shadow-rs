@@ -1,5 +1,6 @@
 use {
     obfstr::obfstr, 
+    handles::Handle,
     pool::PoolMemory, 
     process_attach::ProcessAttach,
     crate::{includes::{structs::SystemModuleInformation, PsGetProcessPeb}, process::Process}, 
@@ -10,7 +11,6 @@ use {
         ptr::{null_mut, read_unaligned}, 
         slice::from_raw_parts
     }, 
-    handles::Handle, 
     ntapi::{
         ntexapi::{
             SystemModuleInformation, SystemProcessInformation, PSYSTEM_PROCESS_INFORMATION
@@ -177,7 +177,7 @@ pub unsafe fn get_module_peb(pid: usize, module_name: &str, function_name: &str)
             return None;
         }
 
-        let dll_name = alloc::string::String::from_utf16(&buffer).ok()?;
+        let dll_name = alloc::string::String::from_utf16_lossy(buffer);
         if dll_name.to_lowercase().contains(module_name) {
             let dll_base = (*list_entry).DllBase as usize;
             let dos_header = dll_base as *mut IMAGE_DOS_HEADER;
@@ -379,7 +379,7 @@ pub fn read_file(path: &String) -> Result<Vec<u8>, NTSTATUS> {
         return Err(status);
     }
 
-    return Ok(shellcode)
+    Ok(shellcode)
 }
 
 /// Responsible for returning information on the modules loaded.

@@ -234,10 +234,6 @@ pub unsafe fn enumerate_value_key(
 
 /// Trait for accessing the object in registry information.
 pub trait RegistryInfo {
-    ///
-    /// 
-    /// 
-    /// 
     fn get_object(&self) -> *mut c_void;
 }
 

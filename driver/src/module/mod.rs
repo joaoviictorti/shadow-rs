@@ -158,7 +158,7 @@ impl Module {
                 return Err(STATUS_UNSUCCESSFUL);
             }
 
-            let dll_name = alloc::string::String::from_utf16_lossy(&buffer);    
+            let dll_name = alloc::string::String::from_utf16_lossy(buffer);    
             if module_name.contains(&dll_name.to_lowercase()) {
                 // Removes the module from the load order list
                 Self::remove_link(&mut (*list_entry).InLoadOrderLinks);

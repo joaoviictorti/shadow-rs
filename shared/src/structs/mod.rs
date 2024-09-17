@@ -36,6 +36,13 @@ pub struct Keylogger {
     pub enable: bool
 }
 
+// ETWTI
+#[repr(C)]
+#[derive(Debug)]
+pub struct ETWTI {
+    pub enable: bool
+}
+
 // Input for information that needs to be listed
 #[repr(C)]
 pub struct EnumerateInfoInput {

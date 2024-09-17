@@ -227,7 +227,7 @@ pub unsafe extern "C" fn driver_unload(driver_object: *mut DRIVER_OBJECT) {
     }
 
     let mut interval = LARGE_INTEGER {
-        QuadPart: -1 * (50 * 10000 as i64),
+        QuadPart: -1 * -(50 * 10000_i64),
     };
 
     KeDelayExecutionThread(KernelMode as i8, 0, &mut interval);
@@ -292,7 +292,7 @@ pub unsafe fn register_callbacks(driver_object: &mut DRIVER_OBJECT) -> NTSTATUS 
     }
 
     // Creating callbacks related to registry operations
-    let mut altitude = uni::str_to_unicode("31122.6172").to_unicode();
+    let mut altitude = uni::str_to_unicode("31422.6172").to_unicode();
     status = CmRegisterCallbackEx(
         Some(registry_callback),
         &mut altitude,

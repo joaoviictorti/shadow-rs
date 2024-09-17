@@ -266,6 +266,17 @@ pub enum MisCommands {
         #[arg(long)]
         start: bool,
     },
+
+    /// Operations related to ETWTI.
+    Etwti {
+        /// Disable ETWTI.
+        #[arg(long)]
+        disable: bool,
+        
+        /// Enable ETWTI.
+        #[arg(long)]
+        enable: bool,
+    }
 }
 
 /// Enum representing the subcommands for module operations.

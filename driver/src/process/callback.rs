@@ -32,13 +32,11 @@ static TARGET_PIDS: Lazy<Mutex<Vec<usize>>> = Lazy::new(|| Mutex::new(Vec::with_
 ///
 pub fn add_remove_process_toggle(process: *mut ProcessProtection) -> NTSTATUS {
     let pid = unsafe { (*process).pid };
-    let status = if unsafe { (*process).enable } {
+    if unsafe { (*process).enable } {
         add_target_pid(pid)
     } else {
         remove_target_pid(pid)
-    };
-
-    status
+    }
 }
 
 /// Method for adding the list of processes that will have anti-kill / dumping protection.
