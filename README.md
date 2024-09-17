@@ -62,6 +62,9 @@ This project, called shadow-rs, is designed to create a rootkit in the Windows k
   - Keylogger
     - ✅ Keylogger (Start / Stop) 
 
+  - ETWTI
+    - ✅ ETWTI (Enable / Disable) 
+
 ### Callbacks
 - ✅ List / Remove / Restore Callbacks 
   - PsSetCreateProcessNotifyRoutine 
