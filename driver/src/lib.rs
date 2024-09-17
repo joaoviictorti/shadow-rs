@@ -31,6 +31,7 @@ mod process;
 mod thread;
 mod module;
 mod injection;
+mod port;
 mod utils;
 
 /// The name of the device in the device namespace.

