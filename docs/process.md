@@ -30,7 +30,7 @@ This command allows you to raise the process to system.
 shadow.exe process elevate --pid <pid>
 ```
 
-* `elevate`: Elevate the process
+* `elevate`: Elevate the process.
 * `<pid>`: The PID of the process you want to escalate to system.
 
 Example of use:
@@ -40,3 +40,46 @@ shadow.exe process elevate --pid 1234
 ```
 
 This command will elevate the process with PID 1234.
+
+### Process Signature (PP / PPL)
+
+Description:
+This command allows you to protect / unprotect a process using Process Protection (PP) or Protected Process Light (PPL).
+
+```cmd
+shadow.exe process signature --pt <PT> --sg <SG> --pid 1234
+```
+
+* `signature`: Signature the process.
+* `<pt>`: The protection type.
+    * Possible values:
+        - `none`:            No protection
+        - `protected-light`: Light protection
+        - `protected`:       Full protection
+
+* `<sg>`: The protection signer.
+    *   Possible values:
+          - `none`:         No signer
+          - `authenticode`: Authenticode signer
+          - `code-gen`:     Code generation signer
+          - `antimalware`:  Antimalware signer
+          - `lsa`:          LSA signer
+          - `windows`:      Windows signer
+          - `win-tcb`:      WinTcb signer
+          - `win-system`:   WinSystem signer
+          - `app`:          Application signer
+          - `max`:          Maximum value for signers
+
+* `<pid>`: The PID of the process you want to modify PP / PPL.
+
+Example of use:
+
+```cmd
+shadow.exe process signature --pid 1234 --pt protected --sg win-tcb
+```
+
+This command changes the protection of the process with PID 1234.
+
+### Terminate Process
+
+### Lists protected and hidden processes currently on the system
