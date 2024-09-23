@@ -10,3 +10,32 @@ This documentation provides an overview of the shadow-rs rootkit project and ins
   * [Process Signature (PP / PPL)](/docs/process.md#process-signature-pp--ppl)
   * [Terminate Process](/docs/process.md#terminate-process)
   * [Lists protected and hidden processes currently on the system](/docs/process.md#lists-protected-and-hidden-processes-currently-on-the-system)
+
+* [Thread](/docs/thread.md)
+  * [Hide / Unhide Thread](/docs/thread.md)
+  * [Thread Protection (Anti-Kill)](/docs/thread.md)
+  * [Lists protected and hidden threads currently on the system](/docs/thread.md)
+
+* [Driver](/docs/driver.md)
+    * [Driver (Hide / Unhide)](/docs/driver.md)
+    * [Enumerate Driver](/docs/driver.md)    
+
+* [Misc](/docs/misc.md)
+    * [Driver Signature Enforcement (DSE) Enable / Disable](/docs/misc.md)
+    * [Keylogger Start / Stop](/docs/misc.md)
+    * [ETWTI Enable / Disable](/docs/misc.md)
+
+* [Callbacks](/docs/callback.md)
+    * [List / Remove / Restore Callbacks](/docs/callback.md)
+    * [Listing currently removed callbacks](/docs/callback.md)
+
+* [Module](/docs/module.md)
+    * [Hide Module](docs/module.md)
+
+* [Registry](/docs/registry.md)
+    * [Hide Key and Values](/docs/registry.md)
+    * [Registry Protection](/docs/registry.md)
+
+* [Injection](/docs/registry.md)
+    * [Process Injection - Shellcode / DLL (ZwCreateThreadEx)](/docs/injection.md)
+    * [APC Injection - Shellcode](/docs/injection.md)

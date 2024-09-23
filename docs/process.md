@@ -1,6 +1,6 @@
 ## Process
 
-### Hide / Unhide Process
+## Hide / Unhide Process
 
 Description:
 This command allows you to hide or reveal specific processes on the system.
@@ -21,7 +21,9 @@ shadow.exe process hide --pid 1234
 
 This command will hide the process with PID 1234.
 
-### Elevate Process to System
+---
+
+## Elevate Process to System
 
 Description:
 This command allows you to raise the process to system.
@@ -41,7 +43,7 @@ shadow.exe process elevate --pid 1234
 
 This command will elevate the process with PID 1234.
 
-### Process Signature (PP / PPL)
+## Process Signature (PP / PPL)
 
 Description:
 This command allows you to protect / unprotect a process using Process Protection (PP) or Protected Process Light (PPL).
@@ -80,6 +82,6 @@ shadow.exe process signature --pid 1234 --pt protected --sg win-tcb
 
 This command changes the protection of the process with PID 1234.
 
-### Terminate Process
+## Terminate Process
 
-### Lists protected and hidden processes currently on the system
+## Lists protected and hidden processes currently on the system
