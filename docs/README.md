@@ -31,6 +31,7 @@ This documentation provides an overview of the shadow-rs rootkit project and ins
 
 * [Module](/docs/module.md)
     * [Hide Module](docs/module.md)
+    * [Enumerate Module](/docs/module.md)
 
 * [Registry](/docs/registry.md)
     * [Hide Key and Values](/docs/registry.md)
