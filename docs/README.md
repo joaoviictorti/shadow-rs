@@ -1,11 +1,5 @@
 ## Windows Kernel Rootkit in Rust (shadow-rs) Documentation 🦀
 
-![Rust](https://img.shields.io/badge/made%20with-Rust-red)
-![Platform](https://img.shields.io/badge/platform-windows-blueviolet)
-![Forks](https://img.shields.io/github/forks/joaoviictorti/shadow-rs)
-![Stars](https://img.shields.io/github/stars/joaoviictorti/shadow-rs)
-![License](https://img.shields.io/github/license/joaoviictorti/shadow-rs)
-
 This documentation provides an overview of the shadow-rs rootkit project and instructions on its usage, features, and development process.
 
 ### Table of contents
