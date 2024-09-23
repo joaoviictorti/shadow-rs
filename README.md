@@ -8,7 +8,7 @@
 
 This project, called shadow-rs, is designed to create a rootkit in the Windows kernel using the Rust language. The aim is to demonstrate advanced techniques for developing rootkits, taking advantage of the security and performance features of the Rust language.
 
-## Summary
+## Table of contents
 
 * [Notice](#notice)
 * [Legal notice](#legal-notice)
@@ -52,7 +52,6 @@ This project, called shadow-rs, is designed to create a rootkit in the Windows k
 ### Driver
 - ✅ Driver (Hide / Unhide) 
 - ✅ Enumerate Driver 
-- ✅ Support for mapping the driver in memory 
  
 ### Misc
 
@@ -92,6 +91,7 @@ The following functionalities are not "features", they are basically techniques 
 
 - Searching for a "Zw" api not exported from `ntoskrnl.exe` at runtime.
 - Reflective Loading.
+- Support for mapping the driver in memory.
 
 ## Build Instructions
 
