@@ -112,7 +112,7 @@ shadow.exe process enumerate -l -t <value>
 
 * `enumerate`: Terminate the specified process.
 * `-l / --list`: List the protected or hidden process.
-* `-t / --type`: Specify which type you want to list
+* `-t / --type`: Specify which type you want to list.
     *   Possible values:
         - hide:       List of hidden targets
         - protection: List of protected targets
