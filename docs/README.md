@@ -1,4 +1,4 @@
-# Windows Kernel Rootkit in Rust (shadow-rs) Documentation
+## Windows Kernel Rootkit in Rust (shadow-rs) Documentation
 
 This documentation provides an overview of the shadow-rs rootkit project and instructions on its usage, features, and development process.
 
@@ -29,7 +29,7 @@ This command will hide the process with PID 1234.
 #### Elevate Process to System
 
 Description:
-This command allows you to hide or reveal specific processes on the system.
+This command allows you to raise the process to system.
 
 ```cmd
 shadow.exe process elevate --pid <pid>
