@@ -3,11 +3,9 @@
 This documentation provides an overview of the shadow-rs rootkit project and instructions on its usage, features, and development process.
 
 
-# Features
+### Process
 
-## Process Management
-
-### Hide / Unhide Process
+#### Hide / Unhide Process
 
 Description:
 This command allows you to hide or reveal specific processes on the system.
