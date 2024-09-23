@@ -1,0 +1,12 @@
+shared/target
+client/target
+driver/target
+
+Cargo.lock
+shared/Cargo.lock
+client/Cargo.lock
+driver/Cargo.lock
+
+driver/src/backup
+driver/src/misc/memory.rs
+driver/src/port
