@@ -12,6 +12,7 @@ This project, called shadow-rs, is designed to create a rootkit in the Windows k
 
 * [Notice](#notice)
 * [Legal notice](#legal-notice)
+* [Documentation](#documentation)
 * [Features](#contents)
 * [Others](#others)
 * [Build Instructions](#build-instructions)
@@ -34,6 +35,10 @@ This project, called shadow-rs, is designed to create a rootkit in the Windows k
 
 > [!WARNING]  
 > This project is for educational and research purposes. Malicious use of the software is strictly prohibited and discouraged. I am not responsible for any damage caused by improper use of the software.
+
+## Documentation
+
+If you would like to read the documentation on how to use the tool, simply navigate to the `/docs` folder. There you will find detailed information on setting up, using, and contributing to the project.
 
 ## Features
  
