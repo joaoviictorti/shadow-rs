@@ -8,7 +8,7 @@
 
 This project, called shadow-rs, is designed to create a rootkit in the Windows kernel using the Rust language. The aim is to demonstrate advanced techniques for developing rootkits, taking advantage of the security and performance features of the Rust language.
 
-## Table of contents
+## Table of Contents
 
 * [Notice](#notice)
 * [Legal notice](#legal-notice)
