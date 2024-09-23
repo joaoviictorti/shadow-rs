@@ -81,6 +81,28 @@ shadow.exe process signature --pid 1234 --pt protected --sg win-tcb
 
 This command changes the protection of the process with PID 1234.
 
+## Process Protection (Anti-Kill / Dumping)
+
+Description:
+This command allows you to add or remove process protection.
+
+```cmd
+shadow.exe process protection --pid <pid> [--add | --remove]
+```
+
+* `protection`: Protect the specified process.
+* `-a / --add`: Add the process.
+* `-r / --remove`: Remove the process.
+* `pid`: The PID of the process you want to protect.
+
+Example of use:
+
+```cmd
+shadow.exe process protection --pid 1234 --add
+```
+
+This command will protect the process with PID 1234.
+
 ## Terminate Process
 
 Description:

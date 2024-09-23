@@ -8,6 +8,7 @@ This document presents an overview of the `shadow-rs` project, describing its fe
   * [Hide / Unhide Process](/docs/process.md#hide--unhide-process)
   * [Elevate Process to System](/docs/process.md#elevate-process-to-system)
   * [Process Signature (PP / PPL)](/docs/process.md#process-signature-pp--ppl)
+  * [Process Protection (Anti-Kill / Dumping)](/docs/process.md#process-protection-anti-kill--dumping)
   * [Terminate Process](/docs/process.md#terminate-process)
   * [Lists protected and hidden processes currently on the system](/docs/process.md#lists-protected-and-hidden-processes-currently-on-the-system)
 
