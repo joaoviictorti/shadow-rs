@@ -2,8 +2,11 @@ use alloc::vec::Vec;
 use wdk_sys::UNICODE_STRING;
 
 /// A wrapper around a Vec<u16> that represents a unicode string
+#[derive(Default)]
 pub(crate) struct OwnedUnicodeString {
+    ///
     buffer: Vec<u16>,
+    ///
     _phantompinned: core::marker::PhantomPinned,
 }
 
@@ -21,6 +24,9 @@ impl OwnedUnicodeString {
 }
 
 /// Creates a new OwnedUnicodeString from a rust string. The string is converted to a wide string and null-terminated.
+/// 
+/// 
+/// 
 pub(crate) fn str_to_unicode(s: &str) -> OwnedUnicodeString {
     // Convert the rust string to a wide string
     let mut wide_string: Vec<u16> = s.encode_utf16().collect();

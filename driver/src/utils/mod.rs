@@ -420,3 +420,7 @@ pub fn return_module() -> Option<(*mut LDR_DATA_TABLE_ENTRY, i32)> {
 pub fn valid_kernel_memory(addr: u64) -> bool {
     addr > 0x8000000000000000 && addr < 0xFFFFFFFFFFFFFFFF
 }
+
+pub fn valid_user_memory(addr: u64) -> bool {
+    addr > 0 && addr < 0x7FFFFFFFFFFFFFFF
+}

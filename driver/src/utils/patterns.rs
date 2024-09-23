@@ -22,6 +22,10 @@ use {
     },
 };
 
+///
+/// 
+/// 
+/// 
 fn slice_to_number<T, const N: usize>(slice: &[u8], func: fn([u8; N]) -> T) -> Result<T, &'static str> {
     if slice.len() != N {
         return Err("Slice length mismatch");
@@ -35,6 +39,7 @@ fn slice_to_number<T, const N: usize>(slice: &[u8], func: fn([u8; N]) -> T) -> R
 }
 
 /// Scans memory for a specific pattern of bytes in a specific section.
+/// 
 /// # Parameters
 /// - `base_addr`: The base address (in `usize` format) from which the scan should start.
 /// - `section_name`: The name of the section to scan. This string must match the name of the section you want to scan.
