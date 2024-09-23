@@ -1,6 +1,6 @@
 ## Windows Kernel Rootkit in Rust (shadow-rs) Documentation 🦀
 
-This documentation provides an overview of the shadow-rs rootkit project and instructions on its usage, features, and development process.
+This document presents an overview of the `shadow-rs` project, describing its features, instructions for use and details of the development process. `shadow-rs` is designed to provide an advanced set of tools for manipulating processes, threads, drivers and much more in the Windows kernel.
 
 ### Table of contents
 

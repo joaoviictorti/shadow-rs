@@ -1,4 +1,4 @@
-## thread
+## Thread
 
 ## Hide / Unhide thread
 
