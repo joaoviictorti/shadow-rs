@@ -22,7 +22,8 @@ This project, called shadow-rs, is designed to create a rootkit in the Windows k
   * [Debug via Windbg](#debug-via-windbg)
   * [Create/Start Service](#createstart-service)
 * [Upcoming Features](#upcoming-Features)
-* [Credits & References](#credits--references)
+* [Contributing to shadow-rs](#contributing-to-shadow-rs)
+* [Credits / References](#credits--references)
 
 ## Notice
 
@@ -155,7 +156,19 @@ These are some of the features that will be added, but there are many more on th
 ### Injection
 - ❌ APC Injection - DLL
 
-## Credits & References
+## Contributing to shadow-rs
+To contribute to shadow-rs, follow these steps:
+
+1. Fork this repository.
+2. Create a branch: ```git checkout -b <branch_name>```.
+3. Make your changes and confirm them: ```git commit -m '<commit_message>'```.
+4. Send to the original branch: ```git push origin <project_name> / <local>```.
+5. Create the pull request.
+
+Alternatively, consult the GitHub documentation on how to create a pull request.
+
+## Credits / References
+
 - https://leanpub.com/windowskernelprogrammingsecondedition
 - https://www.youtube.com/watch?v=t7Rx3crobZU&pp=ugMICgJwdBABGAHKBRBibGFja2hhdCByb290a2l0
 - https://github.com/memN0ps/eagle-rs
