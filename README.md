@@ -6,7 +6,7 @@
 ![Stars](https://img.shields.io/github/stars/joaoviictorti/shadow-rs)
 ![License](https://img.shields.io/github/license/joaoviictorti/shadow-rs)
 
-This project, called shadow-rs, is designed to create a rootkit in the Windows kernel using the Rust language. The aim is to demonstrate advanced techniques for developing rootkits, taking advantage of the security and performance features of the Rust language.
+**shadow-rs** is a Windows kernel rootkit written in Rust, demonstrating advanced techniques for kernel manipulation, while leveraging Rust’s safety and performance features. This project is intended for educational and research purposes.
 
 ## Table of Contents
 
@@ -139,22 +139,14 @@ bcdedit /dbgsettings net hostip:<IP> port:<PORT>
 
 You can use [Service Control Manager](https://docs.microsoft.com/en-us/windows/win32/services/service-control-manager) or [OSR Driver Loader](https://www.osronline.com/article.cfm%5Earticle=157.htm) to load your driver.
 
-## Upcoming Features
+## Upcoming Features 🚧
 
-These are some of the features that will be added, but there are many more on the way
- 
-### Port
-- ❌ Hide port
+Stay tuned for new features! Some upcoming highlights:
 
-### File
-- ❌ Hide File / Directory
-- ❌ Anti-Deletion e Overwriting
-
-### Callback
-- ❌ Minifilters
-
-### Injection
-- ❌ APC Injection - DLL
+* ❌ Hide Ports
+* ❌ File/Directory Hiding / Anti-Deletion and Overwriting 
+* ❌ Minifilters for Callbacks
+* ❌ APC Injection - DLL
 
 ## Contributing to shadow-rs
 To contribute to shadow-rs, follow these steps:
