@@ -60,16 +60,16 @@ shadow.exe process signature --pt <protection> --sg <signature> --pid <pid>
 
 * `sg`: The protection signer.
     *   Possible values:
-          - `none`:         No signer
-          - `authenticode`: Authenticode signer
-          - `code-gen`:     Code generation signer
-          - `antimalware`:  Antimalware signer
-          - `lsa`:          LSA signer
-          - `windows`:      Windows signer
-          - `win-tcb`:      WinTcb signer
-          - `win-system`:   WinSystem signer
-          - `app`:          Application signer
-          - `max`:          Maximum value for signers
+        - `none`:         No signer
+        - `authenticode`: Authenticode signer
+        - `code-gen`:     Code generation signer
+        - `antimalware`:  Antimalware signer
+        - `lsa`:          LSA signer
+        - `windows`:      Windows signer
+        - `win-tcb`:      WinTcb signer
+        - `win-system`:   WinSystem signer
+        - `app`:          Application signer
+        - `max`:          Maximum value for signers
 
 * `pid`: The PID of the process you want to modify PP / PPL.
 
@@ -114,8 +114,8 @@ shadow.exe process enumerate -l -t <value>
 * `-l / --list`: List the protected or hidden process.
 * `-t / --type`: Specify which type you want to list
     *   Possible values:
-          - hide:       List of hidden targets
-          - protection: List of protected targets
+        - hide:       List of hidden targets
+        - protection: List of protected targets
 
 Example of use:
 
