@@ -14,6 +14,8 @@
 * [Documentation](#documentation)
 * [Features](#contents)
 * [Others](#others)
+* [Installation](#installation)
+* [Supported Platforms](#supported-Platforms)
 * [Build Instructions](#build-instructions)
   * [Driver](#driver)
   * [Client](#client)
@@ -21,7 +23,6 @@
   * [Enable Test Mode](#enable-test-mode)
   * [Debug via Windbg](#debug-via-windbg)
   * [Create/Start Service](#createstart-service)
-* [Upcoming Features](#upcoming-Features)
 * [Contributing to shadow-rs](#contributing-to-shadow-rs)
 * [License](#license)
 
@@ -71,8 +72,16 @@ If you would like to read the documentation on how to use the tool, simply navig
   - PsSetCreateThreadNotifyRoutine 
   - PsSetLoadImageNotifyRoutine 
   - CmRegisterCallbackEx  
-  - ObRegisterCallbacks (PsProcessType / PsThreadType) 
+  - ObRegisterCallbacks (PsProcessType / PsThreadType)
+  - ❌ Minifilters
 - ✅ Listing currently removed callbacks 
+
+### Port
+- ❌ Hide Ports
+
+### File
+- ❌ File / Directory Hiding
+- ❌ Anti-Deletion and Overwriting 
 
 ### Module
 - ✅ Hide Module
@@ -83,8 +92,10 @@ If you would like to read the documentation on how to use the tool, simply navig
 - ✅ Registry Protection (Anti-Deletion e Overwriting) 
 
 ### Injection
-- ✅ Process Injection - Shellcode / DLL (ZwCreateThreadEx) 
-- ✅ APC Injection - Shellcode 
+- ✅ Process Injection - Shellcode (ZwCreateThreadEx)
+- ✅ Process Injection - DLL (ZwCreateThreadEx) 
+- ✅ APC Injection - Shellcode
+- ❌ APC Injection - DLL
 
 ## Others
 
@@ -93,6 +104,13 @@ The following functionalities are not "features", they are basically techniques 
 - Searching for a "Zw" api not exported from `ntoskrnl.exe` at runtime.
 - Reflective Loading.
 - Support for mapping the driver in memory.
+
+## Installation
+- Install Rust from [**here**](https://www.rust-lang.org/learn/get-started).
+- Then follow the instructions provided by [**microsoft**](https://github.com/microsoft/windows-drivers-rs?tab=readme-ov-file#getting-started)
+
+## Supported Platforms
+- ✅ Windows 10 / 11 (x64)
 
 ## Build Instructions
 
@@ -139,15 +157,6 @@ bcdedit /dbgsettings net hostip:<IP> port:<PORT>
 
 You can use [Service Control Manager](https://docs.microsoft.com/en-us/windows/win32/services/service-control-manager) or [OSR Driver Loader](https://www.osronline.com/article.cfm%5Earticle=157.htm) to load your driver.
 
-## Upcoming Features 🚧
-
-Stay tuned for new features! Some upcoming highlights:
-
-* ❌ Hide Ports
-* ❌ File/Directory Hiding / Anti-Deletion and Overwriting 
-* ❌ Minifilters for Callbacks
-* ❌ APC Injection - DLL
-
 ## Contributing to shadow-rs
 To contribute to shadow-rs, follow these steps:
 
@@ -161,4 +170,4 @@ Alternatively, consult the GitHub documentation on how to create a pull request.
 
 ## License
 
-Licensed under either of [The MIT License](/LICENSE) at your option.
+This project is licensed under the [**MIT License**](/LICENSE)
