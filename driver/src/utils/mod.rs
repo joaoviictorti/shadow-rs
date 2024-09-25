@@ -166,13 +166,12 @@ pub unsafe fn get_process_by_name(process_name: &str) -> Option<usize> {
 /// - `Option<*mut c_void>`: The address of the target function if found.
 /// 
 pub unsafe fn get_module_peb(pid: usize, module_name: &str, function_name: &str) -> Option<*mut c_void> {
-    let mut apc_state: KAPC_STATE = core::mem::zeroed();
+    let apc_state: KAPC_STATE = core::mem::zeroed();
     let target = Process::new(pid)?;
 
     let attach_process = ProcessAttach::new(target.e_process);
     let target_peb = PsGetProcessPeb(target.e_process) as *mut PEB;
     if target_peb.is_null() || (*target_peb).Ldr.is_null() {
-        KeUnstackDetachProcess(&mut apc_state);
         return None;
     }
     
