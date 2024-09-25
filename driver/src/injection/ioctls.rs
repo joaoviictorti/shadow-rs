@@ -1,25 +1,37 @@
 use {
+    alloc::boxed::Box, 
+    hashbrown::HashMap,
+    wdk_sys::{IO_STACK_LOCATION, IRP, STATUS_SUCCESS},
     crate::{
-        handle_injection, 
+        handle, 
         injection::{InjectionDLL, InjectionShellcode}, 
         utils::ioctls::IoctlHandler
     }, 
-    alloc::boxed::Box, 
-    hashbrown::HashMap, 
     shared::{
-        ioctls::{IOCTL_INJECTION_DLL_THREAD, IOCTL_INJECTION_SHELLCODE_APC, IOCTL_INJECTION_SHELLCODE_THREAD}, 
+        ioctls::{
+            IOCTL_INJECTION_DLL_THREAD, IOCTL_INJECTION_SHELLCODE_APC, 
+            IOCTL_INJECTION_SHELLCODE_THREAD
+        }, 
         structs::TargetInjection
     }, 
-    wdk_sys::{IO_STACK_LOCATION, IRP, STATUS_SUCCESS}
 };
 
+/// Registers the IOCTL handlers for injection-related operations.
+///
+/// This function inserts two IOCTL handlers into the provided `HashMap`, associating them with
+/// their respective IOCTL codes. The two operations supported are:
+///
+/// # Parameters
+/// 
+/// - `ioctls`: A mutable reference to a `HashMap<u32, IoctlHandler>` where the injection-related
+///   IOCTL handlers will be inserted.
+///
 pub fn get_injection_ioctls(ioctls: &mut HashMap<u32, IoctlHandler>) {
-
     // Process injection using ZwCreateThreadEx.
     ioctls.insert(IOCTL_INJECTION_SHELLCODE_THREAD, Box::new(|irp: *mut IRP, stack: *mut IO_STACK_LOCATION | {
         log::info!("Received IOCTL_INJECTION_SHELLCODE_THREAD");
 
-        let status = unsafe { handle_injection!(stack, InjectionShellcode::injection_thread, TargetInjection) };
+        let status = unsafe { handle!(stack, InjectionShellcode::injection_thread, TargetInjection) };
         
         unsafe { (*irp).IoStatus.Information = 0 };
         
@@ -33,7 +45,7 @@ pub fn get_injection_ioctls(ioctls: &mut HashMap<u32, IoctlHandler>) {
     ioctls.insert(IOCTL_INJECTION_SHELLCODE_APC, Box::new(|irp: *mut IRP, stack: *mut IO_STACK_LOCATION | {
         log::info!("Received IOCTL_INJECTION_SHELLCODE_APC");
         
-        let status = unsafe { handle_injection!(stack, InjectionShellcode::injection_apc, TargetInjection) };
+        let status = unsafe { handle!(stack, InjectionShellcode::injection_apc, TargetInjection) };
         
         unsafe { (*irp).IoStatus.Information = 0 };
         
@@ -47,7 +59,7 @@ pub fn get_injection_ioctls(ioctls: &mut HashMap<u32, IoctlHandler>) {
     ioctls.insert(IOCTL_INJECTION_DLL_THREAD, Box::new(|irp: *mut IRP, stack: *mut IO_STACK_LOCATION | {
         log::info!("Received IOCTL_INJECTION_DLL_THREAD");
         
-        let status = unsafe { handle_injection!(stack, InjectionDLL::injection_dll_thread, TargetInjection) };
+        let status = unsafe { handle!(stack, InjectionDLL::injection_dll_thread, TargetInjection) };
         
         unsafe { (*irp).IoStatus.Information = 0 };
 

@@ -3,7 +3,8 @@ use wdk_sys::ntddk::MmGetSystemRoutineAddress;
 
 /// Gets the offset of the `SignatureLevel` in the `EPROCESS` structure.
 ///
-/// # Return
+/// # Returns
+/// 
 /// - `isize`: Returns the offset of the dynamically retrieved structure.
 ///
 pub unsafe fn get_offset_signature() -> isize {
@@ -22,7 +23,8 @@ pub unsafe fn get_offset_signature() -> isize {
 
 /// Gets the offset of the `UniqueProcessId` in the `EPROCESS` structure.
 ///
-/// # Return
+/// # Returns
+/// 
 /// - `isize`: Returns the offset of the dynamically retrieved structure.
 ///
 pub unsafe fn get_offset_unique_process_id() -> isize {
@@ -41,7 +43,8 @@ pub unsafe fn get_offset_unique_process_id() -> isize {
 
 /// Gets the offset of the `Token` in the `EPROCESS` structure.
 ///
-/// # Return
+/// # Returns
+/// 
 /// - `isize`: Returns the offset of the dynamically retrieved structure.
 ///
 pub unsafe fn get_offset_token() -> isize {
@@ -60,7 +63,8 @@ pub unsafe fn get_offset_token() -> isize {
 
 /// Gets the offset of the `RundownProtect` in the `ETHREAD` structure.
 ///
-/// # Return
+/// # Returns
+/// 
 /// - `isize`: Returns the offset of the dynamically retrieved structure.
 ///
 pub unsafe fn get_rundown_protect() -> isize {

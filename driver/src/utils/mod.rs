@@ -1,28 +1,43 @@
 use {
+    ntapi::{
+        ntldr::LDR_DATA_TABLE_ENTRY, 
+        ntpebteb::PEB, 
+        ntzwapi::ZwQuerySystemInformation,
+        ntexapi::{
+            SystemModuleInformation, 
+            SystemProcessInformation, 
+            PSYSTEM_PROCESS_INFORMATION
+        }, 
+    }, 
+    wdk_sys::{
+        *, ntddk::*, 
+        _FILE_INFORMATION_CLASS::FileStandardInformation,
+    }, 
+    winapi::um::winnt::{
+        IMAGE_DOS_HEADER, IMAGE_EXPORT_DIRECTORY,
+        IMAGE_NT_HEADERS64
+    } 
+};
+
+use {
     obfstr::obfstr, 
     handles::Handle,
     pool::PoolMemory, 
     process_attach::ProcessAttach,
-    crate::{includes::{structs::SystemModuleInformation, PsGetProcessPeb}, process::Process}, 
-    alloc::{string::String, vec::Vec}, 
+    alloc::{string::String, vec::Vec},
     core::{
         ffi::{c_void, CStr}, 
         mem::{size_of, zeroed}, 
         ptr::{null_mut, read_unaligned}, 
         slice::from_raw_parts
-    }, 
-    ntapi::{
-        ntexapi::{
-            SystemModuleInformation, SystemProcessInformation, PSYSTEM_PROCESS_INFORMATION
+    },
+    crate::{
+        internals::{
+            structs::SystemModuleInformation, 
+            externs::PsGetProcessPeb
         }, 
-        ntldr::LDR_DATA_TABLE_ENTRY, 
-        ntpebteb::PEB, 
-        ntzwapi::ZwQuerySystemInformation
+        process::Process
     }, 
-    wdk_sys::{
-        ntddk::*, _FILE_INFORMATION_CLASS::FileStandardInformation, *
-    }, 
-    winapi::um::winnt::{IMAGE_DOS_HEADER, IMAGE_EXPORT_DIRECTORY,IMAGE_NT_HEADERS64} 
 };
 
 #[cfg(not(test))]
@@ -48,9 +63,11 @@ pub mod process_attach;
 /// Retrieves the input buffer from the given IO stack location.
 ///
 /// # Parameters
+/// 
 /// - `stack`: A pointer to the `_IO_STACK_LOCATION` structure.
 ///
 /// # Returns
+/// 
 /// - `Result<*mut T, NTSTATUS>`: A result containing the pointer to the input buffer or an NTSTATUS error code.
 ///
 pub unsafe fn get_input_buffer<T>(stack: *mut _IO_STACK_LOCATION) -> Result<*mut T, NTSTATUS> {
@@ -66,9 +83,11 @@ pub unsafe fn get_input_buffer<T>(stack: *mut _IO_STACK_LOCATION) -> Result<*mut
 /// Retrieves the output buffer from the given IRP.
 ///
 /// # Parameters
+/// 
 /// - `irp`: A pointer to the `IRP` structure.
 ///
 /// # Returns
+/// 
 /// - `Result<*mut T, NTSTATUS>`: A result containing the pointer to the output buffer or an NTSTATUS error code.
 ///
 pub unsafe fn get_output_buffer<T>(irp: *mut IRP) -> Result<*mut T, NTSTATUS> {
@@ -84,9 +103,11 @@ pub unsafe fn get_output_buffer<T>(irp: *mut IRP) -> Result<*mut T, NTSTATUS> {
 /// Retrieves the PID of a process by its name.
 ///
 /// # Parameters
+/// 
 /// - `process_name`: A string slice containing the name of the process.
 ///
 /// # Returns
+/// 
 /// - `Option<usize>`: An optional containing the PID of the process, or None if the process is not found.
 ///
 pub unsafe fn get_process_by_name(process_name: &str) -> Option<usize> {
@@ -135,11 +156,13 @@ pub unsafe fn get_process_by_name(process_name: &str) -> Option<usize> {
 /// Retrieves the address of a specified function within a module in the context of a target process.
 ///
 /// # Parameters
+/// 
 /// - `pid`: The process ID (PID) of the target process.
 /// - `module_name`: The name of the module (DLL) to be searched for. The search is case-insensitive.
 /// - `function_name`: The name of the function within the module to be found.
 /// 
 /// # Returns
+/// 
 /// - `Option<*mut c_void>`: The address of the target function if found.
 /// 
 pub unsafe fn get_module_peb(pid: usize, module_name: &str, function_name: &str) -> Option<*mut c_void> {
@@ -207,9 +230,11 @@ pub unsafe fn get_module_peb(pid: usize, module_name: &str, function_name: &str)
 /// Find for a thread with an alertable status.
 /// 
 /// # Parameters
+/// 
 /// - `target_pid`: PID that will fetch the tids.
 ///
 /// # Returns
+/// 
 /// - `Option<*mut _KTHREAD>`: The KTHREAD of the thread found, or `None` if an error occurs or the thread is not found.
 /// 
 pub unsafe fn find_thread_alertable(target_pid: usize) -> Option<*mut _KTHREAD> {
@@ -272,6 +297,7 @@ pub unsafe fn find_thread_alertable(target_pid: usize) -> Option<*mut _KTHREAD> 
 /// Initializes the OBJECT_ATTRIBUTES structure.
 ///
 /// # Parameters
+/// 
 /// - `object_name`: The name of the object (optional).
 /// - `attributes`: The attributes of the object.
 /// - `root_directory`: The root directory (optional).
@@ -279,6 +305,7 @@ pub unsafe fn find_thread_alertable(target_pid: usize) -> Option<*mut _KTHREAD> 
 /// - `security_quality_of_service`: The security quality of service (optional).
 ///
 /// # Returns
+/// 
 /// - `OBJECT_ATTRIBUTES`: The initialized OBJECT_ATTRIBUTES structure
 /// 
 #[allow(non_snake_case)]
@@ -302,9 +329,11 @@ pub fn InitializeObjectAttributes(
 /// Reads the content of a file given its path.
 ///
 /// # Parameters
+/// 
 /// - `path`: The path to the file.
 ///
 /// # Returns
+/// 
 /// - `Result<Vec<u8>, NTSTATUS>`: The content of the file as a vector of bytes if successful, or an NTSTATUS error code if an error occurs.
 /// 
 pub fn read_file(path: &String) -> Result<Vec<u8>, NTSTATUS> {
@@ -345,11 +374,11 @@ pub fn read_file(path: &String) -> Result<Vec<u8>, NTSTATUS> {
     let mut file_info: FILE_STANDARD_INFORMATION = unsafe { zeroed() };
     status = unsafe { 
         ZwQueryInformationFile(
-        h_file.get(), 
-        &mut io_status_block, 
-        &mut file_info as *mut _ as *mut c_void, 
-        size_of::<FILE_STANDARD_INFORMATION>() as u32, 
-        FileStandardInformation
+            h_file.get(), 
+            &mut io_status_block, 
+            &mut file_info as *mut _ as *mut c_void, 
+            size_of::<FILE_STANDARD_INFORMATION>() as u32, 
+            FileStandardInformation
         )
     };
     if !NT_SUCCESS(status) {
@@ -385,6 +414,7 @@ pub fn read_file(path: &String) -> Result<Vec<u8>, NTSTATUS> {
 /// Responsible for returning information on the modules loaded.
 ///
 /// # Returns
+///
 /// - `Option<(*mut LDR_DATA_TABLE_ENTRY, i32)> `: Returns a content containing LDR_DATA_TABLE_ENTRY and the return of how many loaded modules there are in PsLoadedModuleList.
 /// 
 pub fn return_module() -> Option<(*mut LDR_DATA_TABLE_ENTRY, i32)> {
@@ -411,16 +441,52 @@ pub fn return_module() -> Option<(*mut LDR_DATA_TABLE_ENTRY, i32)> {
 /// Validates if the given address is within the kernel memory range.
 ///
 /// # Parameters
+///
 /// - `addr`: A 64-bit unsigned integer representing the address to validate.
 ///
 /// # Returns
-/// - `bool`: True if the address is within the kernel memory range, False otherwise.
 /// 
-#[allow(dead_code)]
+/// - `bool`: True if the address is within the kernel memory range, False otherwise.
+///
 pub fn valid_kernel_memory(addr: u64) -> bool {
     addr > 0x8000000000000000 && addr < 0xFFFFFFFFFFFFFFFF
 }
 
+/// Validates if the given address is within the user memory range.
+///
+/// # Parameters
+/// 
+/// - `addr`: A 64-bit unsigned integer representing the address to validate.
+///
+/// # Returns
+
+/// - `bool`: True if the address is within the user memory range, False otherwise.
+/// 
 pub fn valid_user_memory(addr: u64) -> bool {
     addr > 0 && addr < 0x7FFFFFFFFFFFFFFF
+}
+
+/// Generic function that performs the operation with the lock already acquired.
+/// It will acquire the lock exclusively and guarantee its release after use.
+///
+/// # Parameters
+/// 
+/// - `push_lock` - Pointer to the lock to be acquired.
+/// - `operation` - The operation to be performed while the lock is active.
+///
+pub fn with_push_lock_exclusive<T, F>(push_lock: *mut u64, operation: F) -> T
+where
+    F: FnOnce() -> T,
+{
+    unsafe {
+        ExAcquirePushLockExclusiveEx(push_lock, 0); // Get the lock exclusively
+    }
+
+    let result = operation(); // Performs the operation while the lock is active
+
+    unsafe {
+        ExReleasePushLockExclusiveEx(push_lock, 0); // Releases the lock after the operation
+    }
+
+    result // Returns the result of the operation
 }

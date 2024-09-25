@@ -5,7 +5,10 @@ use {
     core::ffi::c_void,
     spin::{Mutex, lazy::Lazy}, 
     shared::{structs::{ProcessListInfo, ProcessProtection}, vars::MAX_PIDS},
-    winapi::um::winnt::{PROCESS_CREATE_THREAD, PROCESS_TERMINATE, PROCESS_VM_OPERATION, PROCESS_VM_READ},
+    winapi::um::winnt::{
+        PROCESS_CREATE_THREAD, PROCESS_TERMINATE, 
+        PROCESS_VM_OPERATION, PROCESS_VM_READ
+    },
     wdk_sys::{
         ntddk::PsGetProcessId,
         _OB_PREOP_CALLBACK_STATUS::{self, OB_PREOP_SUCCESS},
@@ -24,12 +27,13 @@ static TARGET_PIDS: Lazy<Mutex<Vec<usize>>> = Lazy::new(|| Mutex::new(Vec::with_
 /// Method to check if the action sent is to add or remove a pid from the list of protected processes
 ///
 /// # Parameters
+/// 
 /// - `process`: Structure with information about the process that will be added or removed from the list of protected processes.
 ///
 /// # Returns
+/// 
 /// - `NTSTATUS`: A status code indicating the success or failure of the operation.
 /// 
-///
 pub fn add_remove_process_toggle(process: *mut ProcessProtection) -> NTSTATUS {
     let pid = unsafe { (*process).pid };
     if unsafe { (*process).enable } {
@@ -42,9 +46,11 @@ pub fn add_remove_process_toggle(process: *mut ProcessProtection) -> NTSTATUS {
 /// Method for adding the list of processes that will have anti-kill / dumping protection.
 ///
 /// # Parameters
+/// 
 /// - `pid`: The identifier of the target process (PID) to be hidden.
 ///
 /// # Returns
+/// 
 /// - `NTSTATUS`: A status code indicating the success or failure of the operation.
 /// 
 fn add_target_pid(pid: usize) -> NTSTATUS {
@@ -68,9 +74,11 @@ fn add_target_pid(pid: usize) -> NTSTATUS {
 /// Method for removing the list of processes that will have anti-kill / dumping protection.
 ///
 /// # Parameters
+/// 
 /// - `pid`: The identifier of the target process (PID) to be hidden.
 ///
 /// # Returns
+/// 
 /// - `NTSTATUS`: A status code indicating the success or failure of the operation.
 /// 
 fn remove_target_pid(pid: usize) -> NTSTATUS {
@@ -88,10 +96,12 @@ fn remove_target_pid(pid: usize) -> NTSTATUS {
 /// Enumerate Processes Protect.
 ///
 /// # Parameters
+/// 
 /// - `info_process`: It is a parameter of type `InfoProcesses` that will send the processes that are currently protected.
 /// - `information`: It is a parameter of type `usize` that will be updated with the total size of the filled `InfoProcesses` structures.
 /// 
-/// # Return
+/// # Returns
+/// 
 /// - `NTSTATUS`: A status code indicating success or failure of the operation.
 ///
 pub unsafe fn enumerate_protection_processes(info_process: *mut ProcessListInfo, information: &mut usize) -> NTSTATUS {
@@ -111,10 +121,12 @@ pub unsafe fn enumerate_protection_processes(info_process: *mut ProcessListInfo,
 /// This function is registered as a callback and is called by the operating system before a process opening operation is completed.
 ///
 /// # Parameters
+/// 
 /// - `_registration_context`: Pointer to record context (Not used).
 /// - `info`: Pointer to an `OB_PRE_OPERATION_INFORMATION` structure that contains information about the process's pre-opening operation.
 ///
 /// # Returns
+/// 
 /// - `_OB_PREOP_CALLBACK_STATUS::Type`: A status code indicating the success or failure of the operation.
 ///
 pub unsafe extern "C" fn on_pre_open_process(
@@ -130,7 +142,6 @@ pub unsafe extern "C" fn on_pre_open_process(
     let pids = TARGET_PIDS.lock();
 
     if pids.contains(&pid) {
-        log::info!("Anti-Kill / Dumping actived with PID => {pid}");
         let mask = !(PROCESS_VM_OPERATION | PROCESS_VM_READ | PROCESS_CREATE_THREAD | PROCESS_DUP_HANDLE | PROCESS_TERMINATE);
         (*(*info).Parameters).CreateHandleInformation.DesiredAccess &= mask;
     }

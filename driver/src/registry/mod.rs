@@ -33,10 +33,12 @@ trait RegistryList<T> {
     /// Adds an item to the registry list.
     ///
     /// # Parameters
+    /// 
     /// - `list`: A mutable reference to the list.
     /// - `item`: The item to be added.
     ///
     /// # Returns
+    /// 
     /// - `NTSTATUS`: Status code indicating success or failure of the operation.
     ///
     fn add_item(list: &mut Vec<T>, item: T) -> NTSTATUS;
@@ -44,10 +46,12 @@ trait RegistryList<T> {
     /// Removes an item from the registry list.
     ///
     /// # Parameters
+    /// 
     /// - `list`: A mutable reference to the list.
     /// - `item`: The item to be removed.
     ///
     /// # Returns
+    /// 
     /// - `NTSTATUS`: Status code indicating success or failure of the operation.
     ///
     fn remove_item(list: &mut Vec<T>, item: &T) -> NTSTATUS;
@@ -55,10 +59,12 @@ trait RegistryList<T> {
     /// Checks if an item is in the registry list.
     ///
     /// # Parameters
+    /// 
     /// - `list`: A reference to the list.
     /// - `item`: The item to be checked.
     ///
     /// # Returns
+    /// 
     /// - `bool`: Returns true if the item is in the list, or false otherwise.
     /// 
     fn contains_item(list: &Vec<T>, item: &T) -> bool;
@@ -137,9 +143,11 @@ impl Registry<(String, String)> {
     /// Adds or removes a key-value pair from the list of protected values.
     ///
     /// # Parameters
+    /// 
     /// - `target`: The `TargetRegistry` structure representing the key-value pair to be protected or removed.
     ///
     /// # Returns
+    /// 
     /// - `NTSTATUS`: Status code indicating success or failure of the operation.
     /// 
     pub fn add_remove_registry_toggle(target: *mut TargetRegistry, list_type: KeyListType) -> NTSTATUS {
@@ -187,10 +195,12 @@ impl Registry<String> {
     /// Adds or removes a key from the list of protected keys.
     ///
     /// # Parameters
+    /// 
     /// - `key`: The key to be protected or removed.
     /// - `enable`: A boolean indicating whether to add (true) or remove (false) the key.
     ///
     /// # Returns
+    /// 
     /// - `NTSTATUS`: Status code indicating success or failure of the operation.
     /// 
     pub fn add_remove_key_toggle(target: *mut TargetRegistry, list_type: KeyListType) -> NTSTATUS {
@@ -222,9 +232,11 @@ impl Registry<String> {
     /// Checks if the key is in the list of protected keys.
     ///
     /// # Parameters
+    /// 
     /// - `key`: The key being checked.
     ///
     /// # Returns
+    /// 
     /// - `bool`: Returns true if the key is in the list, or false otherwise.
     pub fn check_key(key: String, list: MutexGuard<Vec<String>>) -> bool {
         Vec::contains_item(&list, &key)

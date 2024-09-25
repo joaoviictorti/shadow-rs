@@ -24,9 +24,11 @@ impl ProcessAttach {
     /// the target process context.
     ///
     /// # Parameters
+    /// 
     /// - `target_process`: A pointer to the target process (`PRKPROCESS`) to attach to.
     ///
     /// # Returns
+    /// 
     /// - `ProcessAttach`: A new `ProcessAttach` instance representing the attached process context.
     ///
     #[inline]

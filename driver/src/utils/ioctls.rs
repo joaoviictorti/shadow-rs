@@ -23,11 +23,15 @@ use {
 /// an `NTSTATUS` result, indicating the success or failure of the operation.
 ///
 /// # Parameters
+/// 
 /// - `*mut IRP`: Pointer to an IRP (I/O Request Packet), which represents an I/O request in Windows.
 /// - `*mut IO_STACK_LOCATION`: Pointer to the current I/O stack location.
 /// 
+/// 
 /// # Returns
+/// 
 /// - `NTSTATUS`: A status code indicating the success or failure of the operation.
+/// 
 pub type IoctlHandler = Box<dyn Fn(*mut IRP, *mut IO_STACK_LOCATION) -> NTSTATUS + Send + Sync>;
 
 lazy_static! {
@@ -41,6 +45,7 @@ lazy_static! {
 /// into a `HashMap`, which maps IOCTL codes (`u32`) to their respective handler functions (`IoctlHandler`).
 ///
 /// # Returns
+/// 
 /// - `HashMap<u32, IoctlHandler>`: A map containing IOCTL handlers for process, thread, driver,
 ///   callback, injection, miscellaneous, module, and port operations.
 ///   If the "mapper" feature is disabled, registry-related IOCTLs are also included.

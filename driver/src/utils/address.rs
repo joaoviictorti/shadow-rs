@@ -11,9 +11,11 @@ use {
 /// Gets the base address of a specified module.
 ///
 /// # Parameters
+/// 
 /// - `module_name`: A string slice containing the name of the module.
 ///
 /// # Returns
+/// 
 /// - `Option<*mut c_void>`: An optional pointer to the base address of the module, or None if the module is not found.
 ///
 pub unsafe fn get_module_base_address(module_name: &str) -> Option<*mut c_void> {
@@ -58,10 +60,12 @@ pub unsafe fn get_module_base_address(module_name: &str) -> Option<*mut c_void> 
 /// Gets the address of a specified function within a module.
 ///
 /// # Parameters
+/// 
 /// - `function_name`: A string slice containing the name of the function.
 /// - `dll_base`: A pointer to the base address of the DLL.
 ///
 /// # Returns
+/// 
 /// - `Option<*mut c_void>`: An optional pointer to the function's address, or None if the function is not found.
 ///
 pub unsafe fn get_function_address(function_name: &str, dll_base: *mut c_void) -> Option<*mut c_void> {
@@ -88,10 +92,12 @@ pub unsafe fn get_function_address(function_name: &str, dll_base: *mut c_void) -
 /// Get the address of the `gafAsyncKeyState` array within a module in the context of a target process.
 ///
 /// # Parameters
+/// 
 /// - `name`: A string slice containing the name `gafAsyncKeyState`.
 /// - `dll_base`: A pointer to the base address of the DLL.
 ///
 /// # Returns
+/// 
 /// - `Option<*mut c_void>`: An optional pointer to the function's address, or None if the function is not found.
 ///
 pub unsafe fn get_address_asynckey(name: &str, dll_base: *mut c_void) -> Option<*mut c_void> {

@@ -19,11 +19,13 @@ impl PoolMemory {
     /// pool. It returns `None` if the allocation fails, or `Some(PoolMemory)` if successful.
     ///
     /// # Parameters
+    /// 
     /// - `flag`: Flags controlling the behavior of the memory allocation, of type `POOL_FLAGS`.
     /// - `number_of_bytes`: The size of the memory block to allocate, in bytes.
     /// - `tag`: A tag (typically a 4-character identifier) used to identify the allocation.
     ///
     /// # Returns
+    /// 
     /// - `Option<PoolMemory>`: `Some(PoolMemory)` if the memory is successfully allocated, or `None` if the allocation fails.
     ///
     #[inline]

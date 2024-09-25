@@ -4,7 +4,6 @@ use {
     ntapi::ntldr::LDR_DATA_TABLE_ENTRY,
     shared::structs::{CallbackInfoInput, CallbackInfoOutput},
     wdk_sys::{
-        ntddk::{ExAcquirePushLockExclusiveEx, ExReleasePushLockExclusiveEx}, 
         NTSTATUS, STATUS_SUCCESS, STATUS_UNSUCCESSFUL
     },
     crate::{
@@ -12,7 +11,8 @@ use {
             find_callback::{find_callback_address, CallbackResult}, 
             CallbackList, INFO_CALLBACK_RESTAURE_OB
         }, 
-        includes::structs::{CallbackRestaureOb, OBCALLBACK_ENTRY}, utils::return_module
+        internals::structs::{CallbackRestaureOb, OBCALLBACK_ENTRY}, 
+        utils::{return_module, with_push_lock_exclusive}
     },
 };
 
@@ -22,103 +22,96 @@ pub struct CallbackOb;
 /// Implement a feature for the callback ObRegisterCallbacks (PsProcessType / PsThreadType).
 impl CallbackList for CallbackOb {
     unsafe fn restore_callback(target_callback: *mut CallbackInfoInput) -> NTSTATUS {
-        let mut callback_info = INFO_CALLBACK_RESTAURE_OB.lock();
-        let callback_type = (*target_callback).callback;
+        let mut callbacks = INFO_CALLBACK_RESTAURE_OB.lock();
+        let type_ = (*target_callback).callback;
         let index = (*target_callback).index;
 
-        if let Some(index) = callback_info.iter().position(|c| c.callback == callback_type && c.index == index) {
-            let object_type = match find_callback_address(&(*target_callback).callback) {
+        if let Some(index) = callbacks.iter().position(|c| c.callback == type_ && c.index == index) {
+            let type_ = match find_callback_address(&(*target_callback).callback) {
                 Some(CallbackResult::ObRegister(addr)) => addr,
                 _ => return STATUS_UNSUCCESSFUL,
             };
 
-            let lock = &(*object_type).type_lock as *const _ as *mut u64;
-            ExAcquirePushLockExclusiveEx(lock, 0);
+            let lock = &(*type_).type_lock as *const _ as *mut u64;
+            with_push_lock_exclusive(lock, || {
+                let current = &mut ((*type_).callback_list) as *mut _ as *mut OBCALLBACK_ENTRY;
+                let mut next = (*current).callback_list.Flink as *mut OBCALLBACK_ENTRY;
+    
+                while next != current {
+                    if !(*next).enabled && !next.is_null() && (*next).entry as u64 == callbacks[index].entry {
+                        (*next).enabled = true;
+                        callbacks.remove(index);
+                        return STATUS_SUCCESS;
+                    }
+    
+                    next = (*next).callback_list.Flink as *mut OBCALLBACK_ENTRY;
+                }    
 
-            let current = &mut ((*object_type).callback_list) as *mut _ as *mut OBCALLBACK_ENTRY;
-            let mut next = (*current).callback_list.Flink as *mut OBCALLBACK_ENTRY;
-
-            while next != current {
-                if !(*next).enabled && !next.is_null() && (*next).entry as u64 == callback_info[index].entry {
-                    (*next).enabled = true;
-                    callback_info.remove(index);
-                    ExReleasePushLockExclusiveEx(lock, 0);
-                    return STATUS_SUCCESS;
-                }
-
-                next = (*next).callback_list.Flink as *mut OBCALLBACK_ENTRY;
-            }
-
-            ExReleasePushLockExclusiveEx(lock, 0);
+                STATUS_UNSUCCESSFUL
+            })
         } else {
-            log::error!("Callback not found for type {:?} at index {}", callback_type, index);
+            log::error!("Callback not found for type {:?} at index {}", type_, index);
             return STATUS_UNSUCCESSFUL;
         }
-
-        STATUS_UNSUCCESSFUL
     }
 
     unsafe fn remove_callback(target_callback: *mut CallbackInfoInput) -> NTSTATUS {
-        let object_type = match find_callback_address(&(*target_callback).callback) {
+        let type_ = match find_callback_address(&(*target_callback).callback) {
             Some(CallbackResult::ObRegister(addr)) => addr,
             _ => return STATUS_UNSUCCESSFUL,
         };
 
-        let lock = &(*object_type).type_lock as *const _ as *mut u64;
-        ExAcquirePushLockExclusiveEx(lock, 0);
-
-        let mut i = 0;
-        let index = (*target_callback).index;
-        let current = &mut ((*object_type).callback_list) as *mut _ as *mut OBCALLBACK_ENTRY;
-        let mut next = (*current).callback_list.Flink as *mut OBCALLBACK_ENTRY;
-        let mut callback_info = INFO_CALLBACK_RESTAURE_OB.lock();
-
-        while next != current {
-            if i == index {
-                if (*next).enabled {
-                    let mut callback_restaure = CallbackRestaureOb {
-                        index,
-                        callback: (*target_callback).callback,
-                        entry: (*next).entry as u64,
-                        pre_operation: 0,
-                        post_operation: 0
-                    };
-
-                    if let Some(pre_op) = (*next).pre_operation {
-                        callback_restaure.pre_operation = pre_op as _;
-                    }
-
-                    if let Some(post_op) = (*next).post_operation {
-                        callback_restaure.post_operation = post_op as _;
-                    }
-
-                    (*next).enabled = false;
+        let lock = &(*type_).type_lock as *const _ as *mut u64;
+        with_push_lock_exclusive(lock, || {
+            let mut i = 0;
+            let index = (*target_callback).index;
+            let current = &mut ((*type_).callback_list) as *mut _ as *mut OBCALLBACK_ENTRY;
+            let mut next = (*current).callback_list.Flink as *mut OBCALLBACK_ENTRY;
+            let mut callback_info = INFO_CALLBACK_RESTAURE_OB.lock();
     
-                    callback_info.push(callback_restaure);
-                    log::info!("Callback removed at index {}", index);
+            while next != current {
+                if i == index {
+                    if (*next).enabled {
+                        let mut callback_restaure = CallbackRestaureOb {
+                            index,
+                            callback: (*target_callback).callback,
+                            entry: (*next).entry as u64,
+                            pre_operation: 0,
+                            post_operation: 0
+                        };
+    
+                        if let Some(pre_op) = (*next).pre_operation {
+                            callback_restaure.pre_operation = pre_op as _;
+                        }
+    
+                        if let Some(post_op) = (*next).post_operation {
+                            callback_restaure.post_operation = post_op as _;
+                        }
+    
+                        (*next).enabled = false;
+        
+                        callback_info.push(callback_restaure);
+                        log::info!("Callback removed at index {}", index);
+                    }
+
+                    return STATUS_SUCCESS;
                 }
-
-                ExReleasePushLockExclusiveEx(lock, 0);
-
-                return STATUS_SUCCESS;
+    
+                next = (*next).callback_list.Flink as *mut OBCALLBACK_ENTRY;
+                i += 1;
             }
 
-            next = (*next).callback_list.Flink as *mut OBCALLBACK_ENTRY;
-            i += 1;
-        }
-
-        ExReleasePushLockExclusiveEx(lock, 0);
-
-        STATUS_UNSUCCESSFUL
+            STATUS_UNSUCCESSFUL    
+        })
     }
 
     unsafe fn enumerate_callback(target_callback: *mut CallbackInfoInput, callback_info: *mut CallbackInfoOutput, information: &mut usize) -> Result<(), NTSTATUS> {
-        let object_type = match find_callback_address(&(*target_callback).callback) {
+        let type_ = match find_callback_address(&(*target_callback).callback) {
             Some(CallbackResult::ObRegister(addr)) => addr,
             _ => return Err(STATUS_UNSUCCESSFUL),
         };
 
-        let current = &mut ((*object_type).callback_list) as *mut _ as *mut OBCALLBACK_ENTRY;
+        let current = &mut ((*type_).callback_list) as *mut _ as *mut OBCALLBACK_ENTRY;
         let mut next = (*current).callback_list.Flink as *mut OBCALLBACK_ENTRY;
         let mut list_objects = Vec::new();
         
@@ -190,12 +183,11 @@ impl CallbackList for CallbackOb {
     }
     
     unsafe fn enumerate_removed_callback(target_callback: *mut CallbackInfoInput, callback_info: *mut CallbackInfoOutput, information: &mut usize) -> Result<(), NTSTATUS> {
-        let callback_restaure = INFO_CALLBACK_RESTAURE_OB.lock();
-
+        let callbacks = INFO_CALLBACK_RESTAURE_OB.lock();
         let (mut ldr_data, module_count) = return_module().ok_or(STATUS_UNSUCCESSFUL)?;
         let start_entry = ldr_data;
 
-        for (i, callback) in callback_restaure.iter().enumerate() {
+        for (i, callback) in callbacks.iter().enumerate() {
             for _ in 0..module_count {
                 let start_address = (*ldr_data).DllBase;
                 let image_size = (*ldr_data).SizeOfImage;

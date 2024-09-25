@@ -14,9 +14,11 @@ impl Dse {
     /// Sets the DSE (Driver Signature Enforcement) status based on the information provided.
     /// 
     /// # Parameters
+    /// 
     /// - `info_dse`: A pointer to the `DSE` structure containing information about the state of the DSE.
     /// 
-    /// # Return
+    /// # Returns
+    /// 
     /// - `NTSTATUS`: A status code indicating success (`STATUS_SUCCESS`) or failure of the operation.
     /// 
     pub unsafe fn set_dse_state(info_dse: *mut DSE) -> Result<(), NTSTATUS> {

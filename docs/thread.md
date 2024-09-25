@@ -42,3 +42,28 @@ shadow.exe thread protection --tid 1234 --add
 ```
 
 This command will protect the thread with TID 1234.
+
+## Lists protected and hidden threads currently on the system
+
+Description:
+This command allows you to list the thread that are currently protected or hidden.
+
+```cmd
+shadow.exe thread enumerate -l -t <value>
+```
+
+* `enumerate`: Terminate the specified thread.
+* `-l / --list`: List the protected or hidden thread.
+* `-t / --type`: Specify which type you want to list.
+
+    *   Possible values:
+        - `hide`:       List of hidden targets
+        - `protection`: List of protected targets
+
+Example of use:
+
+```cmd
+shadow.exe thread enumerate -l -t protection
+```
+
+This command will close and list the currently protected threads.

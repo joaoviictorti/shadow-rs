@@ -92,7 +92,7 @@ fn remove_target_tid(tid: usize) -> NTSTATUS {
 /// - `info_process`: It is a parameter of type `Infothreads` that will send the threads that are currently protected.
 /// - `information`: It is a parameter of type `usize` that will be updated with the total size of the filled `Infothreads` structures.
 /// 
-/// # Return
+/// # Returns
 /// - `NTSTATUS`: A status code indicating success or failure of the operation.
 ///
 pub unsafe fn enumerate_protection_threads(info_process: *mut ThreadListInfo, information: &mut usize) -> NTSTATUS {

@@ -1,8 +1,8 @@
 use {
     obfstr::obfstr,
     super::{
-        address::get_module_base_address, 
         InitializeObjectAttributes,
+        address::get_module_base_address, 
     },
     core::{
         ffi::{c_void, CStr}, mem::{size_of, zeroed}, 
@@ -13,8 +13,9 @@ use {
             ZwClose, ZwMapViewOfSection, ZwOpenSection, 
             ZwUnmapViewOfSection
         }, 
-        LARGE_INTEGER, OBJ_CASE_INSENSITIVE, PAGE_READONLY, SECTION_MAP_READ, 
-        SECTION_QUERY, _SECTION_INHERIT::ViewUnmap, NT_SUCCESS
+        LARGE_INTEGER, OBJ_CASE_INSENSITIVE, PAGE_READONLY, 
+        SECTION_MAP_READ, SECTION_QUERY, _SECTION_INHERIT::ViewUnmap, 
+        NT_SUCCESS
     },
     winapi::um::winnt::{
         IMAGE_DOS_HEADER, IMAGE_EXPORT_DIRECTORY, 
@@ -22,10 +23,45 @@ use {
     },
 };
 
+
+/// The `ETWTI_PATTERN` represents a sequence of machine instructions used for
+/// identifying the location of the `EtwThreatIntProvRegHandle` in memory.
+pub const ETWTI_PATTERN: [u8; 5]  = [
+    0x33, 0xD2,        // 33d2           xor  edx,edx
+    0x48, 0x8B, 0x0D  // 488b0dcd849300  mov  rcx,qword ptr [nt!EtwThreatIntProvRegHandle (xxxx)]
+];
+
+/// The `ZW_PATTERN` represents a sequence of machine instructions used for
+/// identifying system service routines within the Windows kernel.
+pub static mut ZW_PATTERN: [u8; 30] = [
+    0x48, 0x8B, 0xC4,            // mov rax, rsp
+    0xFA,                        // cli
+    0x48, 0x83, 0xEC, 0x10,      // sub rsp, 10h
+    0x50,                        // push rax
+    0x9C,                        // pushfq
+    0x6A, 0x10,                  // push 10h
+    0x48, 0x8D, 0x05, 0xCC, 0xCC, 0xCC, 0xCC, // lea rax, KiServiceLinkage
+    0x50,                        // push rax
+    0xB8, 0xCC, 0xCC, 0xCC, 0xCC, // mov eax, <SSN>
+    0xE9, 0xCC, 0xCC, 0xCC, 0xCC // jmp KiServiceInternal
+];
+
+/// Converts a slice of bytes into a number or custom type using a provided conversion function.
 ///
+/// This function takes a byte slice of length `N`, verifies that its length matches the expected size,
+/// and then converts it into a fixed-size array of `N` bytes. The resulting array is passed to the
+/// provided conversion function (`func`), which returns a value of type `T`.
+///
+/// # Parameters
 /// 
+/// - `slice`: A reference to a byte slice (`&[u8]`) that is expected to have exactly `N` bytes.
+/// - `func`: A function that takes an array of `N` bytes (`[u8; N]`) and returns a value of type `T`.
+///
+/// # Returns
 /// 
-/// 
+/// - `Ok(T)`: The result of the conversion function if the slice has the correct length.
+/// - `Err(&'static str)`: An error message if the slice length does not match `N`.
+///
 fn slice_to_number<T, const N: usize>(slice: &[u8], func: fn([u8; N]) -> T) -> Result<T, &'static str> {
     if slice.len() != N {
         return Err("Slice length mismatch");
@@ -41,11 +77,13 @@ fn slice_to_number<T, const N: usize>(slice: &[u8], func: fn([u8; N]) -> T) -> R
 /// Scans memory for a specific pattern of bytes in a specific section.
 /// 
 /// # Parameters
+/// 
 /// - `base_addr`: The base address (in `usize` format) from which the scan should start.
 /// - `section_name`: The name of the section to scan. This string must match the name of the section you want to scan.
 /// - `pattern`: A slice of bytes (`&[u8]`) that represents the pattern you are searching for in memory.
 /// 
 /// # Returns
+/// 
 /// - `Option<*const u8>`: The address of the target function if found.
 /// 
 pub unsafe fn scan_for_pattern<T, const N: usize>(
@@ -76,9 +114,11 @@ where
 /// Finds the address of a specified Zw function.
 /// 
 /// # Parameters
+/// 
 /// - `name`: The name of the Zw function to find.
 ///
 /// # Returns
+/// 
 /// - `Option<usize>`: The address of the Zw function if found, or `None` if an error occurs or the function is not found.
 /// 
 pub unsafe fn find_zw_function(name: &str) -> Option<usize> {
@@ -86,18 +126,8 @@ pub unsafe fn find_zw_function(name: &str) -> Option<usize> {
     let ntoskrnl_addr = get_module_base_address(obfstr!("ntoskrnl.exe"))?;
 
     let ssn_bytes = ssn.to_le_bytes();
-    let pattern: [u8; 30] = [
-        0x48, 0x8B, 0xC4,            // mov rax, rsp
-        0xFA,                        // cli
-        0x48, 0x83, 0xEC, 0x10,      // sub rsp, 10h
-        0x50,                        // push rax
-        0x9C,                        // pushfq
-        0x6A, 0x10,                  // push 10h
-        0x48, 0x8D, 0x05, 0xCC, 0xCC, 0xCC, 0xCC, // lea rax, KiServiceLinkage
-        0x50,                        // push rax
-        0xB8, ssn_bytes[0], ssn_bytes[1], 0xCC, 0xCC, // mov eax, <SSN>
-        0xE9, 0xCC, 0xCC, 0xCC, 0xCC // jmp KiServiceInternal
-    ];
+    ZW_PATTERN[21] = ssn_bytes[0];
+    ZW_PATTERN[22] = ssn_bytes[1];
     
     let dos_header = ntoskrnl_addr as *const IMAGE_DOS_HEADER;
     let nt_header = (ntoskrnl_addr as usize + (*dos_header).e_lfanew as usize) as *const IMAGE_NT_HEADERS64;
@@ -112,9 +142,9 @@ pub unsafe fn find_zw_function(name: &str) -> Option<usize> {
             let text_end = text_start + *(*section_header.add(i)).Misc.VirtualSize() as usize;
             let data = core::slice::from_raw_parts(text_start as *const u8, text_end - text_start);
 
-            if let Some(offset) = data.windows(pattern.len())
+            if let Some(offset) = data.windows(ZW_PATTERN.len())
                 .position(|window| {
-                    window.iter().zip(&pattern).all(|(d, p)| *p == 0xCC || *d == *p)
+                    window.iter().zip(&ZW_PATTERN[..]).all(|(d, p)| *p == 0xCC || *d == *p)
                 }) {
                 
                 return Some(text_start + offset);
@@ -128,9 +158,11 @@ pub unsafe fn find_zw_function(name: &str) -> Option<usize> {
 /// Retrieves the syscall index for a given function name.
 ///
 /// # Parameters
+/// 
 /// - `function_name`: The name of the function to retrieve the syscall index for.
 ///
 /// # Returns
+/// 
 /// - `Option<u16>`: The syscall index if found, or `None` if an error occurs or the function is not found.
 /// 
 pub unsafe fn get_syscall_index(function_name: &str) -> Option<u16> {

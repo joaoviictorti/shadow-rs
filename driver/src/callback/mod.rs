@@ -1,6 +1,6 @@
 use {
     alloc::vec::Vec,
-    crate::includes::structs::{CallbackRestaure, CallbackRestaureOb}, 
+    crate::internals::structs::{CallbackRestaure, CallbackRestaureOb}, 
     shared::structs::{CallbackInfoInput, CallbackInfoOutput}, 
     spin::{lazy::Lazy, Mutex}, wdk_sys::NTSTATUS, 
 };
@@ -23,9 +23,11 @@ pub trait CallbackList {
     /// Restore a callback from the specified routine.
     /// 
     /// # Parameters
+    /// 
     /// - `target_callback`: Pointer to the callback information input.
     /// 
     /// # Returns
+    /// 
     /// - `NTSTATUS`: Status of the operation. `STATUS_SUCCESS` if successful, `STATUS_UNSUCCESSFUL` otherwise.
     ///
     unsafe fn restore_callback(target_callback: *mut CallbackInfoInput) -> NTSTATUS;
@@ -33,9 +35,11 @@ pub trait CallbackList {
     /// Removes a callback from the specified routine.
     /// 
     /// # Parameters
+    /// 
     /// - `target_callback`: Pointer to the callback information input.
     /// 
     /// # Returns
+    /// 
     /// - `NTSTATUS`: Status of the operation. `STATUS_SUCCESS` if successful, `STATUS_UNSUCCESSFUL` otherwise.
     ///
     unsafe fn remove_callback(target_callback: *mut CallbackInfoInput) -> NTSTATUS;
@@ -43,11 +47,13 @@ pub trait CallbackList {
     /// Searches for a module associated with a callback and updates callback information.
     /// 
     /// # Parameters
+    /// 
     /// - `target_callback`: Pointer to the callback information input.
     /// - `callback_info`: Pointer to the callback information output.
     /// - `information`: Pointer to a variable to store information size.
     /// 
     /// # Returns
+    /// 
     /// - `NTSTATUS`: Status of the operation. `STATUS_SUCCESS` if successful, `STATUS_UNSUCCESSFUL` otherwise.
     ///
     unsafe fn enumerate_callback(target_callback: *mut CallbackInfoInput, callback_info: *mut CallbackInfoOutput, information: &mut usize) -> Result<(), NTSTATUS>;
@@ -55,11 +61,13 @@ pub trait CallbackList {
     /// List of callbacks currently removed.
     /// 
     /// # Parameters
+    /// 
     /// - `target_callback`: Pointer to the callback information input.
     /// - `callback_info`: Pointer to the callback information output.
     /// - `information`: Pointer to a variable to store information size.
     /// 
     /// # Returns
+    /// 
     /// - `NTSTATUS`: Status of the operation. `STATUS_SUCCESS` if successful, `STATUS_UNSUCCESSFUL` otherwise.
     ///
     unsafe fn enumerate_removed_callback(target_callback: *mut CallbackInfoInput, callback_info: *mut CallbackInfoOutput, information: &mut usize) -> Result<(), NTSTATUS>;

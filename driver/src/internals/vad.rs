@@ -1,7 +1,9 @@
-use bitfield::bitfield;
-use wdk_sys::LIST_ENTRY;
-use super::structs::MMVAD_SHORT;
-use core::{ffi::c_void, mem::ManuallyDrop};
+use {
+    bitfield::bitfield,
+    wdk_sys::LIST_ENTRY,
+    super::structs::MMVAD_SHORT,
+    core::{ffi::c_void, mem::ManuallyDrop},
+};
 
 #[repr(C)]
 pub struct MMVAD {

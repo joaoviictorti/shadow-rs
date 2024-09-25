@@ -4,23 +4,32 @@ use {
     obfstr::obfstr,
     shared::structs::TargetInjection, 
     callbacks::{kernel_apc_callback, user_apc_callback}, 
-    core::{ffi::c_void, mem::{size_of, transmute}, ptr::null_mut}, 
+    core::{
+        ffi::c_void, ptr::null_mut,
+        mem::{size_of, transmute}, 
+    }, 
     wdk_sys::{
+        *,
         ntddk::{
             IoGetCurrentProcess, ZwAllocateVirtualMemory, 
             ZwClose, ZwOpenProcess
         },
-        _MODE::{KernelMode, UserMode}, *
+        _MODE::{KernelMode, UserMode},
     },
     crate::{
-        includes::{
+        process::Process, 
+        internals::{
             enums::KAPC_ENVIROMENT::OriginalApcEnvironment, 
             types::{ZwCreateThreadExType, PKNORMAL_ROUTINE}, 
-            KeInitializeApc, KeInsertQueueApc, MmCopyVirtualMemory, ZwProtectVirtualMemory
+            externs::{
+                KeInitializeApc, KeInsertQueueApc, MmCopyVirtualMemory, 
+                ZwProtectVirtualMemory
+            }
         }, 
-        process::Process, 
         utils::{
-            find_thread_alertable, get_module_peb, handles::Handle, patterns::find_zw_function, pool::PoolMemory, read_file, InitializeObjectAttributes
+            find_thread_alertable, get_module_peb, handles::Handle, 
+            patterns::find_zw_function, pool::PoolMemory, read_file, 
+            InitializeObjectAttributes
         } 
     },
 };
@@ -35,9 +44,11 @@ impl InjectionShellcode {
     /// Injection Shellcode in Thread.
     ///
     /// # Parameters
+    /// 
     /// - `target`: The target process identifier (PID) and the path containing the injection shellcode.
     ///
-    /// # Return
+    /// # Returns
+    /// 
     /// - `NTSTATUS`: A status code indicating success or failure of the operation.
     ///
     pub unsafe fn injection_thread(target: *mut TargetInjection) -> Result<(), NTSTATUS> {
@@ -117,9 +128,11 @@ impl InjectionShellcode {
     /// Injection Shellcode in APC.
     ///
     /// # Parameters
+    /// 
     /// - `target`: The target process identifier (PID) and the path containing the injection shellcode.
     ///
-    /// # Return
+    /// # Returns
+    /// 
     /// - `NTSTATUS`: A status code indicating success or failure of the operation.
     ///
     pub unsafe fn injection_apc(target: *mut TargetInjection) -> Result<(), NTSTATUS> {
@@ -218,9 +231,11 @@ impl InjectionDLL {
     /// DLL Injection.
     ///
     /// # Parameters
+    /// 
     /// - `target`: The target process identifier (PID) and the path containing the injection dll.
     ///
-    /// # Return
+    /// # Returns
+    /// 
     /// - `NTSTATUS`: A status code indicating success or failure of the operation.
     ///
     pub unsafe fn injection_dll_thread(target: *mut TargetInjection) -> Result<(), NTSTATUS> {

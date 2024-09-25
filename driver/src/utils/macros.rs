@@ -78,7 +78,7 @@ macro_rules! handle_registry {
 #[macro_export]
 macro_rules! handle_callback {
     ($irp:expr, $stack:expr, $input_type:ty, $output_type:ty, $information:expr, $ioctl:expr) => {{
-        use shared::vars::Callbacks;
+        use shared::enums::Callbacks;
         use crate::callback::{callbacks::{notify_routine::Callback, registry::CallbackRegistry, object::CallbackOb}, CallbackList};
         use wdk_sys::STATUS_UNSUCCESSFUL;
 
@@ -116,7 +116,7 @@ macro_rules! handle_callback {
     }};
     
     ($irp:expr, $type_:ty, $ioctl:expr) => {{
-        use shared::vars::Callbacks;
+        use shared::enums::Callbacks;
         use crate::callback::{callbacks::{notify_routine::Callback, registry::CallbackRegistry, object::CallbackOb}, CallbackList};
         
         let input_buffer = match crate::utils::get_input_buffer::<$type_>($irp) {

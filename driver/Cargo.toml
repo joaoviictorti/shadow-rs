@@ -21,6 +21,7 @@ spin = "0.9.8"
 lazy_static = "1.5.0"
 bitfield = "0.15.0"
 hashbrown = "0.14.5"
+microseh = { version = "1.0.3", default-features = false}
 
 [build-dependencies]
 wdk-build = "0.2.0"
