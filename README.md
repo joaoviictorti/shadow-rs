@@ -78,7 +78,7 @@ If you would like to read the documentation on how to use the tool, simply navig
 - ✅ Listing currently removed callbacks 
 
 ### Port
-- ✅ Hide Ports
+- ✅ Ports (Hide / Unhide)
 
 ### File
 - ❌ File / Directory Hiding
@@ -89,7 +89,7 @@ If you would like to read the documentation on how to use the tool, simply navig
 - ✅ Enumerate Module 
 
 ### Registry
-- ✅ Hide Key and Values 
+- ✅ Key and Values (Hide / Unhide) 
 - ✅ Registry Protection (Anti-Deletion e Overwriting) 
 
 ### Injection
