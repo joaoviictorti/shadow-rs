@@ -78,7 +78,6 @@ pub fn get_process_ioctls(ioctls: &mut HashMap<u32, IoctlHandler>) {
 
     // If the feature is a mapper, these functionalities will not be added.
     #[cfg(not(feature = "mapper"))] {
-
         // Responsible for adding shutdown protection / memory dumping for a process.
         ioctls.insert(IOCTL_PROTECTION_PROCESS, Box::new(|irp: *mut IRP, stack: *mut IO_STACK_LOCATION | {
             let status = unsafe { handle!(stack, add_remove_process_toggle, ProcessProtection) };
@@ -87,6 +86,5 @@ pub fn get_process_ioctls(ioctls: &mut HashMap<u32, IoctlHandler>) {
             status
         }) as IoctlHandler);
     }
-
 }
  

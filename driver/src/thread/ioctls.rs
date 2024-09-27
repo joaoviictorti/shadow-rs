@@ -45,10 +45,13 @@ pub fn get_thread_ioctls(ioctls: &mut HashMap<u32, IoctlHandler>) {
         status
     }) as IoctlHandler);
 
-    // Responsible for adding thread termination protection.
-    ioctls.insert(IOCTL_PROTECTION_THREAD, Box::new(|irp: *mut IRP, stack: *mut IO_STACK_LOCATION | {
-        let status = unsafe { handle!(stack, add_remove_thread_toggle, ThreadProtection) };
-        unsafe { (*irp).IoStatus.Information = size_of::<TargetThread> as u64 };
-        status
-    }) as IoctlHandler);
+    // If the feature is a mapper, these functionalities will not be added.
+    #[cfg(not(feature = "mapper"))] {
+        // Responsible for adding thread termination protection.
+        ioctls.insert(IOCTL_PROTECTION_THREAD, Box::new(|irp: *mut IRP, stack: *mut IO_STACK_LOCATION | {
+            let status = unsafe { handle!(stack, add_remove_thread_toggle, ThreadProtection) };
+            unsafe { (*irp).IoStatus.Information = size_of::<TargetThread> as u64 };
+            status
+        }) as IoctlHandler);
+    }
 }
