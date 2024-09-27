@@ -9,7 +9,7 @@ use {
         vars::MAX_PID,
         structs::{
             EnumerateInfoInput, ProcessInfoHide, ProcessListInfo,
-            ProcessSignature, TargetProcess, ProcessProtection
+            ProcessSignature, TargetProcess
         },
     },
     windows_sys::Win32::{
@@ -93,7 +93,7 @@ impl Process {
         if let Some(pid_value) = pid {
             info!("Preparing to {} protection for process: {}", if enable { "enable" } else { "disable" }, pid_value);
             let pid = *pid_value as usize;
-            let mut target_process = ProcessProtection { pid, enable };
+            let mut target_process = shared::structs::ProcessProtection { pid, enable };
             let mut return_buffer = 0;
 
             let status = unsafe {
@@ -101,7 +101,7 @@ impl Process {
                     self.driver_handle,
                     ioctl_code,
                     &mut target_process as *mut _ as *mut c_void,
-                    size_of::<ProcessProtection>() as u32,
+                    size_of::<shared::structs::ProcessProtection>() as u32,
                     null_mut(),
                     0,
                     &mut return_buffer,

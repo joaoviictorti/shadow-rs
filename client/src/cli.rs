@@ -1,11 +1,11 @@
 #![allow(non_camel_case_types)]
 
 use clap::{arg, ArgAction, Parser, Subcommand, ValueHint};
-use crate::utils::{validate_sys_extension, Callbacks, Options, PortType, Protocol};
+use crate::utils::{validate_sys_extension, Callbacks, Options, PortType, Protocol, BANNER};
 
 /// The main command-line interface struct.
 #[derive(Parser)]
-#[clap(author="joaoviictorti", about="Client Shadow", long_about = None)]
+#[clap(author="joaoviictorti", about="Client Shadow", long_about = BANNER)]
 pub struct Cli {
     /// The command to be executed.
     #[command(subcommand)]
