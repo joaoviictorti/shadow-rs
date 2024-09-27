@@ -78,7 +78,7 @@ If you would like to read the documentation on how to use the tool, simply navig
 - ✅ Listing currently removed callbacks 
 
 ### Port
-- ❌ Hide Ports
+- ✅ Hide Ports
 
 ### File
 - ❌ File / Directory Hiding
