@@ -6,7 +6,7 @@ use {
         PS_PROTECTED_SIGNER, PS_PROTECTED_TYPE,
     },
     shared::{
-        vars::MAX_PIDS,
+        vars::MAX_PID,
         structs::{
             EnumerateInfoInput, ProcessInfoHide, ProcessListInfo,
             ProcessSignature, TargetProcess, ProcessProtection
@@ -120,7 +120,7 @@ impl Process {
     }
 
     pub fn enumerate_process(&mut self, ioctl_code: u32, option: &Options) {
-        let mut info_process: [ProcessListInfo; MAX_PIDS] = unsafe { std::mem::zeroed() };
+        let mut info_process: [ProcessListInfo; MAX_PID] = unsafe { std::mem::zeroed() };
         let mut enumeration_input = EnumerateInfoInput {
             options: option.to_shared(),
         };

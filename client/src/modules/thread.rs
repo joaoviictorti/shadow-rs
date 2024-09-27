@@ -3,7 +3,7 @@ use {
     log::*,
     shared::{
         structs::{EnumerateInfoInput, TargetThread, ThreadListInfo},
-        vars::MAX_TIDS,
+        vars::MAX_TID,
     },
     std::{ffi::c_void, mem::size_of, ptr::null_mut},
     windows_sys::Win32::{
@@ -89,7 +89,7 @@ impl Thread {
     
     pub fn enumerate_thread(self, ioctl_code: u32, option: &Options) {
         debug!("Attempting to open the driver for thread enumeration");
-        let mut info_thread: [ThreadListInfo; MAX_TIDS] = unsafe { std::mem::zeroed() };
+        let mut info_thread: [ThreadListInfo; MAX_TID] = unsafe { std::mem::zeroed() };
         let mut enumeration_input = EnumerateInfoInput {
             options: option.to_shared(),
         };

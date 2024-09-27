@@ -26,7 +26,7 @@ use {
 /// - `file` - A string reference representing the file path.
 ///
 /// # Returns
-
+///
 /// - `true` if the file exists, `false` otherwise.
 pub fn check_file(file: &String) -> bool {
     let file = Path::new(file);
