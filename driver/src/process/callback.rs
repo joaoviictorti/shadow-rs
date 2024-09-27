@@ -4,7 +4,7 @@ use {
     alloc::vec::Vec,
     core::ffi::c_void,
     spin::{Mutex, lazy::Lazy}, 
-    shared::{structs::{ProcessListInfo, ProcessProtection}, vars::MAX_PIDS},
+    shared::{structs::{ProcessListInfo, ProcessProtection}, vars::MAX_PID},
     winapi::um::winnt::{
         PROCESS_CREATE_THREAD, PROCESS_TERMINATE, 
         PROCESS_VM_OPERATION, PROCESS_VM_READ
@@ -22,7 +22,7 @@ use {
 pub static mut CALLBACK_REGISTRATION_HANDLE_PROCESS: *mut c_void = core::ptr::null_mut();
 
 /// List of target PIDs protected by a mutex.
-static TARGET_PIDS: Lazy<Mutex<Vec<usize>>> = Lazy::new(|| Mutex::new(Vec::with_capacity(MAX_PIDS))); 
+static TARGET_PIDS: Lazy<Mutex<Vec<usize>>> = Lazy::new(|| Mutex::new(Vec::with_capacity(MAX_PID))); 
 
 /// Method to check if the action sent is to add or remove a pid from the list of protected processes
 ///
@@ -56,7 +56,7 @@ pub fn add_remove_process_toggle(process: *mut ProcessProtection) -> NTSTATUS {
 fn add_target_pid(pid: usize) -> NTSTATUS {
     let mut pids = TARGET_PIDS.lock();
 
-    if pids.len() >= MAX_PIDS {
+    if pids.len() >= MAX_PID {
         log::error!("PID list is full");
         return STATUS_UNSUCCESSFUL;
     }

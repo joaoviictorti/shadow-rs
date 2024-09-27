@@ -3,7 +3,7 @@
 use {
     alloc::vec::Vec, 
     core::ffi::c_void, 
-    shared::{structs::{ThreadListInfo, ThreadProtection}, vars::MAX_TIDS}, 
+    shared::{structs::{ThreadListInfo, ThreadProtection}, vars::MAX_TID}, 
     spin::{lazy::Lazy, Mutex}, 
     wdk_sys::{
         ntddk::PsGetThreadId, NTSTATUS, OB_PRE_OPERATION_INFORMATION, PETHREAD, 
@@ -17,7 +17,7 @@ use {
 pub static mut CALLBACK_REGISTRATION_HANDLE_THREAD: PVOID = core::ptr::null_mut();
 
 /// List of the target TIDs
-static TARGET_TIDS: Lazy<Mutex<Vec<usize>>> = Lazy::new(|| Mutex::new(Vec::with_capacity(MAX_TIDS))); 
+static TARGET_TIDS: Lazy<Mutex<Vec<usize>>> = Lazy::new(|| Mutex::new(Vec::with_capacity(MAX_TID))); 
 
 /// Method to check if the action sent is to add or remove a tid from the list of protected threads
 ///
@@ -46,7 +46,7 @@ pub fn add_remove_thread_toggle(process: *mut ThreadProtection) -> NTSTATUS {
 fn add_target_tid(tid: usize) -> NTSTATUS {
     let mut tids = TARGET_TIDS.lock();
 
-    if tids.len() >= MAX_TIDS {
+    if tids.len() >= MAX_TID {
         log::error!("tid list is full");
         return STATUS_UNSUCCESSFUL;
     }
@@ -72,7 +72,7 @@ fn add_target_tid(tid: usize) -> NTSTATUS {
 fn remove_target_tid(tid: usize) -> NTSTATUS {
     let mut tids = TARGET_TIDS.lock();
 
-    if tids.len() >= MAX_TIDS {
+    if tids.len() >= MAX_TID {
         log::error!("tid list is full");
         return STATUS_UNSUCCESSFUL;
     }

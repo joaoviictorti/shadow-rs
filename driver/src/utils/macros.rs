@@ -21,8 +21,8 @@ macro_rules! handle {
         $action(input_buffer, output_buffer, $information)
     }};
 
-    ($irp:expr, $action:expr, $type_:ty) => {{
-        let input_buffer = match crate::utils::get_input_buffer::<$type_>($irp) {
+    ($stack:expr, $action:expr, $type_:ty) => {{
+        let input_buffer = match crate::utils::get_input_buffer::<$type_>($stack) {
             Ok(buffer) => buffer,
             Err(status) => return status,
         };

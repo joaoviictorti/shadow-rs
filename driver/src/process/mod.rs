@@ -4,7 +4,7 @@ use {
     alloc::{boxed::Box, vec::Vec}, 
     core::sync::atomic::{AtomicPtr, Ordering},
     shared::{
-        vars::MAX_PIDS,
+        vars::MAX_PID,
         enums::Options,
         structs::{
             HiddenProcessInfo , ProcessListInfo, TargetProcess, 
@@ -31,7 +31,7 @@ pub use callback::*;
 pub mod ioctls;
 
 /// List of target processes protected by a mutex.
-pub static PROCESS_INFO_HIDE: Lazy<Mutex<Vec<HiddenProcessInfo>>> = Lazy::new(|| Mutex::new(Vec::with_capacity(MAX_PIDS))); 
+pub static PROCESS_INFO_HIDE: Lazy<Mutex<Vec<HiddenProcessInfo>>> = Lazy::new(|| Mutex::new(Vec::with_capacity(MAX_PID))); 
 
 /// Represents a process in the operating system.
 pub struct Process {

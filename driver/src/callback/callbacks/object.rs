@@ -126,7 +126,6 @@ impl CallbackList for CallbackOb {
             }
 
             list_objects.push(((*next).enabled, addrs));
-
             next = (*next).callback_list.Flink as *mut OBCALLBACK_ENTRY;
         }
 

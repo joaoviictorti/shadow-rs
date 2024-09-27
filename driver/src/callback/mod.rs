@@ -1,7 +1,10 @@
 use {
     alloc::vec::Vec,
     crate::internals::structs::{CallbackRestaure, CallbackRestaureOb}, 
-    shared::structs::{CallbackInfoInput, CallbackInfoOutput}, 
+    shared::{
+        vars::MAX_CALLBACK,
+        structs::{CallbackInfoInput, CallbackInfoOutput},
+    }, 
     spin::{lazy::Lazy, Mutex}, wdk_sys::NTSTATUS, 
 };
 
@@ -10,13 +13,13 @@ pub mod ioctls;
 pub mod callbacks;
 
 /// Variable that stores callbacks that have been removed.
-pub static mut INFO_CALLBACK_RESTAURE: Lazy<Mutex<Vec<CallbackRestaure>>> = Lazy::new(|| Mutex::new(Vec::with_capacity(40)));
+pub static mut INFO_CALLBACK_RESTAURE: Lazy<Mutex<Vec<CallbackRestaure>>> = Lazy::new(|| Mutex::new(Vec::with_capacity(MAX_CALLBACK)));
 
 /// Variable that stores callbacks registry that have been removed.
-static mut INFO_CALLBACK_RESTAURE_REGISTRY: Lazy<Mutex<Vec<CallbackRestaure>>> = Lazy::new(|| Mutex::new(Vec::with_capacity(40)));
+static mut INFO_CALLBACK_RESTAURE_REGISTRY: Lazy<Mutex<Vec<CallbackRestaure>>> = Lazy::new(|| Mutex::new(Vec::with_capacity(MAX_CALLBACK)));
 
 /// Variable that stores callbacks Ob that have been removed.
-static mut INFO_CALLBACK_RESTAURE_OB: Lazy<Mutex<Vec<CallbackRestaureOb>>> = Lazy::new(|| Mutex::new(Vec::with_capacity(40)));
+static mut INFO_CALLBACK_RESTAURE_OB: Lazy<Mutex<Vec<CallbackRestaureOb>>> = Lazy::new(|| Mutex::new(Vec::with_capacity(MAX_CALLBACK)));
 
 /// Trait defining common operations for callback lists.
 pub trait CallbackList {
