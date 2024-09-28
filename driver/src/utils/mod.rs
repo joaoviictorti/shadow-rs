@@ -490,11 +490,12 @@ where
     result // Returns the result of the operation
 }
 
+/// Retrieves the Windows build number by calling `RtlGetVersion`.
 ///
-/// 
-/// 
-/// 
-/// 
+/// # Return
+///
+/// - `u32`: The Windows build number if successful, otherwise returns 0.
+///
 pub fn get_windows_build_number() -> u32 {
     unsafe {
         let mut os_info: OSVERSIONINFOW = core::mem::zeroed();
