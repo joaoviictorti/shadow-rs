@@ -166,9 +166,7 @@ impl Module {
             }
 
             let dll_name = alloc::string::String::from_utf16_lossy(buffer);
-            log::info!("==> {}", module_name.contains(&dll_name.to_lowercase()));
-            log::info!("==> {}", module_name);
-            if module_name.contains(&dll_name.to_lowercase()) {
+            if dll_name.to_lowercase() == module_name.to_lowercase() {
                 // Removes the module from the load order list
                 Self::remove_link(&mut (*list_entry).InLoadOrderLinks);
                 Self::remove_link(&mut (*list_entry).InMemoryOrderLinks);
@@ -204,7 +202,6 @@ impl Module {
     ///
     pub unsafe fn hide_object(target_address: u64, target_eprocess: Process) -> Result<(), NTSTATUS> {
         let vad_root = get_vad_root();
-        log::info!("{:x}", vad_root);
         let vad_table = target_eprocess.e_process.cast::<u8>().offset(vad_root as isize) as *mut RTL_BALANCED_NODE;
         let current_node = vad_table;
 
