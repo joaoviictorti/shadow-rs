@@ -9,7 +9,7 @@ use {
     },
     crate::{
         internals::{
-            structs::MMVAD_SHORT, vad::MMVAD, 
+            structs::{MMVAD_SHORT, MMVAD}, 
             externs::{MmCopyVirtualMemory, PsGetProcessPeb}
         }, 
         process::Process, 
@@ -207,7 +207,6 @@ impl Module {
 
         // Uses a stack to iteratively traverse the tree
         let mut stack = alloc::vec![vad_table];
-            
         while let Some(current_node) = stack.pop() {
             if current_node.is_null() {
                 continue;
@@ -237,7 +236,6 @@ impl Module {
                 }
 
                 let file_object = ((*(*subsection).control_area).file_pointer.inner.value & !0xF) as *const FILE_OBJECT;
-                let file_name = core::slice::from_raw_parts((*file_object).FileName.Buffer, ((*file_object).FileName.Length / 2) as usize);
                 core::ptr::write_bytes((*file_object).FileName.Buffer, 0, (*file_object).FileName.Length as usize);
                 break;
             }

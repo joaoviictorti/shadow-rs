@@ -6,6 +6,8 @@ use {
     shared::{structs::LIST_ENTRY, enums::Callbacks}
 };
 
+pub use vad::*;
+
 #[repr(C)]
 pub struct FULL_OBJECT_TYPE {
     type_list: LIST_ENTRY,
@@ -321,3 +323,4 @@ pub struct TRACE_ENABLE_INFO {
     pub match_any_keyword: u64,
     pub match_all_keyword: u64
 }
+
