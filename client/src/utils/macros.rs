@@ -17,7 +17,7 @@ macro_rules! get_ks_down_bit {
 #[macro_export]
 macro_rules! is_key_down {
     ($ks:expr, $vk:expr) => {
-        ($ks[get_ks_byte!($vk)] & get_ks_down_bit!($vk)) != 0
+        ($ks[$crate::get_ks_byte!($vk)] & $crate::get_ks_down_bit!($vk)) != 0
     };
 }
 
@@ -25,9 +25,9 @@ macro_rules! is_key_down {
 macro_rules! set_key_down {
     ($ks:expr, $vk:expr, $down:expr) => {
         if $down {
-            $ks[get_ks_byte!($vk)] |= get_ks_down_bit!($vk);
+            $ks[$crate::get_ks_byte!($vk)] |= $crate::get_ks_down_bit!($vk);
         } else {
-            $ks[get_ks_byte!($vk)] &= !get_ks_down_bit!($vk);
+            $ks[$crate::get_ks_byte!($vk)] &= !$crate::get_ks_down_bit!($vk);
         }
     };
 }

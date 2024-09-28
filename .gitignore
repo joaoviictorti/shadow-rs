@@ -10,5 +10,4 @@ driver/Cargo.lock
 driver/src/backup
 client/src/modules/memory.rs
 driver/src/misc/memory.rs
-driver/src/port
 backup

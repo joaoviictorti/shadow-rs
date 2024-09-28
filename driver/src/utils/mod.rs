@@ -32,11 +32,11 @@ use {
         slice::from_raw_parts
     },
     crate::{
+        process::Process,
         internals::{
             structs::SystemModuleInformation, 
             externs::PsGetProcessPeb
         }, 
-        process::Process
     }, 
 };
 
@@ -488,4 +488,21 @@ where
     }
 
     result // Returns the result of the operation
+}
+
+///
+/// 
+/// 
+/// 
+/// 
+pub fn get_windows_build_number() -> u32 {
+    unsafe {
+        let mut os_info: OSVERSIONINFOW = core::mem::zeroed();
+        os_info.dwOSVersionInfoSize = core::mem::size_of::<OSVERSIONINFOW>() as u32;
+
+        if RtlGetVersion(&mut os_info) != 0 {
+            return os_info.dwBuildNumber;
+        }
+    }
+    0
 }

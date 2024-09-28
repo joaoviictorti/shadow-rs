@@ -238,6 +238,7 @@ impl Registry<String> {
     /// # Returns
     /// 
     /// - `bool`: Returns true if the key is in the list, or false otherwise.
+    /// 
     pub fn check_key(key: String, list: MutexGuard<Vec<String>>) -> bool {
         Vec::contains_item(&list, &key)
     }

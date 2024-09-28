@@ -288,13 +288,9 @@ pub enum MisCommands {
 
     /// Operations related to Keylogger.
     Keylogger {
-        /// Stop the keylogger.
-        #[arg(long)]
-        stop: bool,
-
-        /// Start the keylogger.
-        #[arg(long)]
-        start: bool,
+        /// File path for storing keylogger output
+        #[arg(long, required = true)]
+        file: String,
     },
 
     /// Operations related to ETWTI.

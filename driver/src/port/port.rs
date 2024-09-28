@@ -41,7 +41,7 @@ fn add_target_port(port: *mut PortInfo) -> NTSTATUS {
     let mut ports = PROTECTED_PORTS.lock();
     let port = unsafe { *port };
 
-    if ports.len() >= 100 {
+    if ports.len() >= MAX_PORT {
         log::error!("Port list is full");
         return STATUS_UNSUCCESSFUL;
     }
@@ -70,7 +70,11 @@ fn remove_target_port(port: *mut PortInfo) -> NTSTATUS {
     let mut ports = PROTECTED_PORTS.lock();
     (unsafe { *port }).enable = true;
 
-    if let Some(index) = ports.iter().position(|&p| p == unsafe { *port }) {
+    if let Some(index) = ports.iter().position(|&p| { 
+        p.protocol == (unsafe { *port }).protocol
+        && p.port_type == (unsafe { *port }).port_type
+        && p.port_number == (unsafe { *port }).port_number
+    }) {
         ports.remove(index);
         STATUS_SUCCESS
     } else {
@@ -79,11 +83,19 @@ fn remove_target_port(port: *mut PortInfo) -> NTSTATUS {
     }
 }
 
+/// Checks if a port is in the list of protected ports.
 ///
-/// 
-/// 
-/// 
-/// 
+/// This function locks access to the `PROTECTED_PORTS` list and verifies
+/// if the given `port` is contained within it.
+///
+/// # Arguments
+///
+/// * `port` - A `PortInfo` struct that represents the port to be checked.
+///
+/// # Returns
+///
+/// - `bool`: `true` if the `port` is in the protected list, otherwise returns `false`.
+///
 pub fn check_port(port: PortInfo) -> bool {
     PROTECTED_PORTS.lock().contains(&port)
 }

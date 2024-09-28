@@ -130,7 +130,6 @@ pub unsafe extern "C" fn on_pre_open_thread(
     let tids = TARGET_TIDS.lock();
 
     if tids.contains(&tid) {
-        log::info!("Anti-Kill actived with TID => {}", tid);
         let mask = !(THREAD_TERMINATE | THREAD_SUSPEND_RESUME | THREAD_GET_CONTEXT | THREAD_SET_CONTEXT);
         (*(*info).Parameters).CreateHandleInformation.DesiredAccess &= mask;
     }

