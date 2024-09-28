@@ -63,6 +63,8 @@ pub unsafe fn get_user_address_keylogger() -> Option<*mut c_void> {
 
 /// Get the address of the `gafAsyncKeyState` array.
 ///
+/// This function is only compatible with Windows 10.
+/// 
 /// # Returns
 /// 
 /// `Option<PVOID>`: The address of the `gafAsyncKeyState` array if found, otherwise `None`.
