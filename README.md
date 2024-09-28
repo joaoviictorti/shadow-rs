@@ -62,7 +62,7 @@ If you would like to read the documentation on how to use the tool, simply navig
     - ✅ DSE (Enable / Disable) 
   
   - Keylogger
-    - ✅ Keylogger (Start / Stop) 
+    - ✅ Enable Keylogger
 
   - ETWTI
     - ✅ ETWTI (Enable / Disable) 
