@@ -458,7 +458,7 @@ pub fn valid_kernel_memory(addr: u64) -> bool {
 /// - `addr`: A 64-bit unsigned integer representing the address to validate.
 ///
 /// # Returns
-
+///
 /// - `bool`: True if the address is within the user memory range, False otherwise.
 /// 
 pub fn valid_user_memory(addr: u64) -> bool {

