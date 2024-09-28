@@ -5,7 +5,7 @@ This document presents an overview of the `shadow-rs` project, describing its fe
 ### Table of contents
 
 * [Process](/docs/process.md)
-  * [Hide / Unhide Process](/docs/process.md#hide--unhide-process)
+  * [Process (Hide / Unhide)](/docs/process.md#hide--unhide-process)
   * [Elevate Process to System](/docs/process.md#elevate-process-to-system)
   * [Process Signature (PP / PPL)](/docs/process.md#process-signature-pp--ppl)
   * [Process Protection (Anti-Kill / Dumping)](/docs/process.md#process-protection-anti-kill--dumping)
@@ -13,7 +13,7 @@ This document presents an overview of the `shadow-rs` project, describing its fe
   * [Lists protected and hidden processes currently on the system](/docs/process.md#lists-protected-and-hidden-processes-currently-on-the-system)
 
 * [Thread](/docs/thread.md)
-  * [Hide / Unhide Thread](/docs/thread.md)
+  * [Thread (Hide / Unhide)](/docs/thread.md)
   * [Thread Protection (Anti-Kill)](/docs/thread.md)
   * [Lists protected and hidden threads currently on the system](/docs/thread.md)
 
@@ -22,9 +22,12 @@ This document presents an overview of the `shadow-rs` project, describing its fe
     * [Enumerate Driver](/docs/driver.md)    
 
 * [Misc](/docs/misc.md)
-    * [Driver Signature Enforcement (DSE) Enable / Disable](/docs/misc.md)
-    * [Keylogger Start / Stop](/docs/misc.md)
-    * [ETWTI Enable / Disable](/docs/misc.md)
+    * [Driver Signature Enforcement (DSE) (Enable / Disable)](/docs/misc.md)
+    * [Enable Keylogger](/docs/misc.md)
+    * [ETWTI (Enable / Disable)](/docs/misc.md)
+
+* [Port](/docs/port.md)
+    * [Port (Hide / Unhide)](/docs/port.md)
 
 * [Callbacks](/docs/callback.md)
     * [List / Remove / Restore Callbacks](/docs/callback.md)
@@ -35,9 +38,10 @@ This document presents an overview of the `shadow-rs` project, describing its fe
     * [Enumerate Module](/docs/module.md)
 
 * [Registry](/docs/registry.md)
-    * [Hide Key and Values](/docs/registry.md)
-    * [Registry Protection](/docs/registry.md)
+    * [Key and Values (Hide / Unhide)](/docs/registry.md)
+    * [Registry Protection (Anti-Deletion e Overwriting)](/docs/registry.md)
 
 * [Injection](/docs/registry.md)
-    * [Process Injection - Shellcode / DLL (ZwCreateThreadEx)](/docs/injection.md)
+    * [Process Injection - Shellcode (ZwCreateThreadEx)](/docs/injection.md)
+    * [Process Injection - DLL (ZwCreateThreadEx)](/docs/injection.md)
     * [APC Injection - Shellcode](/docs/injection.md)
