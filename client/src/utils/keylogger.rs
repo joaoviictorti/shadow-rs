@@ -15,7 +15,7 @@ pub unsafe fn update_key_state() {
 
 /// Checks if a key has been pressed.
 ///
-/// # Parameters
+/// # Arguments
 /// 
 /// - `key`: The key code.
 ///
@@ -31,7 +31,7 @@ pub unsafe fn key_pressed(key: u8) -> bool {
 
 /// Converts a virtual key code to a character.
 ///
-/// # Parameters
+/// # Arguments
 /// 
 /// - `key`: The code for the virtual key.
 ///

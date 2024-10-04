@@ -33,7 +33,7 @@ pub const BANNER: &str = r#"
 
 /// Checks if the given file exists.
 ///
-/// # Parameters
+/// # Arguments
 ///
 /// - `file` - A string reference representing the file path.
 ///
@@ -78,7 +78,7 @@ pub fn open_driver() -> Result<HANDLE, ()> {
 
 /// Initializes the logger with the specified verbosity level.
 ///
-/// # Parameters
+/// # Arguments
 ///
 /// - `verbose` - A `u8` representing the verbosity level. 
 ///    - `0` for `Info` level.
@@ -110,7 +110,7 @@ pub fn init_logger(verbose: u8) {
 
 /// Validates that a given file has a `.sys` extension.
 ///
-/// # Parameters
+/// # Arguments
 ///
 /// - `val` - A string slice representing the file name.
 ///
@@ -129,11 +129,11 @@ pub fn validate_sys_extension(val: &str) -> Result<String, String> {
 
 /// Searches for the process ID (PID) of a running process by name.
 ///
-/// # Parameters
+/// # Arguments
 /// 
 /// - `name`: A reference to a string containing the name of the process to be searched.
 ///
-/// # Return
+/// # Returns
 ///
 /// -`Option<u32>`: Returns the PID of the process found, or `None` if no process with the specified name is found.
 /// 
