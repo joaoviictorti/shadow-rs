@@ -21,7 +21,7 @@ static TARGET_TIDS: Lazy<Mutex<Vec<usize>>> = Lazy::new(|| Mutex::new(Vec::with_
 
 /// Method to check if the action sent is to add or remove a tid from the list of protected threads
 ///
-/// # Parameters
+/// # Arguments
 /// - `process`: Structure with information about the process that will be added or removed from the list of protected threads.
 ///
 /// # Returns
@@ -37,7 +37,7 @@ pub fn add_remove_thread_toggle(process: *mut ThreadProtection) -> NTSTATUS {
 
 /// Method for adding the list of threads that will have anti-kill / dumping protection.
 ///
-/// # Parameters
+/// # Arguments
 /// - `tid`: The identifier of the target process (tid) to be hidden.
 ///
 /// # Returns
@@ -63,7 +63,7 @@ fn add_target_tid(tid: usize) -> NTSTATUS {
 
 /// Method for removing the list of threads that will have anti-kill / dumping protection.
 ///
-/// # Parameters
+/// # Arguments
 /// - `tid`: The identifier of the target process (tid) to be hidden.
 ///
 /// # Returns
@@ -88,7 +88,7 @@ fn remove_target_tid(tid: usize) -> NTSTATUS {
 
 /// Enumerate threads Protect.
 ///
-/// # Parameters
+/// # Arguments
 /// - `info_process`: It is a parameter of type `Infothreads` that will send the threads that are currently protected.
 /// - `information`: It is a parameter of type `usize` that will be updated with the total size of the filled `Infothreads` structures.
 /// 
@@ -110,7 +110,7 @@ pub unsafe fn enumerate_protection_threads(info_process: *mut ThreadListInfo, in
 
 /// Pre-operation callback for thread opening that modifies the desired access rights to prevent certain actions on specific threads.
 ///
-/// # Parameters
+/// # Arguments
 /// - `_registration_context`: A pointer to the registration context (unused).
 /// - `info`: A pointer to the `OB_PRE_OPERATION_INFORMATION` structure containing information about the operation.
 ///

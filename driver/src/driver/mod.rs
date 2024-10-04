@@ -27,7 +27,7 @@ pub struct Driver;
 impl Driver {
     /// Toggle the visibility of a process based on the `enable` field of the `TargetProcess` structure.
     ///
-    /// # Parameters
+    /// # Arguments
     /// 
     /// - `process`:  A pointer to the `TargetProcess` structure.
     ///
@@ -46,7 +46,7 @@ impl Driver {
 
     /// Hides the driver by unlinking it from the loaded module list.
     ///
-    /// # Parameters
+    /// # Arguments
     /// 
     /// - `device`: A pointer to the `DEVICE_OBJECT` representing the driver to be hidden.
     ///
@@ -105,7 +105,7 @@ impl Driver {
 
     /// Hides the driver by unlinking it from the loaded module list.
     ///
-    /// # Parameters
+    /// # Arguments
     /// 
     /// - `device`: A pointer to the `DEVICE_OBJECT` representing the driver to be hidden.
     ///
@@ -144,7 +144,7 @@ impl Driver {
 
     /// Enumerates loaded drivers and stores the information in the provided buffer.
     ///
-    /// # Parameters
+    /// # Arguments
     /// 
     /// - `driver_info`: A pointer to a buffer where `DriverInfo` structures will be stored.
     /// - `information`: A mutable reference to a `usize` that will store the total size of the information written.

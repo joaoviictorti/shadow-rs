@@ -23,7 +23,7 @@ impl ProcessAttach {
     /// process using `KeStackAttachProcess`. This allows the current thread to operate within
     /// the target process context.
     ///
-    /// # Parameters
+    /// # Arguments
     /// 
     /// - `target_process`: A pointer to the target process (`PRKPROCESS`) to attach to.
     ///

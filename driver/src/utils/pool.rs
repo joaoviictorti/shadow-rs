@@ -18,7 +18,7 @@ impl PoolMemory {
     /// This function uses `ExAllocatePool2` to allocate a block of memory from the Windows kernel
     /// pool. It returns `None` if the allocation fails, or `Some(PoolMemory)` if successful.
     ///
-    /// # Parameters
+    /// # Arguments
     /// 
     /// - `flag`: Flags controlling the behavior of the memory allocation, of type `POOL_FLAGS`.
     /// - `number_of_bytes`: The size of the memory block to allocate, in bytes.

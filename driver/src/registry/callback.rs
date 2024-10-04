@@ -29,7 +29,7 @@ pub static mut CALLBACK_REGISTRY: LARGE_INTEGER = unsafe { core::mem::zeroed() }
 
 /// The registry callback function handles registry-related operations based on the notification class.
 ///
-/// # Parameters
+/// # Arguments
 /// 
 /// - `_callback_context`: A pointer to the callback context, usually not used.
 /// - `argument1`: A pointer to the notification class.
@@ -74,7 +74,7 @@ pub unsafe extern "C" fn registry_callback(
 
 /// Handles the pre-delete key operation.
 ///
-/// # Parameters
+/// # Arguments
 /// 
 /// - `info`: A pointer to `REG_DELETE_KEY_INFORMATION`.
 ///
@@ -104,7 +104,7 @@ unsafe fn pre_delete_key(info: *mut REG_DELETE_KEY_INFORMATION) -> NTSTATUS {
 
 /// Performs the post-operation to enumerate registry key values.
 ///
-/// # Parameters
+/// # Arguments
 /// 
 /// - `info`: Pointer to the information structure of the post-execution logging operation.
 ///
@@ -180,7 +180,7 @@ unsafe fn post_enumerate_key_value(info: *mut REG_POST_OPERATION_INFORMATION) ->
 
 /// Performs the post-operation to enumerate registry keys.
 ///
-/// # Parameters
+/// # Arguments
 /// 
 /// - `info`: Pointer to the information structure of the post-execution logging operation.
 ///
@@ -258,7 +258,7 @@ unsafe fn post_enumerate_key(info: *mut REG_POST_OPERATION_INFORMATION) -> NTSTA
 
 /// Handles the pre-query key operation.
 ///
-/// # Parameters
+/// # Arguments
 /// 
 /// - `info`: A pointer to `REG_QUERY_KEY_INFORMATION`.
 ///
@@ -288,7 +288,7 @@ unsafe fn pre_query_key(info: *mut REG_QUERY_KEY_INFORMATION) -> NTSTATUS {
 
 /// Handles the pre-delete value key operation.
 ///
-/// # Parameters
+/// # Arguments
 /// 
 /// - `info`: A pointer to `REG_DELETE_VALUE_KEY_INFORMATION`.
 ///
@@ -322,7 +322,7 @@ unsafe fn pre_delete_value_key(info: *mut REG_DELETE_VALUE_KEY_INFORMATION) -> N
 
 /// Handles the pre-set value key operation.
 ///
-/// # Parameters
+/// # Arguments
 /// 
 /// - `info`: A pointer to `REG_SET_VALUE_KEY_INFORMATION`.
 ///
@@ -356,7 +356,7 @@ unsafe fn pre_set_value_key(info: *mut REG_SET_VALUE_KEY_INFORMATION) -> NTSTATU
 
 /// Reads the key name from the registry information.
 ///
-/// # Parameters
+/// # Arguments
 /// 
 /// - `info`: A pointer to the registry information.
 ///

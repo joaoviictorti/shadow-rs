@@ -26,7 +26,7 @@ static TARGET_PIDS: Lazy<Mutex<Vec<usize>>> = Lazy::new(|| Mutex::new(Vec::with_
 
 /// Method to check if the action sent is to add or remove a pid from the list of protected processes
 ///
-/// # Parameters
+/// # Arguments
 /// 
 /// - `process`: Structure with information about the process that will be added or removed from the list of protected processes.
 ///
@@ -45,7 +45,7 @@ pub fn add_remove_process_toggle(process: *mut ProcessProtection) -> NTSTATUS {
 
 /// Method for adding the list of processes that will have anti-kill / dumping protection.
 ///
-/// # Parameters
+/// # Arguments
 /// 
 /// - `pid`: The identifier of the target process (PID) to be hidden.
 ///
@@ -73,7 +73,7 @@ fn add_target_pid(pid: usize) -> NTSTATUS {
 
 /// Method for removing the list of processes that will have anti-kill / dumping protection.
 ///
-/// # Parameters
+/// # Arguments
 /// 
 /// - `pid`: The identifier of the target process (PID) to be hidden.
 ///
@@ -95,7 +95,7 @@ fn remove_target_pid(pid: usize) -> NTSTATUS {
 
 /// Enumerate Processes Protect.
 ///
-/// # Parameters
+/// # Arguments
 /// 
 /// - `info_process`: It is a parameter of type `InfoProcesses` that will send the processes that are currently protected.
 /// - `information`: It is a parameter of type `usize` that will be updated with the total size of the filled `InfoProcesses` structures.
@@ -120,7 +120,7 @@ pub unsafe fn enumerate_protection_processes(info_process: *mut ProcessListInfo,
 /// The object (process) pre-operation callback function used to filter process opening operations.
 /// This function is registered as a callback and is called by the operating system before a process opening operation is completed.
 ///
-/// # Parameters
+/// # Arguments
 /// 
 /// - `_registration_context`: Pointer to record context (Not used).
 /// - `info`: Pointer to an `OB_PRE_OPERATION_INFORMATION` structure that contains information about the process's pre-opening operation.

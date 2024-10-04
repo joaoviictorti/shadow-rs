@@ -13,7 +13,7 @@ pub struct Dse;
 impl Dse {
     /// Sets the DSE (Driver Signature Enforcement) status based on the information provided.
     /// 
-    /// # Parameters
+    /// # Arguments
     /// 
     /// - `info_dse`: A pointer to the `DSE` structure containing information about the state of the DSE.
     /// 

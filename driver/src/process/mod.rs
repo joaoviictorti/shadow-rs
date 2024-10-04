@@ -42,7 +42,7 @@ pub struct Process {
 impl Process {
     /// Creates a new `Process` instance by looking up a process by its PID.
     ///
-    /// # Parameters
+    /// # Arguments
     /// 
     /// - `pid`: The process identifier (PID) to look up.
     ///
@@ -65,7 +65,7 @@ impl Process {
 
     /// Toggle the visibility of a process based on the `enable` field of the `TargetProcess` structure.
     ///
-    /// # Parameters
+    /// # Arguments
     /// 
     /// - `process`:  A pointer to the `TargetProcess` structure.
     ///
@@ -84,7 +84,7 @@ impl Process {
 
     /// Hide a process by removing it from the list of active processes.
     ///
-    /// # Parameters
+    /// # Arguments
     /// 
     /// - `process`: The identifier of the target process (PID) to be hidden.
     ///
@@ -133,7 +133,7 @@ impl Process {
 
     /// Unhide a process by removing it from the list of active processes.
     ///
-    /// # Parameters
+    /// # Arguments
     /// 
     /// - `process`: The identifier of the target process (PID) to be hidden.
     ///
@@ -186,7 +186,7 @@ impl Process {
 
     /// Toggles the enumeration between hiding or protecting processes based on the options provided.
     ///
-    /// # Parameters
+    /// # Arguments
     /// 
     /// - `input_target`: Pointer to the enumeration information input structure.
     /// - `info_process`: Information structure of processes.
@@ -214,7 +214,7 @@ impl Process {
 
     /// Enumerate Processes Hide.
     ///
-    /// # Parameters
+    /// # Arguments
     /// 
     /// - `info_process`: It is a parameter of type `ProcessListInfo` that will send the processes that are currently hidden.
     /// - `information`: It is a parameter of type `usize` that will be updated with the total size of the filled `ProcessListInfo` structures.
@@ -238,7 +238,7 @@ impl Process {
 
     /// Terminate a process specified by the PID (Process Identifier).
     ///
-    /// # Parameters
+    /// # Arguments
     /// 
     /// - `pid`: The identifier of the target process (PID) to terminate process.
     ///
@@ -282,7 +282,7 @@ impl Process {
 
     /// Removing process signature (PP / PPL).
     ///
-    /// # Parameters
+    /// # Arguments
     /// 
     /// - `pid`: The identifier of the target process (PID) to remove protection.
     ///
@@ -317,7 +317,7 @@ impl Process {
     /// to the token of the system process, effectively elevating the privileges of the target process
     /// to those of the system (NT AUTHORITY\SYSTEM).
     ///
-    /// # Parameters
+    /// # Arguments
     /// 
     /// - `pid`: The identifier of the target process (PID) whose token will be raised.
     ///

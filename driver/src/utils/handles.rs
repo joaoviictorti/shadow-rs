@@ -13,7 +13,7 @@ impl Handle {
     ///
     /// This function wraps a raw Windows `HANDLE` inside the `Handle` struct.
     ///
-    /// # Parameters
+    /// # Arguments
     /// 
     /// - `handle`: A raw Windows `HANDLE` to wrap.
     ///

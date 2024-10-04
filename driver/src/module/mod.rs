@@ -32,7 +32,7 @@ impl Module {
 
     /// Enumerates modules in a given target process.
     /// 
-    /// # Parameters
+    /// # Arguments
     /// 
     /// - `process`: A pointer to the target process (`*mut TargetProcess`) from which the modules will be enumerated.
     /// - `module_info`: A pointer to a `ModuleInfo` structure that will be populated with information about the enumerated modules.
@@ -124,7 +124,7 @@ impl Module {
 
     /// Hides a module in a target process by removing its entries from the module list.
     ///
-    /// # Parameters
+    /// # Arguments
     /// 
     /// - `target`: A pointer to a `TargetModule` structure containing information about the module to be hidden.
     ///
@@ -191,7 +191,7 @@ impl Module {
 
     /// Removing the module name in the FILE_OBJECT structure.
     ///
-    /// # Parameters
+    /// # Arguments
     /// 
     /// - `target_address`: The address of the module to hide.
     /// - `target_eprocess`: The target process structure.
@@ -256,7 +256,7 @@ impl Module {
 
     /// Removes a link from the list.
     ///
-    /// # Parameters
+    /// # Arguments
     /// 
     /// - `list`: A mutable reference to the `LIST_ENTRY` structure to unlink.
     /// 

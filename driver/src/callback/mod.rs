@@ -25,7 +25,7 @@ static mut INFO_CALLBACK_RESTAURE_OB: Lazy<Mutex<Vec<CallbackRestaureOb>>> = Laz
 pub trait CallbackList {
     /// Restore a callback from the specified routine.
     /// 
-    /// # Parameters
+    /// # Arguments
     /// 
     /// - `target_callback`: Pointer to the callback information input.
     /// 
@@ -37,7 +37,7 @@ pub trait CallbackList {
 
     /// Removes a callback from the specified routine.
     /// 
-    /// # Parameters
+    /// # Arguments
     /// 
     /// - `target_callback`: Pointer to the callback information input.
     /// 
@@ -49,7 +49,7 @@ pub trait CallbackList {
 
     /// Searches for a module associated with a callback and updates callback information.
     /// 
-    /// # Parameters
+    /// # Arguments
     /// 
     /// - `target_callback`: Pointer to the callback information input.
     /// - `callback_info`: Pointer to the callback information output.
@@ -63,7 +63,7 @@ pub trait CallbackList {
 
     /// List of callbacks currently removed.
     /// 
-    /// # Parameters
+    /// # Arguments
     /// 
     /// - `target_callback`: Pointer to the callback information input.
     /// - `callback_info`: Pointer to the callback information output.

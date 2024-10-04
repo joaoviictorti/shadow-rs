@@ -18,7 +18,7 @@ use {
 /// This function inserts two IOCTL handlers into the provided `HashMap`, associating them with
 /// their respective IOCTL codes. The two operations supported are:
 ///
-/// # Parameters
+/// # Arguments
 /// 
 /// - `ioctls`: A mutable reference to a `HashMap<u32, IoctlHandler>` where the registry-related
 ///   IOCTL handlers will be inserted.

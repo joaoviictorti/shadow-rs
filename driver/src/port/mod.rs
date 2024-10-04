@@ -155,7 +155,7 @@ impl Port {
     /// and the control code matches `NIS_CONTROL_CODE`. It intercepts TCP and UDP entries, 
     /// allowing modification of network data, such as filtering specific ports.
     ///
-    /// # Parameters
+    /// # Arguments
     /// 
     /// - `device_object`: A pointer to the device object.
     /// - `irp`: A pointer to the IRP (I/O Request Packet).
@@ -198,7 +198,7 @@ impl Port {
     /// This function is called after the original completion routine is invoked. It inspects the network
     /// table entries (TCP or UDP) and can remove or modify entries based on certain conditions (e.g., port filtering).
     ///
-    /// # Parameters
+    /// # Arguments
     /// 
     /// - `device_object`: A pointer to the device object.
     /// - `irp`: A pointer to the IRP (I/O Request Packet).
@@ -292,7 +292,7 @@ impl NetworkUtils {
     /// This function uses `ProbeForRead` to check whether a memory address is valid and accessible.
     /// It wraps the operation in a Structured Exception Handling (SEH) block to catch and log any exceptions.
     ///
-    /// # Parameters
+    /// # Arguments
     /// 
     /// - `address`: The memory address to validate.
     ///
@@ -322,7 +322,7 @@ impl NetworkUtils {
     /// hook operation. It copies TCP/UDP entries, status entries, and process entries, effectively 
     /// "hiding" specific network ports.
     ///
-    /// # Parameters
+    /// # Arguments
     /// 
     /// - `entries`: A pointer to the list of TCP or UDP entries.
     /// - `count`: The total number of entries in the table.

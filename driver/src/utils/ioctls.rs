@@ -22,7 +22,7 @@ use {
 /// two parameters, `IRP` (I/O Request Packet) and `IO_STACK_LOCATION`, and returns
 /// an `NTSTATUS` result, indicating the success or failure of the operation.
 ///
-/// # Parameters
+/// # Arguments
 /// 
 /// - `*mut IRP`: Pointer to an IRP (I/O Request Packet), which represents an I/O request in Windows.
 /// - `*mut IO_STACK_LOCATION`: Pointer to the current I/O stack location.

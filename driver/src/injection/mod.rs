@@ -43,7 +43,7 @@ pub struct InjectionShellcode;
 impl InjectionShellcode {
     /// Injection Shellcode in Thread.
     ///
-    /// # Parameters
+    /// # Arguments
     /// 
     /// - `target`: The target process identifier (PID) and the path containing the injection shellcode.
     ///
@@ -127,7 +127,7 @@ impl InjectionShellcode {
 
     /// Injection Shellcode in APC.
     ///
-    /// # Parameters
+    /// # Arguments
     /// 
     /// - `target`: The target process identifier (PID) and the path containing the injection shellcode.
     ///
@@ -230,7 +230,7 @@ pub struct InjectionDLL;
 impl InjectionDLL {
     /// DLL Injection.
     ///
-    /// # Parameters
+    /// # Arguments
     /// 
     /// - `target`: The target process identifier (PID) and the path containing the injection dll.
     ///

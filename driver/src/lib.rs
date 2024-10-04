@@ -50,7 +50,7 @@ const DOS_DEVICE_NAME: &str = "\\??\\shadow";
 ///
 /// This function is called by the system when the driver is loaded.
 ///
-/// # Parameters
+/// # Arguments
 /// 
 /// - `driver_object`: Pointer to the driver object.
 /// - `registry_path`: Pointer to the Unicode string that specifies the driver's registry path.
@@ -87,7 +87,7 @@ pub unsafe extern "system" fn driver_entry(
 /// This function is called by the system when the driver is loaded. It is responsible for
 /// initializing the driver, creating the device object and setting up the symbolic link.
 ///
-/// # Parameters
+/// # Arguments
 /// 
 /// - `driver_object`: Pointer to the driver object.
 /// - `_registry_path`: Pointer to the Unicode string that specifies the driver's registry path.
@@ -161,7 +161,7 @@ pub unsafe extern "system" fn shadow_entry(
 ///
 /// This function is responsible for processing IOCTL commands received by the driver and executing the corresponding actions.
 ///
-/// # Parameters
+/// # Arguments
 /// 
 /// - `_device`: Pointer to the device object (not used in this function).
 /// - `irp`: Pointer to the I/O request packet (IRP) that contains the information about the device control request.
@@ -191,7 +191,7 @@ pub unsafe extern "C" fn device_control(_device: *mut DEVICE_OBJECT, irp: *mut I
 /// This function is called when an open instance of the device is closed.
 /// It marks the I/O request (IRP) as successfully completed.
 ///
-/// # Parameters
+/// # Arguments
 /// 
 /// - `_device_object`: Pointer to the associated device object (not used in this function).
 /// - `irp`: Pointer to the I/O request packet (IRP) containing the information about the close request.
@@ -212,7 +212,7 @@ pub unsafe extern "C" fn driver_close(_device_object: *mut DEVICE_OBJECT, irp: *
 /// This function is called when the driver is being unloaded from the system.
 /// It removes the symbolic link and deletes the device object associated with the driver.
 ///
-/// # Parameters
+/// # Arguments
 /// 
 /// - `driver_object`: Pointer to the driver object being unloaded.
 ///
@@ -243,7 +243,7 @@ pub unsafe extern "C" fn driver_unload(driver_object: *mut DRIVER_OBJECT) {
 
 /// Register Callbacks.
 ///
-/// # Parameters
+/// # Arguments
 /// 
 /// - `driver_object`: Pointer to the driver object being unloaded.
 /// 

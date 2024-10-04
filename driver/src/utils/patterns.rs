@@ -52,7 +52,7 @@ pub static mut ZW_PATTERN: [u8; 30] = [
 /// and then converts it into a fixed-size array of `N` bytes. The resulting array is passed to the
 /// provided conversion function (`func`), which returns a value of type `T`.
 ///
-/// # Parameters
+/// # Arguments
 /// 
 /// - `slice`: A reference to a byte slice (`&[u8]`) that is expected to have exactly `N` bytes.
 /// - `func`: A function that takes an array of `N` bytes (`[u8; N]`) and returns a value of type `T`.
@@ -76,7 +76,7 @@ fn slice_to_number<T, const N: usize>(slice: &[u8], func: fn([u8; N]) -> T) -> R
 
 /// Scans memory for a specific pattern of bytes in a specific section.
 /// 
-/// # Parameters
+/// # Arguments
 /// 
 /// - `base_addr`: The base address (in `usize` format) from which the scan should start.
 /// - `section_name`: The name of the section to scan. This string must match the name of the section you want to scan.
@@ -113,7 +113,7 @@ where
 
 /// Finds the address of a specified Zw function.
 /// 
-/// # Parameters
+/// # Arguments
 /// 
 /// - `name`: The name of the Zw function to find.
 ///
@@ -157,7 +157,7 @@ pub unsafe fn find_zw_function(name: &str) -> Option<usize> {
 
 /// Retrieves the syscall index for a given function name.
 ///
-/// # Parameters
+/// # Arguments
 /// 
 /// - `function_name`: The name of the function to retrieve the syscall index for.
 ///

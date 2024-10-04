@@ -17,7 +17,7 @@ use {
 
 /// Checks if the key is present.
 ///
-/// # Parameters
+/// # Arguments
 /// 
 /// - `info`: Pointer to the record operation information structure.
 /// - `key`: Name of the key to be checked.
@@ -55,7 +55,7 @@ pub unsafe fn check_key(info: *mut REG_POST_OPERATION_INFORMATION, key: String) 
 
 /// Checks if the key value is present.
 ///
-/// # Parameters
+/// # Arguments
 /// - `info`: Pointer to the record operation information structure.
 /// - `key`: Name of the key to be checked.
 ///
@@ -100,7 +100,7 @@ pub unsafe fn check_key_value(info: *mut REG_POST_OPERATION_INFORMATION, key: St
 
 /// Enumerate the target key.
 ///
-/// # Parameters
+/// # Arguments
 /// - `key_handle`: Handle of the target key.
 /// - `index`: Index to be listed.
 /// - `buffer`: Buffer that will store the key.
@@ -164,7 +164,7 @@ pub unsafe fn enumerate_key(
 
 /// Enumerates values of the target key
 ///
-/// # Parameters
+/// # Arguments
 /// - `key_handle`: Handle of the target key.
 /// - `index`: Index to be listed.
 /// - `buffer`: Buffer that will store the key values.

@@ -37,7 +37,7 @@ pub struct Thread {
 impl Thread {
     /// Creates a new `Thread` instance by looking up a thread by its TID.
     ///
-    /// # Parameters
+    /// # Arguments
     /// 
     /// - `tid`: The process identifier (TID) to look up.
     ///
@@ -60,7 +60,7 @@ impl Thread {
 
     /// Toggle the visibility of a process based on the `enable` field of the `TargetProcess` structure.
     ///
-    /// # Parameters
+    /// # Arguments
     /// 
     /// - `process`:  A pointer to the `TargetProcess` structure.
     ///
@@ -78,7 +78,7 @@ impl Thread {
 
     /// Hides a thread by removing it from the list of active threads.
     ///
-    /// # Parameters
+    /// # Arguments
     /// - `tid`: The identifier of the target thread (TID) to be hidden.
     ///
     /// # Returns
@@ -131,7 +131,7 @@ impl Thread {
 
     /// Unhide a process by removing it from the list of active threads.
     ///
-    /// # Parameters
+    /// # Arguments
     /// 
     /// - `tid`: The identifier of the target process (TID) to be hidden.
     ///
@@ -188,7 +188,7 @@ impl Thread {
 
     /// Enumerates and hides threads by populating the provided `ThreadListInfo` structure with thread IDs.
     ///
-    /// # Parameters
+    /// # Arguments
     /// 
     /// - `info_process`: A pointer to the `ThreadListInfo` structure to be populated.
     /// - `information`: A mutable reference to a `usize` value that will be updated with the size of the populated data.
@@ -211,7 +211,7 @@ impl Thread {
 
     /// Enumerates threads and performs actions based on the specified options (hide or protection).
     ///
-    /// # Parameters
+    /// # Arguments
     /// 
     /// - `input_target`: A pointer to the `EnumerateInfoInput` structure containing the target options.
     /// - `info_process`: A pointer to the `ThreadListInfo` structure to be populated.

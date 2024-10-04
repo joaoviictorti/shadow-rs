@@ -32,7 +32,7 @@ static HIDE_KEY_VALUES: Lazy<Mutex<Vec<(String, String)>>> = Lazy::new(|| Mutex:
 trait RegistryList<T> {
     /// Adds an item to the registry list.
     ///
-    /// # Parameters
+    /// # Arguments
     /// 
     /// - `list`: A mutable reference to the list.
     /// - `item`: The item to be added.
@@ -45,7 +45,7 @@ trait RegistryList<T> {
 
     /// Removes an item from the registry list.
     ///
-    /// # Parameters
+    /// # Arguments
     /// 
     /// - `list`: A mutable reference to the list.
     /// - `item`: The item to be removed.
@@ -58,7 +58,7 @@ trait RegistryList<T> {
 
     /// Checks if an item is in the registry list.
     ///
-    /// # Parameters
+    /// # Arguments
     /// 
     /// - `list`: A reference to the list.
     /// - `item`: The item to be checked.
@@ -142,7 +142,7 @@ pub struct Registry<T> {
 impl Registry<(String, String)> {
     /// Adds or removes a key-value pair from the list of protected values.
     ///
-    /// # Parameters
+    /// # Arguments
     /// 
     /// - `target`: The `TargetRegistry` structure representing the key-value pair to be protected or removed.
     ///
@@ -179,7 +179,7 @@ impl Registry<(String, String)> {
 
     /// Checks if the key-value pair is in the list of protected values.
     ///
-    /// # Parameters
+    /// # Arguments
     /// - `key`: The key being checked.
     /// - `value`: The value being checked.
     ///
@@ -194,7 +194,7 @@ impl Registry<(String, String)> {
 impl Registry<String> {
     /// Adds or removes a key from the list of protected keys.
     ///
-    /// # Parameters
+    /// # Arguments
     /// 
     /// - `key`: The key to be protected or removed.
     /// - `enable`: A boolean indicating whether to add (true) or remove (false) the key.
@@ -231,7 +231,7 @@ impl Registry<String> {
 
     /// Checks if the key is in the list of protected keys.
     ///
-    /// # Parameters
+    /// # Arguments
     /// 
     /// - `key`: The key being checked.
     ///

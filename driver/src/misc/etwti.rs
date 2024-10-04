@@ -22,7 +22,7 @@ pub struct Etw;
 impl Etw {
     /// Enables or disables ETW tracing by manipulating the `ETWTI` structure.
     ///
-    /// # Parameters
+    /// # Arguments
     /// 
     /// - `info`: A pointer to an `ETWTI` structure, which contains information on whether to enable or disable ETW tracing.
     ///

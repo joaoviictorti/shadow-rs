@@ -11,7 +11,7 @@ pub static PROTECTED_PORTS: Lazy<Mutex<Vec<PortInfo>>> = Lazy::new(|| Mutex::new
 
 /// Method to toggle the addition or removal of a port from the list of protected ports.
 ///
-/// # Parameters
+/// # Arguments
 /// 
 /// - `port`: `PortInfo` structure with information about the port to be added or removed.
 ///
@@ -29,7 +29,7 @@ pub fn add_remove_port_toggle(port: *mut PortInfo) -> NTSTATUS {
 
 /// Method to add a port to the list of protected ports.
 ///
-/// # Parameters
+/// # Arguments
 /// 
 /// - `port`: `PortInfo` structure with information about the port to be protected.
 ///
@@ -58,7 +58,7 @@ fn add_target_port(port: *mut PortInfo) -> NTSTATUS {
 
 /// Method to remove a port from the list of protected ports.
 ///
-/// # Parameters
+/// # Arguments
 /// 
 /// - `port`: `PortInfo` structure with information about the port to be removed.
 ///

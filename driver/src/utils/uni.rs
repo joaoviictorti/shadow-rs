@@ -44,7 +44,7 @@ impl OwnedUnicodeString {
 /// is properly null-terminated. The resulting wide string is stored in an `OwnedUnicodeString`,
 /// which can later be converted to a `UNICODE_STRING` for use in kernel APIs.
 ///
-/// # Parameters
+/// # Arguments
 /// 
 /// - `s`: A reference to the Rust string slice to be converted.
 ///

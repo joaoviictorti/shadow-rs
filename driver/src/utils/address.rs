@@ -12,7 +12,7 @@ use {
 
 /// Gets the base address of a specified module.
 ///
-/// # Parameters
+/// # Arguments
 /// 
 /// - `module_name`: A string slice containing the name of the module.
 ///
@@ -61,7 +61,7 @@ pub unsafe fn get_module_base_address(module_name: &str) -> Option<*mut c_void> 
 
 /// Gets the address of a specified function within a module.
 ///
-/// # Parameters
+/// # Arguments
 /// 
 /// - `function_name`: A string slice containing the name of the function.
 /// - `dll_base`: A pointer to the base address of the DLL.

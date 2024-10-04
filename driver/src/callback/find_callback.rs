@@ -110,7 +110,7 @@ pub fn find_ob_register_callback(callback: &Callbacks) -> Option<*mut FULL_OBJEC
 
 /// Finds the type of the callback and calls the function responsible for it.
 /// 
-/// # Parameters
+/// # Arguments
 /// 
 /// - `callback`: target callback that will be called.
 /// 

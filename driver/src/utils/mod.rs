@@ -62,7 +62,7 @@ pub mod process_attach;
 
 /// Retrieves the input buffer from the given IO stack location.
 ///
-/// # Parameters
+/// # Arguments
 /// 
 /// - `stack`: A pointer to the `_IO_STACK_LOCATION` structure.
 ///
@@ -82,7 +82,7 @@ pub unsafe fn get_input_buffer<T>(stack: *mut _IO_STACK_LOCATION) -> Result<*mut
 
 /// Retrieves the output buffer from the given IRP.
 ///
-/// # Parameters
+/// # Arguments
 /// 
 /// - `irp`: A pointer to the `IRP` structure.
 ///
@@ -102,7 +102,7 @@ pub unsafe fn get_output_buffer<T>(irp: *mut IRP) -> Result<*mut T, NTSTATUS> {
 
 /// Retrieves the PID of a process by its name.
 ///
-/// # Parameters
+/// # Arguments
 /// 
 /// - `process_name`: A string slice containing the name of the process.
 ///
@@ -155,7 +155,7 @@ pub unsafe fn get_process_by_name(process_name: &str) -> Option<usize> {
 
 /// Retrieves the address of a specified function within a module in the context of a target process.
 ///
-/// # Parameters
+/// # Arguments
 /// 
 /// - `pid`: The process ID (PID) of the target process.
 /// - `module_name`: The name of the module (DLL) to be searched for. The search is case-insensitive.
@@ -228,7 +228,7 @@ pub unsafe fn get_module_peb(pid: usize, module_name: &str, function_name: &str)
 
 /// Find for a thread with an alertable status.
 /// 
-/// # Parameters
+/// # Arguments
 /// 
 /// - `target_pid`: PID that will fetch the tids.
 ///
@@ -295,7 +295,7 @@ pub unsafe fn find_thread_alertable(target_pid: usize) -> Option<*mut _KTHREAD> 
 
 /// Initializes the OBJECT_ATTRIBUTES structure.
 ///
-/// # Parameters
+/// # Arguments
 /// 
 /// - `object_name`: The name of the object (optional).
 /// - `attributes`: The attributes of the object.
@@ -327,7 +327,7 @@ pub fn InitializeObjectAttributes(
 
 /// Reads the content of a file given its path.
 ///
-/// # Parameters
+/// # Arguments
 /// 
 /// - `path`: The path to the file.
 ///
@@ -439,7 +439,7 @@ pub fn return_module() -> Option<(*mut LDR_DATA_TABLE_ENTRY, i32)> {
 
 /// Validates if the given address is within the kernel memory range.
 ///
-/// # Parameters
+/// # Arguments
 ///
 /// - `addr`: A 64-bit unsigned integer representing the address to validate.
 ///
@@ -453,7 +453,7 @@ pub fn valid_kernel_memory(addr: u64) -> bool {
 
 /// Validates if the given address is within the user memory range.
 ///
-/// # Parameters
+/// # Arguments
 /// 
 /// - `addr`: A 64-bit unsigned integer representing the address to validate.
 ///
@@ -468,7 +468,7 @@ pub fn valid_user_memory(addr: u64) -> bool {
 /// Generic function that performs the operation with the lock already acquired.
 /// It will acquire the lock exclusively and guarantee its release after use.
 ///
-/// # Parameters
+/// # Arguments
 /// 
 /// - `push_lock` - Pointer to the lock to be acquired.
 /// - `operation` - The operation to be performed while the lock is active.
