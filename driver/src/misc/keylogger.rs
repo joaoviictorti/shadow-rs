@@ -25,7 +25,7 @@ pub static mut USER_ADDRESS: usize = 0;
 
 /// Retrieves the address of gafAsyncKeyState and maps it to the user mode of winlogon.exe.
 ///
-/// # Return
+/// # Returns
 ///
 /// - `Option<*mut c_void>`: If successful, the address will be returned as Some, if not found, it will be returned as None.
 ///

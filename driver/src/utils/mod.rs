@@ -492,7 +492,7 @@ where
 
 /// Retrieves the Windows build number by calling `RtlGetVersion`.
 ///
-/// # Return
+/// # Returns
 ///
 /// - `u32`: The Windows build number if successful, otherwise returns 0.
 ///
