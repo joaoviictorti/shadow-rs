@@ -26,6 +26,7 @@ impl Driver {
         let mut info_driver = TargetDriver {
             name: name.to_string(),
             enable,
+            ..Default::default()
         };
 
         debug!("Sending DeviceIoControl command to {} driver", if enable { "hide" } else { "unhide" });

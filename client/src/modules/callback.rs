@@ -8,6 +8,7 @@ use {
         Foundation::{CloseHandle, GetLastError, HANDLE},
     },
 };
+
 pub struct Callback {
     driver_handle: HANDLE,
 }
