@@ -1,12 +1,10 @@
 target
 backup
-
-crates/common/target
-crates/shadowx/target
 client/target
 driver/target
-
-crates/common/Cargo.lock
-crates/shadowx/Cargo.lock
 client/Cargo.lock
 driver/Cargo.lock
+crates/common/target
+crates/shadowx/target
+crates/common/Cargo.lock
+crates/shadowx/Cargo.lock
