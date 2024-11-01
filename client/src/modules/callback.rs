@@ -1,7 +1,7 @@
 use {
     log::*,
     crate::{utils::Callbacks, utils::open_driver},
-    shared::structs::{CallbackInfoInput, CallbackInfoOutput},
+    common::structs::{CallbackInfoInput, CallbackInfoOutput},
     std::{ffi::c_void, mem::size_of, ptr::null_mut},
     windows_sys::Win32::{
         System::IO::DeviceIoControl,
@@ -14,7 +14,7 @@ pub struct Callback {
 
 impl Callback {
     pub fn new() -> Self {
-        let driver_handle = open_driver().expect("Failed to open driver");
+        let driver_handle = open_driver().expect("Error");
         Callback { driver_handle }
     }
 

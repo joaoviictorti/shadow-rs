@@ -26,13 +26,12 @@ impl OwnedUnicodeString {
     /// # Returns
     /// 
     /// - A `UNICODE_STRING` pointing to the wide string stored in `buffer`.
-    /// 
     pub fn to_unicode(&self) -> UNICODE_STRING {
         // The length is the size of the string in bytes, excluding the null terminator.
         // MaximumLength includes the null terminator.
         UNICODE_STRING {
-            Length: ((self.buffer.len() * core::mem::size_of::<u16>()) - 2) as u16,
-            MaximumLength: (self.buffer.len() * core::mem::size_of::<u16>()) as u16,
+            Length: ((self.buffer.len() * size_of::<u16>()) - 2) as u16,
+            MaximumLength: (self.buffer.len() * size_of::<u16>()) as u16,
             Buffer: self.buffer.as_ptr() as *mut u16,
         }
     }
@@ -46,16 +45,18 @@ impl OwnedUnicodeString {
 ///
 /// # Arguments
 /// 
-/// - `s`: A reference to the Rust string slice to be converted.
+/// * `s` - A reference to the Rust string slice to be converted.
 ///
 /// # Returns
 /// 
-/// - `OwnedUnicodeString`: A structure containing the wide (UTF-16) representation of the input string.
-///
+/// * A structure containing the wide (UTF-16) representation of the input string.
 pub fn str_to_unicode(s: &str) -> OwnedUnicodeString {
     // Convert the rust string to a wide string
     let mut wide_string: Vec<u16> = s.encode_utf16().collect();
-    wide_string.push(0); // Null terminate the string
+    
+    // Null terminate the string
+    wide_string.push(0);
+    
     OwnedUnicodeString {
         buffer: wide_string,
         _phantompinned: core::marker::PhantomPinned,

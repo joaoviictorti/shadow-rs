@@ -1,13 +1,12 @@
 target
-shared/target
+backup
+
+crates/common/target
+crates/shadowx/target
 client/target
 driver/target
 
-shared/Cargo.lock
+crates/common/Cargo.lock
+crates/shadowx/Cargo.lock
 client/Cargo.lock
 driver/Cargo.lock
-
-driver/src/backup
-client/src/modules/memory.rs
-driver/src/misc/memory.rs
-backup

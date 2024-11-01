@@ -2,7 +2,7 @@ use {
     log::*,
     crate::utils::open_driver,
     std::{ffi::c_void, mem::size_of, ptr::null_mut},
-    shared::structs::{ModuleInfo, TargetModule, TargetProcess},
+    common::structs::{ModuleInfo, TargetModule, TargetProcess},
     windows_sys::Win32::{
         System::IO::DeviceIoControl,
         Foundation::{CloseHandle, GetLastError, HANDLE},
@@ -15,7 +15,7 @@ pub struct Module {
 
 impl Module {
     pub fn new() -> Self {
-        let driver_handle = open_driver().expect("Failed to open driver");
+        let driver_handle = open_driver().expect("Error");
         Module { driver_handle }
     }
 
@@ -24,7 +24,7 @@ impl Module {
     
         debug!("Preparing structure for pid: {pid}");
         let mut module_info: [ModuleInfo; 400] = unsafe { std::mem::zeroed() };
-        let mut input_module = TargetProcess { pid: *pid as usize };
+        let mut input_module = TargetProcess { pid: *pid as usize, ..Default::default() };
     
         debug!("Sending DeviceIoControl command to enumerate modules for PID: {pid}");
         let mut return_buffer = 0;

@@ -1,9 +1,9 @@
 use {
-    crate::{utils::check_file, utils::open_driver},
     core::ffi::c_void,
-    log::*,
-    shared::structs::TargetInjection,
     std::ptr::null_mut,
+    log::{info, error, debug},
+    common::structs::TargetInjection,
+    crate::{utils::check_file, utils::open_driver},
     windows_sys::Win32::{
         Foundation::{CloseHandle, HANDLE}, 
         System::IO::DeviceIoControl
@@ -16,7 +16,7 @@ pub struct Injection {
 
 impl Injection {
     pub fn new() -> Self {
-        let driver_handle = open_driver().expect("Failed to open driver");
+        let driver_handle = open_driver().expect("Error");
         Injection { driver_handle }
     }   
 
@@ -43,7 +43,7 @@ impl Injection {
                 self.driver_handle,
                 ioctl_code,
                 &mut info_injection as *mut _ as *mut c_void,
-                std::mem::size_of::<TargetInjection>() as u32,
+                size_of::<TargetInjection>() as u32,
                 null_mut(),
                 0,
                 &mut return_buffer,
@@ -81,7 +81,7 @@ impl Injection {
                 self.driver_handle,
                 ioctl_code,
                 &mut info_injection as *mut _ as *mut c_void,
-                std::mem::size_of::<TargetInjection>() as u32,
+                size_of::<TargetInjection>() as u32,
                 null_mut(),
                 0,
                 &mut return_buffer,

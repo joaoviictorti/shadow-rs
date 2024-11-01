@@ -1,44 +1,36 @@
 #![no_std]
 #![allow(unused_must_use)]
-#![allow(unreachable_code)]
 #![allow(unused_variables)]
+#![allow(static_mut_refs)]
 
 extern crate alloc;
 
 use {
-    utils::uni,
-    port::Port,
-    kernel_log::KernelLogger,
-    wdk_sys::{ntddk::*, _MODE::KernelMode, *},
-    core::{ptr::null_mut, sync::atomic::Ordering},
-    crate::{
-        port::HOOK_INSTALLED,
-        utils::{
-            offsets::BUILD_NUMBER,
-            ioctls::IOCTL_MAP, get_windows_build_number, 
-        }
-    }, 
+    utils::uni, 
+    log::{error, info}, 
+    kernel_log::KernelLogger, 
+    shadowx::error::ShadowError, 
+    crate::utils::ioctls::IoctlManager,
+    wdk_sys::{*, ntddk::*, _MODE::KernelMode},
+    core::{ptr::null_mut, sync::atomic::Ordering}, 
 };
 
 #[cfg(not(feature = "mapper"))]
-use {
-    process::{on_pre_open_process, CALLBACK_REGISTRATION_HANDLE_PROCESS},
-    thread::{on_pre_open_thread, CALLBACK_REGISTRATION_HANDLE_THREAD},
-    registry::{registry_callback, CALLBACK_REGISTRY},
+use shadowx::{
+    ThreadCallback, CALLBACK_REGISTRATION_HANDLE_THREAD,
+    ProcessCallback, CALLBACK_REGISTRATION_HANDLE_PROCESS,
+    registry::callback::{CALLBACK_REGISTRY, registry_callback}
 };
 
-#[cfg(not(feature = "mapper"))]
-pub mod registry;
-pub mod callback;
-pub mod misc;
-pub mod driver;
-pub mod internals;
-pub mod process;
-pub mod thread;
-pub mod module;
-pub mod injection;
-pub mod port;
-pub mod utils;
+#[cfg(not(test))]
+extern crate wdk_panic;
+
+#[cfg(not(test))]
+#[global_allocator]
+static GLOBAL_ALLOCATOR: wdk_alloc::WDKAllocator = wdk_alloc::WDKAllocator;
+
+mod modules;
+mod utils;
 
 /// The name of the device in the device namespace.
 const DEVICE_NAME: &str = "\\Device\\shadow";
@@ -52,12 +44,12 @@ const DOS_DEVICE_NAME: &str = "\\??\\shadow";
 ///
 /// # Arguments
 /// 
-/// - `driver_object`: Pointer to the driver object.
-/// - `registry_path`: Pointer to the Unicode string that specifies the driver's registry path.
+/// * `driver_object` - Pointer to the driver object.
+/// * `registry_path` - Pointer to the Unicode string that specifies the driver's registry path.
 ///
 /// # Returns
 /// 
-/// - `NTSTATUS`: Status code indicating the success or failure of the operation.
+/// * Status code indicating the success or failure of the operation.
 ///
 /// Reference: WDF expects a symbol with the name DriverEntry
 #[export_name = "DriverEntry"]
@@ -68,13 +60,13 @@ pub unsafe extern "system" fn driver_entry(
     KernelLogger::init(log::LevelFilter::Info).expect("Failed to initialize logger");
     
     #[cfg(feature = "mapper")] {
-        use internals::IoCreateDriver;
+        use shadowx::data::IoCreateDriver;
 
         const DRIVER_NAME: &str = "\\Driver\\shadow";
         let mut driver_name = uni::str_to_unicode(DRIVER_NAME).to_unicode();
         let status = IoCreateDriver(&mut driver_name, Some(shadow_entry));
         if !NT_SUCCESS(status) {
-            log::error!("IoCreateDriver Failed With Status: {status}");
+            error!("IoCreateDriver Failed With Status: {status}");
         }
         return status;
     }
@@ -89,18 +81,17 @@ pub unsafe extern "system" fn driver_entry(
 ///
 /// # Arguments
 /// 
-/// - `driver_object`: Pointer to the driver object.
-/// - `_registry_path`: Pointer to the Unicode string that specifies the driver's registry path.
+/// * `driver_object` - Pointer to the driver object.
+/// * `_registry_path` - Pointer to the Unicode string that specifies the driver's registry path.
 ///
 /// # Returns
 /// 
-/// - `NTSTATUS`: Status code indicating the success or failure of the operation.
-/// 
+/// * Status code indicating the success or failure of the operation. 
 pub unsafe extern "system" fn shadow_entry(
     driver: &mut DRIVER_OBJECT,
     _registry_path: PCUNICODE_STRING,
 ) -> NTSTATUS {
-    log::info!("Shadow Loaded");
+    info!("Shadow Loaded");
 
     let device_name = uni::str_to_unicode(DEVICE_NAME);
     let dos_device_name = uni::str_to_unicode(DOS_DEVICE_NAME);
@@ -116,7 +107,7 @@ pub unsafe extern "system" fn shadow_entry(
     );
 
     if !NT_SUCCESS(status) {
-        log::error!("IoCreateDevice Failed With Status: {status}");
+        error!("IoCreateDevice Failed With Status: {status}");
         return status;
     }
 
@@ -129,13 +120,7 @@ pub unsafe extern "system" fn shadow_entry(
 
     if !NT_SUCCESS(status) {
         IoDeleteDevice(device_object);
-        log::error!("IoCreateSymbolicLink Failed With Status: {status}");
-        return status;
-    }
-
-    if !NT_SUCCESS(status) {
-        IoDeleteDevice(device_object);
-        log::error!("PsCreateSystemThread Failed With Status: {status}");
+        error!("IoCreateSymbolicLink Failed With Status: {status}");
         return status;
     }
 
@@ -147,14 +132,20 @@ pub unsafe extern "system" fn shadow_entry(
     #[cfg(not(feature = "mapper"))] {
         status = register_callbacks(driver);
         if !NT_SUCCESS(status) {
-            log::error!("register_callbacks Failed With Status: {status}");
+            error!("register_callbacks Failed With Status: {status}");
             return status;
         }
     }
 
-    BUILD_NUMBER = get_windows_build_number();
-
     STATUS_SUCCESS
+}
+
+lazy_static::lazy_static! {
+    pub static ref MANAGER: IoctlManager = {
+        let mut manager = IoctlManager::default();
+        manager.load_default_handlers();
+        manager
+    };
 }
 
 /// Handles device control commands (IOCTL).
@@ -163,21 +154,28 @@ pub unsafe extern "system" fn shadow_entry(
 ///
 /// # Arguments
 /// 
-/// - `_device`: Pointer to the device object (not used in this function).
-/// - `irp`: Pointer to the I/O request packet (IRP) that contains the information about the device control request.
+/// * `_device` - Pointer to the device object (not used in this function).
+/// * `irp` - Pointer to the I/O request packet (IRP) that contains the information about the device control request.
 ///
 /// # Returns
 /// 
-/// - `NTSTATUS`: Status code indicating the success or failure of the operation.
-/// 
+/// * Status code indicating the success or failure of the operation.
 pub unsafe extern "C" fn device_control(_device: *mut DEVICE_OBJECT, irp: *mut IRP) -> NTSTATUS {
     let stack = (*irp).Tail.Overlay.__bindgen_anon_2.__bindgen_anon_1.CurrentStackLocation;
     let control_code = (*stack).Parameters.DeviceIoControl.IoControlCode;
     
-    let status = if let Some(handler) = IOCTL_MAP.get(&control_code) {
+    let status = if let Some(handler) = MANAGER.get_handler(control_code) {
         handler(irp, stack)
     } else {
-        STATUS_INVALID_DEVICE_REQUEST
+        Err(ShadowError::InvalidDeviceRequest)
+    };
+
+    let status = match status {
+        Ok(ntstatus) => ntstatus,
+        Err(err) => {
+            error!("Error: {err}");
+            STATUS_INVALID_DEVICE_REQUEST
+        },
     };
 
     (*irp).IoStatus.__bindgen_anon_1.Status = status;
@@ -193,17 +191,17 @@ pub unsafe extern "C" fn device_control(_device: *mut DEVICE_OBJECT, irp: *mut I
 ///
 /// # Arguments
 /// 
-/// - `_device_object`: Pointer to the associated device object (not used in this function).
-/// - `irp`: Pointer to the I/O request packet (IRP) containing the information about the close request.
+/// * `_device_object` - Pointer to the associated device object (not used in this function).
+/// * `irp` - Pointer to the I/O request packet (IRP) containing the information about the close request.
 ///
 /// # Returns
 /// 
-/// - `NTSTATUS`: Status code indicating the success of the operation (always returns `STATUS_SUCCESS`).
-///
+/// * Status code indicating the success of the operation (always returns `STATUS_SUCCESS`).
 pub unsafe extern "C" fn driver_close(_device_object: *mut DEVICE_OBJECT, irp: *mut IRP) -> NTSTATUS {
     (*irp).IoStatus.__bindgen_anon_1.Status = STATUS_SUCCESS;
     (*irp).IoStatus.Information = 0;
     IofCompleteRequest(irp, IO_NO_INCREMENT as i8);
+
     STATUS_SUCCESS
 }
 
@@ -214,13 +212,12 @@ pub unsafe extern "C" fn driver_close(_device_object: *mut DEVICE_OBJECT, irp: *
 ///
 /// # Arguments
 /// 
-/// - `driver_object`: Pointer to the driver object being unloaded.
-///
+/// * `driver_object` - Pointer to the driver object being unloaded.
 pub unsafe extern "C" fn driver_unload(driver_object: *mut DRIVER_OBJECT) {
-    log::info!("Unloading driver");
+    info!("Unloading driver");
 
-    if HOOK_INSTALLED.load(Ordering::Relaxed) {
-        let hook_status = Port::uninstall_hook();
+    if shadowx::port::HOOK_INSTALLED.load(Ordering::Relaxed) {
+        let hook_status = shadowx::Port::uninstall_hook();
         let mut interval = LARGE_INTEGER {
             QuadPart: -50 * 1000_i64 * 1000_i64,
         };
@@ -233,36 +230,33 @@ pub unsafe extern "C" fn driver_unload(driver_object: *mut DRIVER_OBJECT) {
     IoDeleteDevice((*driver_object).DeviceObject);
 
     #[cfg(not(feature = "mapper"))] {
-        ObUnRegisterCallbacks(process::CALLBACK_REGISTRATION_HANDLE_PROCESS);
+        ObUnRegisterCallbacks(CALLBACK_REGISTRATION_HANDLE_PROCESS);
         ObUnRegisterCallbacks(CALLBACK_REGISTRATION_HANDLE_THREAD);
         CmUnRegisterCallback(CALLBACK_REGISTRY);
     }
 
-    log::info!("Shadow Unload");
+    info!("Shadow Unload");
 }
 
 /// Register Callbacks.
 ///
 /// # Arguments
 /// 
-/// - `driver_object`: Pointer to the driver object being unloaded.
+/// * `driver_object` - Pointer to the driver object being unloaded.
 /// 
 /// # Returns
 /// 
-/// - `NTSTATUS`: Status code indicating the success of the operation (always returns `STATUS_SUCCESS`).
-///
+/// * Status code indicating the success of the operation (always returns `STATUS_SUCCESS`).
 #[cfg(not(feature = "mapper"))]
 pub unsafe fn register_callbacks(driver_object: &mut DRIVER_OBJECT) -> NTSTATUS {
-    let mut status;
-
     // Creating callbacks related to Process operations
+    let altitude = uni::str_to_unicode("31243.5222");
     let mut op_reg = OB_OPERATION_REGISTRATION {
         ObjectType: PsProcessType,
         Operations: OB_OPERATION_HANDLE_CREATE | OB_OPERATION_HANDLE_DUPLICATE,
-        PreOperation: Some(on_pre_open_process),
+        PreOperation: Some(ProcessCallback::on_pre_open_process),
         PostOperation: None,
     };
-    let altitude = uni::str_to_unicode("31243.5222");
     let mut cb_reg = OB_CALLBACK_REGISTRATION {
         Version: OB_FLT_REGISTRATION_VERSION as u16,
         OperationRegistrationCount: 1,
@@ -271,20 +265,20 @@ pub unsafe fn register_callbacks(driver_object: &mut DRIVER_OBJECT) -> NTSTATUS 
         OperationRegistration: &mut op_reg,
     };
 
-    status = ObRegisterCallbacks(&mut cb_reg,core::ptr::addr_of_mut!(CALLBACK_REGISTRATION_HANDLE_PROCESS));
+    let mut status = ObRegisterCallbacks(&mut cb_reg,core::ptr::addr_of_mut!(CALLBACK_REGISTRATION_HANDLE_PROCESS));
     if !NT_SUCCESS(status) {
-        log::error!("ObRegisterCallbacks (Process) Failed With Status: {status}");
+        error!("ObRegisterCallbacks (Process) Failed With Status: {status}");
         return status;
     }
 
     // Creating callbacks related to thread operations
+    let altitude = uni::str_to_unicode("31243.5223");
     let mut op_reg = OB_OPERATION_REGISTRATION {
         ObjectType: PsThreadType,
         Operations: OB_OPERATION_HANDLE_CREATE | OB_OPERATION_HANDLE_DUPLICATE,
-        PreOperation: Some(on_pre_open_thread),
+        PreOperation: Some(ThreadCallback::on_pre_open_thread),
         PostOperation: None,
     };
-    let altitude = uni::str_to_unicode("31243.5223");
     let mut cb_reg = OB_CALLBACK_REGISTRATION {
         Version: OB_FLT_REGISTRATION_VERSION as u16,
         OperationRegistrationCount: 1,
@@ -295,7 +289,7 @@ pub unsafe fn register_callbacks(driver_object: &mut DRIVER_OBJECT) -> NTSTATUS 
 
     status = ObRegisterCallbacks(&mut cb_reg,core::ptr::addr_of_mut!(CALLBACK_REGISTRATION_HANDLE_THREAD));
     if !NT_SUCCESS(status) {
-        log::error!("ObRegisterCallbacks (Thread) Failed With Status: {status}");
+        error!("ObRegisterCallbacks (Thread) Failed With Status: {status}");
         return status;
     }
 
@@ -311,7 +305,7 @@ pub unsafe fn register_callbacks(driver_object: &mut DRIVER_OBJECT) -> NTSTATUS 
     );
 
     if !NT_SUCCESS(status) {
-        log::error!("CmRegisterCallbackEx Failed With Status: {status}");
+        error!("CmRegisterCallbackEx Failed With Status: {status}");
         return status;
     }
 

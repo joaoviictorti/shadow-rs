@@ -5,12 +5,9 @@ use {
         utils::{open_driver, Options}, 
         PS_PROTECTED_SIGNER, PS_PROTECTED_TYPE,
     },
-    shared::{
+    common::{
         vars::MAX_PID,
-        structs::{
-            EnumerateInfoInput, ProcessInfoHide, ProcessListInfo,
-            ProcessSignature, TargetProcess
-        },
+        structs::TargetProcess,
     },
     windows_sys::Win32::{
         System::IO::DeviceIoControl,
@@ -24,7 +21,7 @@ pub struct Process {
 
 impl Process {
     pub fn new() -> Self {
-        let driver_handle = open_driver().expect("Failed to open driver");
+        let driver_handle = open_driver().expect("Error");
         Process { driver_handle }
     }
 
@@ -32,7 +29,7 @@ impl Process {
         if let Some(pid_value) = pid {
             info!("Preparing to {} process: {}", if enable { "hide" } else { "unhide" }, pid_value);
             let pid = *pid_value as usize;
-            let mut target_process = ProcessInfoHide { enable, pid };
+            let mut target_process = TargetProcess { enable, pid, ..Default::default() };
             let mut return_buffer = 0;
 
             let status = unsafe {
@@ -40,7 +37,7 @@ impl Process {
                     self.driver_handle,
                     ioctl_code,
                     &mut target_process as *mut _ as *mut c_void,
-                    size_of::<ProcessInfoHide>() as u32,
+                    size_of::<TargetProcess>() as u32,
                     null_mut(),
                     0,
                     &mut return_buffer,
@@ -62,7 +59,7 @@ impl Process {
         if let Some(pid_value) = pid {
             info!("Preparing to terminate process: {}", pid_value);
             let pid = *pid_value as usize;
-            let mut target_process = TargetProcess { pid };
+            let mut target_process = TargetProcess { pid, ..Default::default() };
             let mut return_buffer = 0;
 
             let status = unsafe {
@@ -93,7 +90,7 @@ impl Process {
         if let Some(pid_value) = pid {
             info!("Preparing to {} protection for process: {}", if enable { "enable" } else { "disable" }, pid_value);
             let pid = *pid_value as usize;
-            let mut target_process = shared::structs::ProcessProtection { pid, enable };
+            let mut target_process = TargetProcess { pid, enable, ..Default::default() };
             let mut return_buffer = 0;
 
             let status = unsafe {
@@ -101,7 +98,7 @@ impl Process {
                     self.driver_handle,
                     ioctl_code,
                     &mut target_process as *mut _ as *mut c_void,
-                    size_of::<shared::structs::ProcessProtection>() as u32,
+                    size_of::<TargetProcess>() as u32,
                     null_mut(),
                     0,
                     &mut return_buffer,
@@ -120,9 +117,10 @@ impl Process {
     }
 
     pub fn enumerate_process(&mut self, ioctl_code: u32, option: &Options) {
-        let mut info_process: [ProcessListInfo; MAX_PID] = unsafe { std::mem::zeroed() };
-        let mut enumeration_input = EnumerateInfoInput {
+        let mut info_process: [TargetProcess; MAX_PID] = unsafe { std::mem::zeroed() };
+        let mut enumeration_input = TargetProcess {
             options: option.to_shared(),
+            ..Default::default()
         };
 
         let mut return_buffer = 0;
@@ -131,9 +129,9 @@ impl Process {
                 self.driver_handle,
                 ioctl_code,
                 &mut enumeration_input as *mut _ as *mut c_void,
-                size_of::<EnumerateInfoInput>() as u32,
+                size_of::<TargetProcess>() as u32,
                 info_process.as_mut_ptr() as *mut _,
-                (info_process.len() * size_of::<ProcessListInfo>()) as u32,
+                (info_process.len() * size_of::<TargetProcess>()) as u32,
                 &mut return_buffer,
                 null_mut(),
             )
@@ -142,12 +140,12 @@ impl Process {
         if status == 0 {
             error!("DeviceIoControl Failed with status: 0x{:08X}", unsafe { GetLastError() });
         } else {
-            let total_process = return_buffer as usize / size_of::<ProcessListInfo>();
+            let total_process = return_buffer as usize / size_of::<TargetProcess>();
             info!("Total Processes: {}", total_process);
             println!("Listing Processes:");
             for (i, process) in info_process.iter().enumerate().take(total_process) {
-                if process.pids > 0 {
-                    println!("[{}] {}", i, process.pids);
+                if process.pid > 0 {
+                    println!("[{}] {}", i, process.pid);
                 }
             }
         }
@@ -159,7 +157,7 @@ impl Process {
             let pid = *pid_value as usize;
             let sg = *sg as usize;
             let tp = *tp as usize;
-            let mut info_protection_process = ProcessSignature { pid, sg, tp };
+            let mut info_protection_process = TargetProcess { pid, sg, tp, ..Default::default() };
             let mut return_buffer = 0;
 
             let status = unsafe {
@@ -167,7 +165,7 @@ impl Process {
                     self.driver_handle,
                     ioctl_code,
                     &mut info_protection_process as *mut _ as *mut c_void,
-                    size_of::<ProcessSignature>() as u32,
+                    size_of::<TargetProcess>() as u32,
                     null_mut(),
                     0,
                     &mut return_buffer,
@@ -187,7 +185,7 @@ impl Process {
         if let Some(pid_value) = pid {
             info!("Preparing to elevate process: {}", pid_value);
             let pid = *pid_value as usize;
-            let mut target_process = TargetProcess { pid };
+            let mut target_process = TargetProcess { pid, ..Default::default() };
             let mut return_buffer = 0;
 
             let status = unsafe {

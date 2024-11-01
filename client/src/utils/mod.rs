@@ -52,7 +52,7 @@ pub fn check_file(file: &String) -> bool {
 /// - `Ok(HANDLE)` if the driver handle is successfully opened.
 /// - `Err(())` if there is an error.
 /// 
-pub fn open_driver() -> Result<HANDLE, ()> {
+pub fn open_driver() -> Result<HANDLE, &'static str> {
     info!("Opening driver handle");
     
     let h_file = unsafe {
@@ -63,13 +63,13 @@ pub fn open_driver() -> Result<HANDLE, ()> {
             null_mut(),
             OPEN_EXISTING,
             FILE_ATTRIBUTE_NORMAL,
-            0, 
+            null_mut(),
         )
     };
 
     if h_file == INVALID_HANDLE_VALUE {
-        error!("CreateFileW failed with error: {:?}", unsafe { GetLastError() });
-        return Err(());
+        error!("CreateFileW failed with error: {}", unsafe { GetLastError() });
+        return Err("Failed to open the driver.");
     }
 
     info!("Driver handle successfully opened");
@@ -172,16 +172,16 @@ impl Callbacks {
     ///
     /// # Returns
     ///
-    /// A `shared::enums::Callbacks` variant corresponding to the selected callback.
+    /// A `common::enums::Callbacks` variant corresponding to the selected callback.
     /// 
-    pub fn to_shared(self) -> shared::enums::Callbacks {
+    pub fn to_shared(self) -> common::enums::Callbacks {
         match self {
-            Callbacks::Process => shared::enums::Callbacks::PsSetCreateProcessNotifyRoutine,
-            Callbacks::Thread => shared::enums::Callbacks::PsSetCreateThreadNotifyRoutine,
-            Callbacks::LoadImage => shared::enums::Callbacks::PsSetLoadImageNotifyRoutine,
-            Callbacks::Registry => shared::enums::Callbacks::CmRegisterCallbackEx,
-            Callbacks::ObProcess => shared::enums::Callbacks::ObProcess,
-            Callbacks::ObThread => shared::enums::Callbacks::ObThread,
+            Callbacks::Process => common::enums::Callbacks::PsSetCreateProcessNotifyRoutine,
+            Callbacks::Thread => common::enums::Callbacks::PsSetCreateThreadNotifyRoutine,
+            Callbacks::LoadImage => common::enums::Callbacks::PsSetLoadImageNotifyRoutine,
+            Callbacks::Registry => common::enums::Callbacks::CmRegisterCallbackEx,
+            Callbacks::ObProcess => common::enums::Callbacks::ObProcess,
+            Callbacks::ObThread => common::enums::Callbacks::ObThread,
         }
     }
 }
@@ -201,13 +201,13 @@ impl Options {
     ///
     /// # Returns
     ///
-    /// A `shared::enums::Options` variant corresponding to the selected option.
+    /// A `common::enums::Options` variant corresponding to the selected option.
     /// 
-    pub fn to_shared(self) -> shared::enums::Options {
+    pub fn to_shared(self) -> common::enums::Options {
         match self {
-            Options::Hide => shared::enums::Options::Hide,
+            Options::Hide => common::enums::Options::Hide,
             #[cfg(not(feature = "mapper"))]
-            Options::Protection => shared::enums::Options::Protection,
+            Options::Protection => common::enums::Options::Protection,
         }
     }
 }
@@ -226,12 +226,12 @@ impl Protocol {
     ///
     /// # Returns
     ///
-    /// A `shared::enums::Protocol` variant corresponding to the selected protocol.
+    /// A `common::enums::Protocol` variant corresponding to the selected protocol.
     /// 
-    pub fn to_shared(self) -> shared::enums::Protocol {
+    pub fn to_shared(self) -> common::enums::Protocol {
         match self {
-            Protocol::TCP => shared::enums::Protocol::TCP,
-            Protocol::UDP => shared::enums::Protocol::UDP,
+            Protocol::TCP => common::enums::Protocol::TCP,
+            Protocol::UDP => common::enums::Protocol::UDP,
         }
     }
 }
@@ -250,12 +250,12 @@ impl PortType {
     ///
     /// # Returns
     ///
-    /// A `shared::enums::PortType` variant corresponding to the selected port type.
+    /// A `common::enums::PortType` variant corresponding to the selected port type.
     /// 
-    pub fn to_shared(self) -> shared::enums::PortType {
+    pub fn to_shared(self) -> common::enums::PortType {
         match self {
-            PortType::LOCAL => shared::enums::PortType::LOCAL,
-            PortType::REMOTE => shared::enums::PortType::REMOTE,
+            PortType::LOCAL => common::enums::PortType::LOCAL,
+            PortType::REMOTE => common::enums::PortType::REMOTE,
         }
     }
 }

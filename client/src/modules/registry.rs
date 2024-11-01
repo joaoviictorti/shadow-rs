@@ -1,7 +1,7 @@
 use {
     crate::utils::open_driver,
     log::*,
-    shared::structs::TargetRegistry,
+    common::structs::TargetRegistry,
     std::{ffi::c_void, ptr::null_mut},
     windows_sys::Win32::{
         System::IO::DeviceIoControl,
@@ -15,7 +15,7 @@ pub struct Registry {
 
 impl Registry {
     pub fn new() -> Self {
-        let driver_handle = open_driver().expect("Failed to open driver");
+        let driver_handle = open_driver().expect("Error");
         Registry { driver_handle }
     }
 

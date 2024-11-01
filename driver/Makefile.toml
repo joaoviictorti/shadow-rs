@@ -1,8 +1,5 @@
 extend = "target/rust-driver-makefile.toml"
 
-[env]
-CARGO_MAKE_EXTEND_WORKSPACE_MAKEFILE = true
-
 [config]
 load_script = '''
 #!@rust
