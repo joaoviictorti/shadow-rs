@@ -11,7 +11,7 @@
 ## Table of Contents
 
 * [Legal notice](#legal-notice)
-* [Features](#contents)
+* [Features](#features)
 * [Documentation](#documentation)
 * [Crates](#crates)
 * [Installation](#installation)
@@ -36,6 +36,7 @@
 ## Features
  
 ### Process
+
 - ✅ Process (Hide / Unhide) 
 - ✅ Process Signature (PP / PPL) 
 - ✅ Process Protection (Anti-Kill / Dumping) 
@@ -44,11 +45,13 @@
 - ✅ Lists protected and hidden processes currently on the system 
 
 ### Thread
+
 - ✅ Thread (Hide / Unhide) 
 - ✅ Thread Protection (Anti-Kill) 
 - ✅ Lists protected and hidden threads currently on the system 
  
 ### Driver
+
 - ✅ Driver (Hide / Unhide) 
 - ✅ Enumerate Driver 
  
@@ -64,35 +67,34 @@
     - ✅ ETWTI (Enable / Disable) 
 
 ### Callbacks
+
 - ✅ List / Remove / Restore Callbacks 
   - PsSetCreateProcessNotifyRoutine 
   - PsSetCreateThreadNotifyRoutine 
   - PsSetLoadImageNotifyRoutine 
   - CmRegisterCallbackEx  
   - ObRegisterCallbacks (PsProcessType / PsThreadType)
-  - ❌ Minifilters
 - ✅ Listing currently removed callbacks 
 
 ### Port
+
 - ✅ Ports (Hide / Unhide)
 
-### File
-- ❌ File / Directory Hiding
-- ❌ Anti-Deletion and Overwriting 
-
 ### Module
+
 - ✅ Hide Module
 - ✅ Enumerate Module 
 
 ### Registry
+
 - ✅ Key and Values (Hide / Unhide) 
 - ✅ Registry Protection (Anti-Deletion e Overwriting) 
 
 ### Injection
+
 - ✅ Process Injection - Shellcode (ZwCreateThreadEx)
 - ✅ Process Injection - DLL (ZwCreateThreadEx) 
 - ✅ APC Injection - Shellcode
-- ❌ APC Injection - DLL
 
 ## Documentation
 
