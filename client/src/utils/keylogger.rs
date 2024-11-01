@@ -17,12 +17,11 @@ pub unsafe fn update_key_state() {
 ///
 /// # Arguments
 /// 
-/// - `key`: The key code.
+/// * `key` - The key code.
 ///
 /// # Returns
 /// 
-/// - `bool`: if the key was pressed, otherwise `false`.
-///
+/// * `bool` - if the key was pressed, otherwise `false`.
 pub unsafe fn key_pressed(key: u8) -> bool {
     let result = is_key_down!(KEY_RECENT, key);
     set_key_down!(KEY_RECENT, key, false);
@@ -33,12 +32,11 @@ pub unsafe fn key_pressed(key: u8) -> bool {
 ///
 /// # Arguments
 /// 
-/// - `key`: The code for the virtual key.
+/// * `key` - The code for the virtual key.
 ///
 /// # Returns
 /// 
-/// - `&'static str`: A string representing the character corresponding to the code of the virtual key.
-/// 
+/// * A string representing the character corresponding to the code of the virtual key.
 pub fn vk_to_char(key: u8) -> &'static str {
     for &(vk, char) in &VK_CHARS {
         if vk == key {

@@ -1,5 +1,5 @@
 use {
-    log::*,
+    log::{error, info, debug},
     crate::utils::open_driver,
     std::{ffi::c_void, mem::size_of, ptr::null_mut},
     common::structs::{ModuleInfo, TargetModule, TargetProcess},
@@ -9,16 +9,32 @@ use {
     },
 };
 
+/// Provides operations for managing modules within a process through a driver interface.
 pub struct Module {
     driver_handle: HANDLE,
 }
 
 impl Module {
+    /// Creates a new `Module` instance, opening a handle to the driver.
+    ///
+    /// # Returns
+    /// 
+    /// * An instance of `Module`.
+    /// 
+    /// # Panics
+    /// 
+    /// Panics if the driver cannot be opened.
     pub fn new() -> Self {
         let driver_handle = open_driver().expect("Error");
         Module { driver_handle }
     }
 
+    /// Enumerates all modules within a specified process by `pid`.
+    ///
+    /// # Arguments
+    ///
+    /// * `ioctl_code` - The IOCTL code for the enumeration operation.
+    /// * `pid` - A reference to the PID of the process whose modules will be enumerated.
     pub fn enumerate_module(self, ioctl_code: u32, pid: &u32) {
         info!("Attempting to enumerate modules for PID: {pid}");
     
@@ -70,6 +86,13 @@ impl Module {
         }
     }
     
+    /// Hides a specific module within a process specified by `pid`.
+    ///
+    /// # Arguments
+    ///
+    /// * `ioctl_code` - The IOCTL code for the hide operation.
+    /// * `name` - A reference to the module name to hide.
+    /// * `pid` - The PID of the process containing the module to hide.
     pub fn hide_module(self, ioctl_code: u32, name: &String, pid: u32) {
         debug!("Attempting to open the module for hide operation");
     
@@ -103,6 +126,7 @@ impl Module {
 }
 
 impl Drop for Module {
+    /// Ensures the driver handle is closed when `Module` goes out of scope.
     fn drop(&mut self) {
         debug!("Closing the driver handle");
         unsafe { CloseHandle(self.driver_handle) };

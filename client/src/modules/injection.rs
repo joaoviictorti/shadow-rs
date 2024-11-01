@@ -1,7 +1,6 @@
 use {
-    core::ffi::c_void,
-    std::ptr::null_mut,
     log::{info, error, debug},
+    std::{ptr::null_mut, ffi::c_void},
     common::structs::TargetInjection,
     crate::{utils::check_file, utils::open_driver},
     windows_sys::Win32::{
@@ -10,16 +9,33 @@ use {
     },
 };
 
+/// Provides operations for injecting code into processes through a driver interface.
 pub struct Injection {
     driver_handle: HANDLE,
 }
 
 impl Injection {
+    /// Creates a new `Injection` instance, opening a handle to the driver.
+    ///
+    /// # Returns
+    /// 
+    /// * An instance of `Injection`.
+    /// 
+    /// # Panics
+    /// 
+    /// Panics if the driver cannot be opened.
     pub fn new() -> Self {
         let driver_handle = open_driver().expect("Error");
         Injection { driver_handle }
     }   
 
+    /// Injects code into a process's thread specified by `pid` using a file at `path`.
+    ///
+    /// # Arguments
+    ///
+    /// * `ioctl_code` - The IOCTL code for the thread injection operation.
+    /// * `pid` - A reference to the PID of the target process.
+    /// * `path` - The file path of the code to inject.
     pub fn injection_thread(self, ioctl_code: u32, pid: &u32, path: &String) {
         info!("Starting process injection for PID: {pid}, using file: {path}");
 
@@ -58,6 +74,13 @@ impl Injection {
         }
     }
     
+    /// Injects code into a process using an Asynchronous Procedure Call (APC) specified by `pid` and `path`.
+    ///
+    /// # Arguments
+    ///
+    /// * `ioctl_code` - The IOCTL code for the APC injection operation.
+    /// * `pid` - A reference to the PID of the target process.
+    /// * `path` - The file path of the code to inject.
     pub fn injection_apc(self, ioctl_code: u32, pid: &u32, path: &String) {
         debug!("Starting APC injection for PID: {pid}, using file: {path}");
         
@@ -98,6 +121,7 @@ impl Injection {
 }
 
 impl Drop for Injection {
+    /// Ensures the driver handle is closed when `Injection` goes out of scope.
     fn drop(&mut self) {
         debug!("Closing the driver handle");
         unsafe { CloseHandle(self.driver_handle) };
