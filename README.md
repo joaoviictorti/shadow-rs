@@ -10,11 +10,12 @@
 
 The project also provides useful crates for developing rootkits, such as [**shadowx**](/crates/shadowx/), which consolidates core logic and essential techniques. It includes rootkit-specific tricks, with plans for additional features in future updates.
 
+The documentation on how to execute CLI commands can be found on the [**Wiki**](https://github.com/joaoviictorti/shadow-rs/wiki)
+
 ## Table of Contents
 
 * [Legal notice](#legal-notice)
 * [Features](#features)
-* [Documentation](#documentation)
 * [Installation](#installation)
 * [Supported Platforms](#supported-Platforms)
 * [Build Instructions](#build-instructions)
@@ -96,11 +97,6 @@ The project also provides useful crates for developing rootkits, such as [**shad
 - ✅ Process Injection - Shellcode (ZwCreateThreadEx)
 - ✅ Process Injection - DLL (ZwCreateThreadEx) 
 - ✅ APC Injection - Shellcode
-
-## Documentation
-
-If you would like to read the documentation on how to use the tool, simply navigate to the `/docs` folder. There you will find detailed information on setting up, using, and contributing to the project.
-
 
 ## Installation
 - Install Rust from [**here**](https://www.rust-lang.org/learn/get-started).
