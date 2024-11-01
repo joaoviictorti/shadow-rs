@@ -6,7 +6,9 @@
 ![Stars](https://img.shields.io/github/stars/joaoviictorti/shadow-rs)
 ![License](https://img.shields.io/github/license/joaoviictorti/shadow-rs)
 
-**shadow-rs** is a Windows kernel rootkit written in Rust, demonstrating advanced techniques for kernel manipulation, while leveraging Rust’s safety and performance features. This project is intended for educational and research purposes.
+`shadow-rs` is a Windows kernel rootkit written in Rust, demonstrating advanced techniques for kernel manipulation while leveraging Rust’s safety and performance features. This project is intended for educational and research purposes.
+
+The project also provides useful crates for developing rootkits, such as shadowx, which consolidates core logic and essential techniques. It includes rootkit-specific tricks, with plans for additional features in future updates.
 
 ## Table of Contents
 
