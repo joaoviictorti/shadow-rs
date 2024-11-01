@@ -11,9 +11,9 @@
 ## Table of Contents
 
 * [Legal notice](#legal-notice)
-* [Documentation](#documentation)
 * [Features](#contents)
-* [Others](#others)
+* [Documentation](#documentation)
+* [Crates](#crates)
 * [Installation](#installation)
 * [Supported Platforms](#supported-Platforms)
 * [Build Instructions](#build-instructions)
@@ -32,10 +32,6 @@
 > [!IMPORTANT]  
 > This project is under development.
 > This project is for educational and research purposes. Malicious use of the software is strictly prohibited and discouraged. I am not responsible for any damage caused by improper use of the software.
-
-## Documentation
-
-If you would like to read the documentation on how to use the tool, simply navigate to the `/docs` folder. There you will find detailed information on setting up, using, and contributing to the project.
 
 ## Features
  
@@ -98,13 +94,13 @@ If you would like to read the documentation on how to use the tool, simply navig
 - ✅ APC Injection - Shellcode
 - ❌ APC Injection - DLL
 
-## Others
+## Documentation
 
-The following functionalities are not "features", they are basically techniques that may be of interest to you to explore, understand and apply in the development of your driver.
+If you would like to read the documentation on how to use the tool, simply navigate to the `/docs` folder. There you will find detailed information on setting up, using, and contributing to the project.
 
-- Searching for a "Zw" api not exported from `ntoskrnl.exe` at runtime.
-- Reflective Loading.
-- Support for mapping the driver in memory.
+## Crates
+
+shadow-rs offers some useful crates for developing rootkits, such as [**shadowx**](/crates/shadowx/). This crate brings together all the logic of the essential techniques and contains some rootkit-specific tricks, with more features planned for future updates.
 
 ## Installation
 - Install Rust from [**here**](https://www.rust-lang.org/learn/get-started).
