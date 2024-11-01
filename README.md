@@ -8,14 +8,13 @@
 
 `shadow-rs` is a Windows kernel rootkit written in Rust, demonstrating advanced techniques for kernel manipulation while leveraging Rust’s safety and performance features. This project is intended for educational and research purposes.
 
-The project also provides useful crates for developing rootkits, such as shadowx, which consolidates core logic and essential techniques. It includes rootkit-specific tricks, with plans for additional features in future updates.
+The project also provides useful crates for developing rootkits, such as [**shadowx**](/crates/shadowx/), which consolidates core logic and essential techniques. It includes rootkit-specific tricks, with plans for additional features in future updates.
 
 ## Table of Contents
 
 * [Legal notice](#legal-notice)
 * [Features](#features)
 * [Documentation](#documentation)
-* [Crates](#crates)
 * [Installation](#installation)
 * [Supported Platforms](#supported-Platforms)
 * [Build Instructions](#build-instructions)
@@ -26,7 +25,7 @@ The project also provides useful crates for developing rootkits, such as shadowx
   * [Debug via Windbg](#debug-via-windbg)
   * [Create/Start Service](#createstart-service)
 * [Contributing to shadow-rs](#contributing-to-shadow-rs)
-* [Credits / References](#credits--references)
+* [References](#references)
 * [License](#license)
 
 ## Legal Notice
@@ -102,9 +101,6 @@ The project also provides useful crates for developing rootkits, such as shadowx
 
 If you would like to read the documentation on how to use the tool, simply navigate to the `/docs` folder. There you will find detailed information on setting up, using, and contributing to the project.
 
-## Crates
-
-shadow-rs offers some useful crates for developing rootkits, such as [**shadowx**](/crates/shadowx/). This crate brings together all the logic of the essential techniques and contains some rootkit-specific tricks, with more features planned for future updates.
 
 ## Installation
 - Install Rust from [**here**](https://www.rust-lang.org/learn/get-started).
@@ -169,7 +165,7 @@ To contribute to shadow-rs, follow these steps:
 
 Alternatively, consult the GitHub documentation on how to create a pull request.
 
-## Credits / References
+## References
 
 - https://leanpub.com/windowskernelprogrammingsecondedition
 - https://www.youtube.com/watch?v=t7Rx3crobZU&pp=ugMICgJwdBABGAHKBRBibGFja2hhdCByb290a2l0
