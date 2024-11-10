@@ -9,10 +9,10 @@ use {
     utils::uni, 
     log::{error, info}, 
     kernel_log::KernelLogger, 
-    shadowx::error::ShadowError, 
+    shadowx::error::ShadowError,
+    core::sync::atomic::Ordering, 
     crate::utils::ioctls::IoctlManager,
     wdk_sys::{*, ntddk::*, _MODE::KernelMode},
-    core::{ptr::null_mut, sync::atomic::Ordering}, 
 };
 
 #[cfg(not(feature = "mapper"))]
@@ -71,6 +71,7 @@ pub unsafe extern "system" fn driver_entry(
         return status;
     }
 
+    #[cfg(not(feature = "mapper"))]
     shadow_entry(driver, registry_path)
 }
 
@@ -299,9 +300,9 @@ pub unsafe fn register_callbacks(driver_object: &mut DRIVER_OBJECT) -> NTSTATUS 
         Some(registry_callback),
         &mut altitude,
         driver_object as *mut DRIVER_OBJECT as *mut core::ffi::c_void,
-        null_mut(),
+        core::ptr::null_mut(),
         core::ptr::addr_of_mut!(CALLBACK_REGISTRY),
-        null_mut(),
+        core::ptr::null_mut(),
     );
 
     if !NT_SUCCESS(status) {

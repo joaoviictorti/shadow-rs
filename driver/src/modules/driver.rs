@@ -17,7 +17,6 @@ use {
         ioctls::IoctlManager
     },
     common::{
-        vars::MAX_DRIVER,
         structs::{DriverInfo, TargetDriver},
         ioctls::{
             ENUMERATE_DRIVER, 
@@ -25,6 +24,8 @@ use {
         }, 
     }, 
 };
+
+const MAX_DRIVER: usize = 100;
 
 /// Static structure to store hidden driver information.
 /// 
