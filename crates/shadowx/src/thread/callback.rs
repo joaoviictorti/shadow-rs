@@ -1,18 +1,19 @@
 use {
     alloc::vec::Vec, 
     spin::{lazy::Lazy, Mutex},
-    common::{structs::TargetThread, vars::MAX_TID},
+    common::structs::TargetThread,
     wdk_sys::{
-        ntddk::PsGetThreadId, STATUS_QUOTA_EXCEEDED,
-        PETHREAD, STATUS_DUPLICATE_OBJECTID, 
-        NTSTATUS, OB_PRE_OPERATION_INFORMATION, 
-        _OB_PREOP_CALLBACK_STATUS::{Type, OB_PREOP_SUCCESS},
-        STATUS_SUCCESS, STATUS_UNSUCCESSFUL, THREAD_GET_CONTEXT, 
-        THREAD_SET_CONTEXT, THREAD_SUSPEND_RESUME, THREAD_TERMINATE, 
+        *,
+        ntddk::PsGetThreadId, 
+        _OB_PREOP_CALLBACK_STATUS::{
+            Type, OB_PREOP_SUCCESS
+        },
     }
 };
 
 pub struct ThreadCallback;
+
+const MAX_TID: usize = 100;
 
 /// Handle for the thread callback registration.
 pub static mut CALLBACK_REGISTRATION_HANDLE_THREAD: *mut core::ffi::c_void = core::ptr::null_mut();

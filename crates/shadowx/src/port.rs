@@ -16,7 +16,6 @@ use {
 
 use {
     common::{
-        vars::MAX_PORT,
         structs::TargetPort,
         enums::{PortType, Protocol}, 
     },
@@ -34,6 +33,8 @@ use {
         },
     }
 };
+
+const MAX_PORT: usize = 100;
 
 /// Holds the original NSI dispatch function, used to store the original pointer before hooking.
 static mut ORIGINAL_NSI_DISPATCH: AtomicPtr<()> = AtomicPtr::new(null_mut());

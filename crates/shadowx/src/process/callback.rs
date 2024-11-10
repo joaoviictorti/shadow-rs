@@ -1,26 +1,23 @@
 use {
     alloc::vec::Vec,
     spin::{Lazy, Mutex},
-    common::{
-        structs::TargetProcess, 
-        vars::MAX_PID
-    },  
+    common::structs::TargetProcess,  
     winapi::um::winnt::{
         PROCESS_CREATE_THREAD, PROCESS_TERMINATE, 
         PROCESS_VM_OPERATION, PROCESS_VM_READ
     },
-};
-
-use wdk_sys::{
-    STATUS_UNSUCCESSFUL,
-    PEPROCESS, PROCESS_DUP_HANDLE,
-    ntddk::PsGetProcessId, STATUS_QUOTA_EXCEEDED,
-    NTSTATUS, OB_PRE_OPERATION_INFORMATION, 
-    STATUS_DUPLICATE_OBJECTID, STATUS_SUCCESS,
-    _OB_PREOP_CALLBACK_STATUS::{OB_PREOP_SUCCESS, Type}
+    wdk_sys::{
+        *,
+        ntddk::PsGetProcessId, 
+        _OB_PREOP_CALLBACK_STATUS::{
+            Type, OB_PREOP_SUCCESS
+        },
+    },
 };
 
 pub struct ProcessCallback;
+
+const MAX_PID: usize = 100;
 
 /// Handle for the process callback registration.
 pub static mut CALLBACK_REGISTRATION_HANDLE_PROCESS: *mut core::ffi::c_void = core::ptr::null_mut();

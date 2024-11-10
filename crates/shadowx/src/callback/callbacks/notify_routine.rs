@@ -8,7 +8,6 @@ use {
 use {
     common::{
         enums::Callbacks,
-        vars::MAX_CALLBACK,
         structs::CallbackInfoOutput
     },
     crate::{
@@ -27,6 +26,8 @@ use {
 /// system callbacks like `PsSetCreateProcessNotifyRoutine`, `PsSetCreateThreadNotifyRoutine`, 
 /// and `PsSetLoadImageNotifyRoutine`.
 pub struct Callback;
+
+const MAX_CALLBACK: usize = 100;
 
 /// Stores information about removed callbacks.
 ///

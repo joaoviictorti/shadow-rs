@@ -1,9 +1,15 @@
 use {
     utils::Type, 
     core::marker::PhantomData,
-    spin::{lazy::Lazy, Mutex, MutexGuard},
-    alloc::{string::{String, ToString}, vec::Vec},  
-    common::{structs::TargetRegistry, vars::MAX_REGISTRY}, 
+    common::structs::TargetRegistry,
+    spin::{
+        lazy::Lazy, 
+        Mutex, MutexGuard
+    },
+    alloc::{
+        vec::Vec,
+        string::{String, ToString}
+    },  
     wdk_sys::{
         NTSTATUS, STATUS_DUPLICATE_OBJECTID, 
         STATUS_SUCCESS, STATUS_UNSUCCESSFUL
@@ -12,6 +18,8 @@ use {
 
 pub mod callback;
 pub mod utils;
+
+const MAX_REGISTRY: usize = 100;
 
 /// List of protection key-value pairs.
 ///

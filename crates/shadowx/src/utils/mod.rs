@@ -1,12 +1,6 @@
 use {
-    alloc::string::{ToString, String},
     wdk_sys::{*, ntddk::*},
-    crate::{
-        *, 
-        pool::PoolMemory, 
-        error::ShadowError,
-        process_attach::ProcessAttach
-    },
+    alloc::string::{ToString, String},
     core::{
         ffi::{c_void, CStr}, 
         slice::from_raw_parts,
@@ -16,12 +10,23 @@ use {
         ntpebteb::PEB,
         ntldr::LDR_DATA_TABLE_ENTRY,
         ntzwapi::ZwQuerySystemInformation,
-        ntexapi::{SystemProcessInformation, PSYSTEM_PROCESS_INFORMATION}, 
+        ntexapi::{
+            SystemProcessInformation, 
+            PSYSTEM_PROCESS_INFORMATION
+        }, 
     },
     winapi::um::winnt::{
-        IMAGE_DOS_HEADER, IMAGE_EXPORT_DIRECTORY, 
-        IMAGE_NT_HEADERS64
+        IMAGE_DOS_HEADER, 
+        IMAGE_NT_HEADERS64,
+        IMAGE_EXPORT_DIRECTORY, 
     }
+};
+
+use crate::{
+    *, 
+    pool::PoolMemory, 
+    error::ShadowError,
+    process_attach::ProcessAttach
 };
 
 pub mod uni;
@@ -32,42 +37,6 @@ pub mod pool;
 pub mod handle;
 pub mod file;
 pub mod process_attach;
-
-/// Initializes the `OBJECT_ATTRIBUTES` structure.
-///
-/// # Arguments
-///
-/// * `object_name` - An optional pointer to a `UNICODE_STRING` representing the name of the object. 
-///   If `None`, the object name is set to `null_mut()`.
-/// * `attributes` - A `u32` representing the attributes of the object (e.g., `OBJ_CASE_INSENSITIVE`, `OBJ_KERNEL_HANDLE`).
-/// * `root_directory` - An optional pointer to a root directory. If the object resides in a directory, 
-///   this pointer represents the root directory. If `None`, it is set to `null_mut()`.
-/// * `security_descriptor` - An optional pointer to a security descriptor that defines 
-///   access control. If `None`, it is set to `null_mut()`.
-/// * `security_quality_of_service` - An optional pointer to a security quality of service structure. 
-///   If `None`, it is set to `null_mut()`.
-///
-/// # Returns
-///
-/// * Returns an `OBJECT_ATTRIBUTES` structure initialized with the provided parameters. 
-/// If optional arguments are not provided, their corresponding fields are set to `null_mut()`.
-#[allow(non_snake_case)]
-pub fn InitializeObjectAttributes(
-    object_name: Option<*mut UNICODE_STRING>,
-    attributes: u32,
-    root_directory: Option<*mut c_void>,
-    security_descriptor: Option<*mut c_void>,
-    security_quality_of_service: Option<*mut c_void>
-) -> OBJECT_ATTRIBUTES {
-    OBJECT_ATTRIBUTES {
-        Length: size_of::<OBJECT_ATTRIBUTES>() as u32,
-        RootDirectory: root_directory.unwrap_or(null_mut()),
-        ObjectName: object_name.unwrap_or(null_mut()),
-        Attributes: attributes,
-        SecurityDescriptor: security_descriptor.unwrap_or(null_mut()),
-        SecurityQualityOfService: security_quality_of_service.unwrap_or(null_mut())
-    }
-}
 
 /// Find a thread with an alertable status for the given process (PID).
 ///
@@ -323,4 +292,40 @@ pub fn list_modules() -> Result<(*mut LDR_DATA_TABLE_ENTRY, i32), ShadowError> {
     }
 
     Ok((start_entry, module_count))
+}
+
+/// Initializes the `OBJECT_ATTRIBUTES` structure.
+///
+/// # Arguments
+///
+/// * `object_name` - An optional pointer to a `UNICODE_STRING` representing the name of the object. 
+///   If `None`, the object name is set to `null_mut()`.
+/// * `attributes` - A `u32` representing the attributes of the object (e.g., `OBJ_CASE_INSENSITIVE`, `OBJ_KERNEL_HANDLE`).
+/// * `root_directory` - An optional pointer to a root directory. If the object resides in a directory, 
+///   this pointer represents the root directory. If `None`, it is set to `null_mut()`.
+/// * `security_descriptor` - An optional pointer to a security descriptor that defines 
+///   access control. If `None`, it is set to `null_mut()`.
+/// * `security_quality_of_service` - An optional pointer to a security quality of service structure. 
+///   If `None`, it is set to `null_mut()`.
+///
+/// # Returns
+///
+/// * Returns an `OBJECT_ATTRIBUTES` structure initialized with the provided parameters. 
+/// If optional arguments are not provided, their corresponding fields are set to `null_mut()`.
+#[allow(non_snake_case)]
+pub fn InitializeObjectAttributes(
+    object_name: Option<*mut UNICODE_STRING>,
+    attributes: u32,
+    root_directory: Option<*mut c_void>,
+    security_descriptor: Option<*mut c_void>,
+    security_quality_of_service: Option<*mut c_void>
+) -> OBJECT_ATTRIBUTES {
+    OBJECT_ATTRIBUTES {
+        Length: size_of::<OBJECT_ATTRIBUTES>() as u32,
+        RootDirectory: root_directory.unwrap_or(null_mut()),
+        ObjectName: object_name.unwrap_or(null_mut()),
+        Attributes: attributes,
+        SecurityDescriptor: security_descriptor.unwrap_or(null_mut()),
+        SecurityQualityOfService: security_quality_of_service.unwrap_or(null_mut())
+    }
 }

@@ -8,19 +8,20 @@ use {
 use {
     common::{
         enums::Callbacks,
-        structs::CallbackInfoOutput, 
-        vars::MAX_CALLBACK
+        structs::CallbackInfoOutput,
     },
     crate::{
         error::ShadowError, list_modules,
         lock::with_push_lock_exclusive,
+        data::{CallbackRestaureOb, OBCALLBACK_ENTRY},
         callback::find_callback::{find_callback_address, CallbackResult}, 
-        data::{CallbackRestaureOb, OBCALLBACK_ENTRY}, 
     },
 };
 
 /// Structure representing the Callback Object.
 pub struct CallbackOb;
+
+const MAX_CALLBACK: usize = 100;
 
 /// Stores information about removed callbacks.
 ///

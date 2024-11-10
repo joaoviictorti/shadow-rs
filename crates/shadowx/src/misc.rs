@@ -2,7 +2,8 @@ use {
     obfstr::obfstr,
     core::{ffi::c_void, ptr::null_mut},
     wdk_sys::{
-        *, ntddk::*,
+        *, 
+        ntddk::*,
         _MODE::UserMode,
         _MEMORY_CACHING_TYPE::MmCached,
         _MM_PAGE_PRIORITY::NormalPagePriority,

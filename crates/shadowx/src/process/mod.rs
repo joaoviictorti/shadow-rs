@@ -5,10 +5,7 @@ use {
 };
 
 use {
-    common::{
-        vars::MAX_PID,
-        structs::TargetProcess, 
-    },
+    common::structs::TargetProcess,
     crate::{
         error::ShadowError,
         structs::PROCESS_SIGNATURE, 
@@ -24,6 +21,8 @@ use {
 
 pub mod callback;
 pub use callback::*;
+
+const MAX_PID: usize = 100;
 
 /// Represents a process in the operating system.
 ///

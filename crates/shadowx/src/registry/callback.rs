@@ -6,11 +6,12 @@ use {
     core::{ffi::c_void, ptr::null_mut},
     wdk_sys::{
         *,
+        _MODE::KernelMode,
         ntddk::{
-            ObOpenObjectByPointer, ZwClose,
-            CmCallbackGetKeyObjectIDEx, CmCallbackReleaseKeyObjectIDEx,
-        }, 
-        _MODE::KernelMode, 
+            CmCallbackGetKeyObjectIDEx,
+            ObOpenObjectByPointer, ZwClose, 
+            CmCallbackReleaseKeyObjectIDEx,
+        },  
         _REG_NOTIFY_CLASS::{
             RegNtPreQueryKey, RegNtPreSetValueKey,
             RegNtPreDeleteKey, RegNtPreDeleteValueKey, 
@@ -21,13 +22,12 @@ use {
 
 use {
     super::{
-        HIDE_KEYS, 
-        HIDE_KEY_VALUES, 
-        PROTECTION_KEYS,
-        PROTECTION_KEY_VALUES,
+        HIDE_KEYS, HIDE_KEY_VALUES, 
+        PROTECTION_KEYS, PROTECTION_KEY_VALUES,
         utils::{
-            check_key_value, enumerate_value_key, 
-            RegistryInfo
+            RegistryInfo,
+            check_key_value, 
+            enumerate_value_key, 
         }, 
     }, 
     crate::{

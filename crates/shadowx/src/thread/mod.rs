@@ -1,18 +1,22 @@
-use alloc::vec::Vec;
-use wdk_sys::{ntddk::*, *};
-use spin::{mutex::Mutex, lazy::Lazy};
-use crate::{
-    error::ShadowError,
-    lock::with_push_lock_exclusive, 
-    offsets::{
-        get_thread_list_entry_offset, 
-        get_thread_lock_offset
-    }
+use {
+    alloc::vec::Vec,
+    wdk_sys::{ntddk::*, *},
+    spin::{mutex::Mutex, lazy::Lazy},
+    common::structs::TargetThread,
+    crate::{
+        error::ShadowError,
+        lock::with_push_lock_exclusive, 
+        offsets::{
+            get_thread_list_entry_offset, 
+            get_thread_lock_offset
+        }
+    },
 };
-use common::{structs::TargetThread, vars::MAX_TID};
 
 pub mod callback;
 pub use callback::*;
+
+const MAX_TID: usize = 100;
 
 /// List of target threads protected by a mutex.
 pub static THREAD_INFO_HIDE: Lazy<Mutex<Vec<TargetThread>>> = Lazy::new(|| Mutex::new(Vec::with_capacity(MAX_TID))); 

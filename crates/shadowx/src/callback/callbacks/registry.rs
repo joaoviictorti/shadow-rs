@@ -2,30 +2,29 @@ use {
     alloc::vec::Vec,
     spin::{Lazy, Mutex},
     ntapi::ntldr::LDR_DATA_TABLE_ENTRY,
-    wdk_sys::{ 
-        NTSTATUS, STATUS_SUCCESS,
-    },
+    wdk_sys::{NTSTATUS, STATUS_SUCCESS},
 };
 
 use {
     common::{
         enums::Callbacks,
-        vars::MAX_CALLBACK,
         structs::CallbackInfoOutput
     },
     crate::{
+        list_modules,
         error::ShadowError, 
-        list_modules, 
         lock::with_push_lock_exclusive,
+        data::{CallbackRestaure, CM_CALLBACK},
         callback::find_callback::{
             find_callback_address, CallbackResult
         },
-        data::{CallbackRestaure, CM_CALLBACK}, 
     },
 };
 
 /// Structure representing the Callback Registry.
 pub struct CallbackRegistry;
+
+const MAX_CALLBACK: usize = 100;
 
 /// Stores information about removed callbacks.
 ///
@@ -160,7 +159,7 @@ impl CallbackRegistry {
     /// 
     /// # Returns
     /// 
-    /// * `NTSTATUS` - Status of the operation. `STATUS_SUCCESS` if successful, `STATUS_UNSUCCESSFUL` otherwise.
+    /// * Status of the operation. `STATUS_SUCCESS` if successful, `STATUS_UNSUCCESSFUL` otherwise.
     pub unsafe fn enumerate(callback: Callbacks) -> Result<Vec<CallbackInfoOutput>, ShadowError> {
         let mut callbacks: Vec<CallbackInfoOutput> = Vec::new();
 
@@ -233,7 +232,7 @@ impl CallbackRegistry {
     /// 
     /// # Returns
     /// 
-    /// * `NTSTATUS` - Status of the operation. `STATUS_SUCCESS` if successful, `STATUS_UNSUCCESSFUL` otherwise.
+    /// * Status of the operation. `STATUS_SUCCESS` if successful, `STATUS_UNSUCCESSFUL` otherwise.
     pub unsafe fn enumerate_removed() -> Result<Vec<CallbackInfoOutput>, ShadowError> {
         let mut callbacks: Vec<CallbackInfoOutput> = Vec::new();
 
