@@ -14,7 +14,7 @@ The documentation on how to execute CLI commands can be found on the [**Wiki**](
 
 ## Table of Contents
 
-* [Legal notice](#legal-notice)
+* [Notice](#legal-notice)
 * [Features](#features)
 * [Installation](#installation)
 * [Supported Platforms](#supported-Platforms)
@@ -25,80 +25,29 @@ The documentation on how to execute CLI commands can be found on the [**Wiki**](
   * [Enable Test Mode](#enable-test-mode)
   * [Debug via Windbg](#debug-via-windbg)
   * [Create/Start Service](#createstart-service)
+* [Disclaimer](#disclaimer)
 * [Contributing to shadow-rs](#contributing-to-shadow-rs)
 * [References](#references)
 * [License](#license)
 
-## Legal Notice
+## Notice
 
 > [!IMPORTANT]  
 > This project is under development.
-> This project is for educational and research purposes. Malicious use of the software is strictly prohibited and discouraged. I am not responsible for any damage caused by improper use of the software.
 
 ## Features
  
-### Process
-
-- ✅ Process (Hide / Unhide) 
-- ✅ Process Signature (PP / PPL) 
-- ✅ Process Protection (Anti-Kill / Dumping) 
-- ✅ Elevate Process to System 
-- ✅ Terminate Process 
-- ✅ Lists protected and hidden processes currently on the system 
-
-### Thread
-
-- ✅ Thread (Hide / Unhide) 
-- ✅ Thread Protection (Anti-Kill) 
-- ✅ Lists protected and hidden threads currently on the system 
- 
-### Driver
-
-- ✅ Driver (Hide / Unhide) 
-- ✅ Enumerate Driver 
- 
-### Misc
-
-  - Driver Signature Enforcement (DSE)
-    - ✅ DSE (Enable / Disable) 
-  
-  - Keylogger
-    - ✅ Enable Keylogger
-
-  - ETWTI
-    - ✅ ETWTI (Enable / Disable) 
-
-### Callbacks
-
-- ✅ List / Remove / Restore Callbacks 
-  - PsSetCreateProcessNotifyRoutine 
-  - PsSetCreateThreadNotifyRoutine 
-  - PsSetLoadImageNotifyRoutine 
-  - CmRegisterCallbackEx  
-  - ObRegisterCallbacks (PsProcessType / PsThreadType)
-- ✅ Listing currently removed callbacks 
-
-### Port
-
-- ✅ Ports (Hide / Unhide)
-
-### Module
-
-- ✅ Hide Module
-- ✅ Enumerate Module 
-
-### Registry
-
-- ✅ Key and Values (Hide / Unhide) 
-- ✅ Registry Protection (Anti-Deletion e Overwriting) 
-
-### Injection
-
-- ✅ Process Injection - Shellcode (ZwCreateThreadEx)
-- ✅ Process Injection - DLL (ZwCreateThreadEx) 
-- ✅ APC Injection - Shellcode
+- ✅ Process: Hide / Unhide, Signature (PP / PPL), Protection (Anti-Kill / Dumping), Elevate to System, Terminate, List Protected / Hidden Processes.
+- ✅ Thread: Hide / Unhide, Protection (Anti-Kill), List Protected / Hidden Threads.
+- ✅ Driver: Hide / Unhide, Enumerate, Signature Enforcement (Enable / Disable).
+- ✅ Callback: List / Remove / Restore (PsCreateProcess, PsCreateThread, PsLoadImage, CmRegisterCallbackEx, ObRegisterCallbacks), List Removed Callbacks.
+- ✅ Keylogger & Ports: Enable Keylogger, Hide / Unhide Ports. 
+- ✅ Module & Registry: Hide / Enumerate Modules, Hide / Unhide Keys & Values, Registry Protection (Anti-Deletion / Overwriting).
+- ✅ User Mode Code Execution: Injection via ZwCreateThreadEx (Shellcode / DLL), APC Injection (Shellcode).
+- ✅ ETWTI: Disable Event Tracing for Windows (ETW).
 
 ## Installation
+
 - Install Rust from [**here**](https://www.rust-lang.org/learn/get-started).
 - Then follow the instructions provided by [**microsoft**](https://github.com/microsoft/windows-drivers-rs?tab=readme-ov-file#getting-started)
 
@@ -150,8 +99,9 @@ bcdedit /dbgsettings net hostip:<IP> port:<PORT>
 
 You can use [Service Control Manager](https://docs.microsoft.com/en-us/windows/win32/services/service-control-manager) or [OSR Driver Loader](https://www.osronline.com/article.cfm%5Earticle=157.htm) to load your driver.
 
+
 ## Contributing to shadow-rs
-To contribute to shadow-rs, follow these steps:
+To contribute to `shadow-rs`, follow these steps:
 
 1. Fork this repository.
 2. Create a branch: ```git checkout -b <branch_name>```.
@@ -159,25 +109,29 @@ To contribute to shadow-rs, follow these steps:
 4. Send to the original branch: ```git push origin <project_name> / <local>```.
 5. Create the pull request.
 
-Alternatively, consult the GitHub documentation on how to create a pull request.
+Alternatively, consult the [**GitHub documentation**](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests) on how to create a pull request.
+
+## Disclaimer
+
+This project is for educational and research purposes. Malicious use of the software is strictly prohibited and discouraged. I am not responsible for any damage caused by improper use of the software.
 
 ## References
 
-- https://leanpub.com/windowskernelprogrammingsecondedition
-- https://www.youtube.com/watch?v=t7Rx3crobZU&pp=ugMICgJwdBABGAHKBRBibGFja2hhdCByb290a2l0
-- https://github.com/memN0ps/eagle-rs
-- https://www.amazon.com/Rootkits-Bootkits-Reversing-Malware-Generation/dp/1593277164
+- https://www.unknowncheats.me
+- https://github.com/JKornev/hidden
+- https://github.com/mirror/reactos
 - https://github.com/Idov31/Nidhogg
-- https://www.unknowncheats.me/
-- https://www.amazon.com.br/Rootkit-Arsenal-Escape-Evasion-Corners/dp/144962636X
+- https://github.com/memN0ps/eagle-rs
 - https://github.com/eversinc33/Banshee
 - https://synzack.github.io/Blinding-EDR-On-Windows/
-- https://github.com/JKornev/hidden
-- https://www.amazon.com.br/Rootkits-Subverting-Windows-Greg-Hoglund/dp/0321294319
-- https://github.com/mirror/reactos
 - https://github.com/Kharos102/ReadWriteDriverSample
+- https://leanpub.com/windowskernelprogrammingsecondedition
+- https://www.amazon.com.br/Rootkit-Arsenal-Escape-Evasion-Corners/dp/144962636X
+- https://www.amazon.com.br/Rootkits-Subverting-Windows-Greg-Hoglund/dp/0321294319
+- https://www.amazon.com/Rootkits-Bootkits-Reversing-Malware-Generation/dp/1593277164
+- https://www.youtube.com/watch?v=t7Rx3crobZU&pp=ugMICgJwdBABGAHKBRBibGFja2hhdCByb290a2l0
 - https://imphash.medium.com/windows-process-internals-a-few-concepts-to-know-before-jumping-on-memory-forensics-part-4-16c47b89e826
 
 ## License
 
-This project is licensed under the [**MIT License**](/LICENSE)
+This project is licensed under the [**MIT License**](/LICENSE). See the LICENSE file for details.
