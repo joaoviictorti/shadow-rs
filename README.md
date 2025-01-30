@@ -40,7 +40,7 @@ The documentation on how to execute CLI commands can be found on the [**Wiki**](
 - ✅ Process: Hide / Unhide, Signature (PP / PPL), Protection (Anti-Kill / Dumping), Elevate to System, Terminate, List Protected / Hidden Processes.
 - ✅ Thread: Hide / Unhide, Protection (Anti-Kill), List Protected / Hidden Threads.
 - ✅ Driver: Hide / Unhide, Enumerate, Signature Enforcement (Enable / Disable).
-- ✅ Callback: List / Remove / Restore (PsCreateProcess, PsCreateThread, PsLoadImage, CmRegisterCallbackEx, ObRegisterCallbacks), List Removed Callbacks.
+- ✅ Callback: List / Remove / Restore Callback, List Removed Callbacks.
 - ✅ Keylogger & Ports: Enable Keylogger, Hide / Unhide Ports. 
 - ✅ Module & Registry: Hide / Enumerate Modules, Hide / Unhide Keys & Values, Registry Protection (Anti-Deletion / Overwriting).
 - ✅ User Mode Code Execution: Injection via ZwCreateThreadEx (Shellcode / DLL), APC Injection (Shellcode).
