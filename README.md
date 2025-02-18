@@ -6,9 +6,13 @@
 ![Stars](https://img.shields.io/github/stars/joaoviictorti/shadow-rs)
 ![License](https://img.shields.io/github/license/joaoviictorti/shadow-rs)
 
+<p align="center">
+    <img height="450" alt="shadow-rs" src="img/shadow.png">
+</p>
+
 `shadow-rs` is a Windows kernel rootkit written in Rust, demonstrating advanced techniques for kernel manipulation while leveraging Rust’s safety and performance features. This project is intended for educational and research purposes.
 
-The project also provides useful crates for developing rootkits, such as [**shadowx**](/crates/shadowx/), which consolidates core logic and essential techniques. It includes rootkit-specific tricks, with plans for additional features in future updates.
+The project also provides useful crates for developing rootkits, such as [**shadowx**](/shadowx/), which consolidates core logic and essential techniques. It includes rootkit-specific tricks, with plans for additional features in future updates.
 
 The documentation on how to execute CLI commands can be found on the [**Wiki**](https://github.com/joaoviictorti/shadow-rs/wiki)
 
@@ -48,35 +52,40 @@ The documentation on how to execute CLI commands can be found on the [**Wiki**](
 
 ## Installation
 
-- Install Rust from [**here**](https://www.rust-lang.org/learn/get-started).
-- Then follow the instructions provided by [**microsoft**](https://github.com/microsoft/windows-drivers-rs?tab=readme-ov-file#getting-started)
+* Install Rust from [**here**](https://www.rust-lang.org/learn/get-started).
+* Follow [Microsoft's guide](https://github.com/microsoft/windows-drivers-rs?tab=readme-ov-file#getting-started) to set up Rust for kernel development. 
 
 ## Supported Platforms
-- ✅ Windows 10 / 11 (x64)
+
+- ✅ Windows 10 / 11 (x64 only)
 
 ## Build Instructions
 
-To build the project, ensure you have the Rust toolchain installed. 
-
 #### Driver
-To build the driver, first go to the `driver` folder and then run the following command (When you do the first build you have to be as administrator, but after that you won't need to):
-```sh
+
+Navigate to the driver directory and build the kernel driver:
+
+```cmd
 cargo make default --release
 ```
 
-This driver can be mapped using `kdmapper` among other exploit tools, for example, to put mapping support, use the command:
-```sh
+> [!IMPORTANT]  
+> Note: The first build must be executed as Administrator. Subsequent builds do not require elevated privileges.
+
+To enable mapping support for tools like kdmapper, compile with:
+```cmd
 cargo make default --release --features mapper
 ```
 
 #### Client
-To build the client, first go into the `client` folder, then run the following command:
-```sh
+
+Navigate to the `client` directory and build the user-mode client:
+```cmd
 cargo build --release
 ```
 
-Since some features of the rootkit are not supported due to the controller mapping, use the following command to build the client with only the commands that can be executed with the mapping:
-```sh
+For compatibility with mapped drivers:
+```cmd
 cargo build --release --features mapper
 ```
 
@@ -88,17 +97,18 @@ cargo build --release --features mapper
 bcdedit /set testsigning on
 ```
 
-#### [Optional] Debug via Windbg
+#### Create / Start Service
+
+You can use [Service Control Manager](https://docs.microsoft.com/en-us/windows/win32/services/service-control-manager) or [OSR Driver Loader](https://www.osronline.com/article.cfm%5Earticle=157.htm) to load your driver.
+
+## Debugging 
+
+Use Windbg to attach to the kernel and monitor driver activity.
 
 ```
 bcdedit /debug on
 bcdedit /dbgsettings net hostip:<IP> port:<PORT>
 ```
-
-#### Create / Start Service
-
-You can use [Service Control Manager](https://docs.microsoft.com/en-us/windows/win32/services/service-control-manager) or [OSR Driver Loader](https://www.osronline.com/article.cfm%5Earticle=157.htm) to load your driver.
-
 
 ## Contributing to shadow-rs
 To contribute to `shadow-rs`, follow these steps:
@@ -117,20 +127,27 @@ This project is for educational and research purposes. Malicious use of the soft
 
 ## References
 
-- https://www.unknowncheats.me
-- https://github.com/JKornev/hidden
-- https://github.com/mirror/reactos
-- https://github.com/Idov31/Nidhogg
-- https://github.com/memN0ps/eagle-rs
-- https://github.com/eversinc33/Banshee
-- https://synzack.github.io/Blinding-EDR-On-Windows/
-- https://github.com/Kharos102/ReadWriteDriverSample
-- https://leanpub.com/windowskernelprogrammingsecondedition
-- https://www.amazon.com.br/Rootkit-Arsenal-Escape-Evasion-Corners/dp/144962636X
-- https://www.amazon.com.br/Rootkits-Subverting-Windows-Greg-Hoglund/dp/0321294319
-- https://www.amazon.com/Rootkits-Bootkits-Reversing-Malware-Generation/dp/1593277164
-- https://www.youtube.com/watch?v=t7Rx3crobZU&pp=ugMICgJwdBABGAHKBRBibGFja2hhdCByb290a2l0
-- https://imphash.medium.com/windows-process-internals-a-few-concepts-to-know-before-jumping-on-memory-forensics-part-4-16c47b89e826
+I want to express my gratitude to these projects that inspired me to create `shadow-rs` and contribute with some features:
+
+* [Hidden](https://github.com/JKornev/hidden)
+* [Nidhogg](https://github.com/Idov31/Nidhogg)
+* [eagle-rs](https://github.com/memN0ps/eagle-rs)
+* [Banshee](https://github.com/eversinc33/Banshee)
+* [ReadWriteDriverSample](https://github.com/Kharos102/ReadWriteDriverSample)
+
+### Other Essential Resources:
+
+These materials and research have been invaluable in deepening my understanding of Windows kernel development:
+
+* [UnKnoWnCheaTs](https://www.unknowncheats.me)
+* [Reactos](https://github.com/mirror/reactos)
+* [Blinding EDR On Windows](https://synzack.github.io/Blinding-EDR-On-Windows)
+* [Windows Kernel Programming - Pavel](https://leanpub.com/windowskernelprogrammingsecondedition)
+* [Rootkit Arsenal Escape Evasion Corners](https://www.amazon.com.br/Rootkit-Arsenal-Escape-Evasion-Corners/dp/144962636X) 
+* [Rootkits Subverting Windows Greg Hoglund](https://www.amazon.com.br/Rootkits-Subverting-Windows-Greg-Hoglund/dp/032129431)
+* [Rootkits Bootkits Reversing Malware Generation](https://www.amazon.com/Rootkits-Bootkits-Reversing-Malware-Generation/dp/1593277164)
+* [Memory Forensics](https://imphash.medium.com/windows-process-internals-a-few-concepts-to-know-before-jumping-on-memory-forensics-part-4-16c47b89e826)
+* [Leveraging Rootkits for Post-Exploitation - Black Hat](https://www.youtube.com/watch?v=t7Rx3crobZU&pp=ugMICgJwdBABGAHKBRBibGFja2hhdCByb290a2l0)
 
 ## License
 
