@@ -1,35 +1,21 @@
 [tasks.build-client]
-description = "Build the project inside the client directory"
 command = "cargo"
 args = ["build", "--release", "--manifest-path", "client/Cargo.toml"]
 
-[tasks.update-client]
-description = "Update dependencies in the client directory"
-command = "cargo"
-args = ["update", "--manifest-path", "client/Cargo.toml"]
-
-[tasks.update-shared]
-description = "Update dependencies in the shared directory"
-command = "cargo"
-args = ["update", "--manifest-path", "shared/Cargo.toml"]
-
 [tasks.clean-client]
-description = "Clean the project inside the client directory"
 cwd = "client"
 command = "cargo"
 args = ["clean"]
 
-[tasks.clean-shared]
-description = "Clean the project inside the shared directory"
-cwd = "shared"
+[tasks.clean-common]
+cwd = "common"
 command = "cargo"
 args = ["clean"]
 
 [tasks.clean]
-description = "Clean both client and shared directories"
-dependencies = ["clean-client", "clean-shared"]
+description = "Clean both client and common directories"
+dependencies = ["clean-client", "clean-common"]
 
-# Define the default task to build client and update dependencies in both directories
 [tasks.default]
-description = "Build client and run cargo update in both client and shared"
+description = "Build client and run cargo update in both client and common"
 dependencies = ["build-client", "update-client", "update-shared"]
