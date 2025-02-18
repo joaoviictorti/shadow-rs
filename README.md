@@ -41,14 +41,53 @@ The documentation on how to execute CLI commands can be found on the [**Wiki**](
 
 ## Features
  
-- ✅ Process: Hide / Unhide, Signature (PP / PPL), Protection (Anti-Kill / Dumping), Elevate to System, Terminate, List Protected / Hidden Processes.
-- ✅ Thread: Hide / Unhide, Protection (Anti-Kill), List Protected / Hidden Threads.
-- ✅ Driver: Hide / Unhide, Enumerate, Signature Enforcement (Enable / Disable).
-- ✅ Callback: List / Remove / Restore Callback, List Removed Callbacks.
-- ✅ Keylogger & Ports: Enable Keylogger, Hide / Unhide Ports. 
-- ✅ Module & Registry: Hide / Enumerate Modules, Hide / Unhide Keys & Values, Registry Protection (Anti-Deletion / Overwriting).
-- ✅ User Mode Code Execution: Injection via ZwCreateThreadEx (Shellcode / DLL), APC Injection (Shellcode).
-- ✅ ETWTI: Disable Event Tracing for Windows (ETW).
+### Process Features
+
+- ✅ Hide and unhide processes.
+- ✅ Modify process signature levels to handle `Protected Processes (PP)` and `Protected Process Light (PPL)`.
+- ✅ Protect processes against termination and memory dumping.
+- ✅ Elevate process privileges to SYSTEM, granting full administrative access.
+- ✅ Terminate target processes.
+- ✅ List all protected and hidden processes.
+
+### Thread Features
+
+- ✅ Hide and unhide threads.
+- ✅ Protect threads from termination or suspension.
+- ✅ List all protected and hidden threads
+
+### Driver Features
+
+- ✅ Hide and unhide kernel-mode drivers.
+- ✅ Enumerate all loaded drivers.
+- ✅ Enable or disable Driver Signature Enforcement (`DSE`) to allow loading of unsigned drivers.
+
+### Callback Features
+
+- ✅ List registered callbacks for process creation, thread creation, image loading, and registry operations.
+- ✅ Remove or restore specific callbacks.
+- ✅ List all removed callbacks.
+
+### Misc Features
+
+- ✅ Capture keystrokes from user input in real-time with kernel-level interception.
+- ✅ Disable Microsoft-Windows-Threat-Intelligence (`EtwTi`).
+
+### User Mode Code Execution
+
+- ✅ Inject shellcode or DLLs into processes using `ZwCreateThreadEx`.
+- ✅ Perform Asynchronous Procedure Call (`APC`) injection with shellcode execution in suspended threads.
+
+### Module & Registry Features
+
+- ✅ Hide and unhide modules from process memory listings.
+- ✅ Enumerate all loaded modules.
+- ✅ Hide and unhide registry keys and values to prevent detection and manipulation.
+- ✅ Apply registry protection to prevent key or value deletion or overwriting.
+
+### Network Features
+
+- ✅ Hide and unhide network ports from netstat and similar monitoring tools.
 
 ## Installation
 
