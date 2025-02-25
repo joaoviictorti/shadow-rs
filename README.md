@@ -61,6 +61,7 @@ The documentation on how to execute CLI commands can be found on the [**Wiki**](
 - ✅ Hide and unhide kernel-mode drivers.
 - ✅ Enumerate all loaded drivers.
 - ✅ Enable or disable Driver Signature Enforcement (`DSE`) to allow loading of unsigned drivers.
+- ✅ Blocking Driver Loading.
 
 ### Callback Features
 
@@ -72,16 +73,23 @@ The documentation on how to execute CLI commands can be found on the [**Wiki**](
 
 - ✅ Capture keystrokes from user input in real-time with kernel-level interception.
 - ✅ Disable Microsoft-Windows-Threat-Intelligence (`EtwTi`).
+- ✅ Cleaning Driver Artifacts from Memory Dumps in Case of BSOD.
+- ✅ Compile Encryption String.
+- ✅ Support for Reflective Driver Loading.
 
 ### User Mode Code Execution
 
 - ✅ Inject shellcode or DLLs into processes using `ZwCreateThreadEx`.
-- ✅ Perform Asynchronous Procedure Call (`APC`) injection with shellcode execution in suspended threads.
+- ✅ Asynchronous Procedure Call (`APC`) injection to execute shellcode or DLLs in alertable threads.
+- ✅ Execute shellcode in processes using `Thread Hijacking`.
 
-### Module & Registry Features
+### Module Features
 
 - ✅ Hide and unhide modules from process memory listings.
 - ✅ Enumerate all loaded modules.
+
+### Registry Features
+
 - ✅ Hide and unhide registry keys and values to prevent detection and manipulation.
 - ✅ Apply registry protection to prevent key or value deletion or overwriting.
 
