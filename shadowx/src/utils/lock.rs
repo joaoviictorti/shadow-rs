@@ -1,4 +1,4 @@
-use wdk_sys::ntddk::{ExAcquirePushLockExclusiveEx, ExReleasePushLockExclusiveEx};
+use wdk_sys::ntddk::{ExAcquirePushLockExclusiveEx, ExAcquireResourceSharedLite, ExReleasePushLockExclusiveEx};
 use wdk_sys::ntddk::{ExAcquireResourceExclusiveLite, ExReleaseResourceLite};
 use wdk_sys::ERESOURCE;
 
@@ -35,7 +35,7 @@ where
 /// 
 /// * `resource` - Pointer to the `ERESOURCE` lock.
 /// * `operation` - The function to execute while holding the lock.
-pub fn with_eresource_lock<T, F>(resource: *mut ERESOURCE, operation: F) -> T
+pub fn with_eresource_exclusive_lock<T, F>(resource: *mut ERESOURCE, operation: F) -> T
 where
     F: FnOnce() -> T,
 {
@@ -49,6 +49,37 @@ where
 
     unsafe {
         // Release the lock after the operation
+        ExReleaseResourceLite(resource);
+    }
+
+    result
+}
+
+/// Executes an operation while holding a **shared** ERESOURCE lock.
+/// This allows multiple threads to read concurrently, but no writes can occur.
+///
+/// # Arguments
+///
+/// * `resource` - Pointer to the `ERESOURCE` lock.
+/// * `operation` - The function to execute while holding the lock.
+///
+/// # Returns
+///
+/// The result of the operation executed within the lock.
+pub fn with_eresource_shared_lock<T, F>(resource: *mut ERESOURCE, operation: F) -> T
+where
+    F: FnOnce() -> T,
+{
+    unsafe {
+        // Acquire the shared lock before accessing the resource
+        ExAcquireResourceSharedLite(resource, 1);
+    }
+
+    // Execute the operation while holding the lock
+    let result = operation();
+
+    unsafe {
+        // Release the shared lock
         ExReleaseResourceLite(resource);
     }
 

@@ -9,7 +9,13 @@ use alloc::{
     vec::Vec,
 };
 
-use crate::{LDR_DATA_TABLE_ENTRY, lock::with_eresource_lock};
+use crate::{
+    LDR_DATA_TABLE_ENTRY, 
+    lock::{
+        with_eresource_exclusive_lock, 
+        with_eresource_shared_lock
+    }
+};
 use crate::{error::ShadowError, uni, Result};
 use crate::data::PsLoadedModuleResource;
 use common::structs::DriverInfo;
@@ -43,7 +49,7 @@ impl Driver {
         let list_entry = ldr_data as *mut LIST_ENTRY;
 
         // Acquire the lock before modifying the module list
-        with_eresource_lock(PsLoadedModuleResource, || {
+        with_eresource_exclusive_lock(PsLoadedModuleResource, || {
             let mut next = (*ldr_data).InLoadOrderLinks.Flink as *mut LIST_ENTRY;
 
             // Iterate through the loaded module list to find the target driver
@@ -107,7 +113,7 @@ impl Driver {
         list_entry: PLIST_ENTRY,
         driver_entry: *mut LDR_DATA_TABLE_ENTRY,
     ) -> Result<NTSTATUS> {
-        with_eresource_lock(PsLoadedModuleResource, || {
+        with_eresource_exclusive_lock(PsLoadedModuleResource, || {
             // Restore the driver's link pointers
             (*driver_entry).InLoadOrderLinks.Flink = (*list_entry).Flink as *mut LIST_ENTRY;
             (*driver_entry).InLoadOrderLinks.Blink = (*list_entry).Blink as *mut LIST_ENTRY;
@@ -145,7 +151,7 @@ impl Driver {
 
         let current = ldr_data as *mut LIST_ENTRY;
 
-        with_eresource_lock(PsLoadedModuleResource, || {
+        with_eresource_shared_lock(PsLoadedModuleResource, || {
             let mut next = (*ldr_data).InLoadOrderLinks.Flink;
             let mut count = 0;
     
