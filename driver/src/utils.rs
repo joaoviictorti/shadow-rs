@@ -30,7 +30,7 @@ pub unsafe fn get_input_buffer<T>(stack: *mut _IO_STACK_LOCATION) -> Result<*mut
     }
 
     //  Allocate a kernel-mode buffer in non-paged memory
-    let buffer  = ExAllocatePool2(POOL_FLAG_NON_PAGED, size_of::<T>() as u64, 0x1234) as *mut T;
+    let buffer = ExAllocatePool2(POOL_FLAG_NON_PAGED, size_of::<T>() as u64, 0x1234) as *mut T;
     if buffer.is_null() {
         return Err(ShadowError::NullPointer("buffer"));
     }
@@ -79,6 +79,5 @@ pub unsafe fn get_output_buffer<T>(irp: *mut IRP, stack: *mut _IO_STACK_LOCATION
     }
 
     let count = output_length as usize / size_of::<T>();
-
     Ok((buffer as *mut T, count))
 }

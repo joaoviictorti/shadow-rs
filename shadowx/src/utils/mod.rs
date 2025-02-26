@@ -334,7 +334,7 @@ pub unsafe fn get_process_by_name(process_name: &str) -> Result<usize> {
 ///
 /// * True if the address is within the kernel memory range, False otherwise.
 pub fn valid_kernel_memory(addr: u64) -> bool {
-    (addr >> 48) == 0xFFFF
+    unsafe { addr >= wdk_sys::MmSystemRangeStart as u64 }
 }
 
 /// Validates if the given address is within the user memory range.
@@ -347,7 +347,7 @@ pub fn valid_kernel_memory(addr: u64) -> bool {
 ///
 /// * True if the address is within the user memory range, False otherwise.
 pub fn valid_user_memory(addr: u64) -> bool {
-    (addr >> 48) == 0x0000
+    unsafe { addr > 0 && addr <= wdk_sys::MmHighestUserAddress as u64 }
 }
 
 /// Responsible for returning information on the modules loaded.
