@@ -269,10 +269,13 @@ impl IoctlManager {
         
                 // Write the USER_ADDRESS to the output buffer provided by the IRP.
                 let output_buffer = (*irp).AssociatedIrp.SystemBuffer;
-                if !output_buffer.is_null() {
-                    *(output_buffer as *mut usize) = USER_ADDRESS;
+                if output_buffer.is_null() {
+                    log::error!("IRP SystemBuffer is null");
+                    return Ok(STATUS_UNSUCCESSFUL);
                 }
-        
+
+                *(output_buffer as *mut usize) = USER_ADDRESS;
+
                 // Set the number of bytes returned to the size of a `usize`.
                 (*irp).IoStatus.Information = size_of::<usize>() as u64;
                 Ok(STATUS_SUCCESS)

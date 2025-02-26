@@ -56,10 +56,7 @@ pub unsafe fn get_module_base_address(module_name: &str) -> Result<*mut c_void> 
     );
 
     if !NT_SUCCESS(status) {
-        return Err(ShadowError::ApiCallFailed(
-            "ZwQuerySystemInformation",
-            status,
-        ));
+        return Err(ShadowError::ApiCallFailed("ZwQuerySystemInformation", status));
     }
 
     // Iterates over the list of modules to find the one that matches the provided name

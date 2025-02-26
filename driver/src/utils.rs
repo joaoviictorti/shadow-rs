@@ -29,7 +29,7 @@ pub unsafe fn get_input_buffer<T>(stack: *mut _IO_STACK_LOCATION) -> Result<*mut
         return Err(ShadowError::BufferTooSmall);
     }
 
-    //  Allocate a kernel-mode buffer in non-paged memory
+    // Allocate a kernel-mode buffer in non-paged memory
     let buffer = ExAllocatePool2(POOL_FLAG_NON_PAGED, size_of::<T>() as u64, 0x1234) as *mut T;
     if buffer.is_null() {
         return Err(ShadowError::NullPointer("buffer"));

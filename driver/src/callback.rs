@@ -159,11 +159,18 @@ impl<'a> Callback<'a> {
     pub fn unload() {
         unsafe {
             // Unregister process and thread creation callbacks
-            ObUnRegisterCallbacks(CALLBACK_REGISTRATION_HANDLE_PROCESS);
-            ObUnRegisterCallbacks(CALLBACK_REGISTRATION_HANDLE_THREAD);
-    
+            if !CALLBACK_REGISTRATION_HANDLE_PROCESS.is_null() {
+                ObUnRegisterCallbacks(CALLBACK_REGISTRATION_HANDLE_PROCESS);
+            }
+
+            if !CALLBACK_REGISTRATION_HANDLE_THREAD.is_null() {
+                ObUnRegisterCallbacks(CALLBACK_REGISTRATION_HANDLE_THREAD);
+            }
+
             // Unregister registry modification callback
-            CmUnRegisterCallback(CALLBACK_REGISTRY);
+            if CALLBACK_REGISTRY.QuadPart != 0 {
+                CmUnRegisterCallback(CALLBACK_REGISTRY);
+            }
     
             // Unregister bug check (crash dump) callback
             KeDeregisterBugCheckReasonCallback(&mut BUG_CHECK);
