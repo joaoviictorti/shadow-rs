@@ -117,6 +117,13 @@ pub enum ShadowError {
     #[error("Small buffer")]
     BufferTooSmall,
 
+    /// Represents an error when a buffer is misaligned for the expected data structure.
+    ///
+    /// This error occurs when the provided buffer does not have the correct memory alignment
+    /// required for safe access.
+    #[error("Misaligned buffer")]
+    MisalignedBuffer,
+
     /// Error indicating that a callback could not be found.
     ///
     /// This occurs when the system is unable to locate the expected callback function.

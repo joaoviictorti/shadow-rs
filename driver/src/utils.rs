@@ -16,17 +16,22 @@ use wdk_sys::{
 /// * `Result<*mut T, ShadowError>` - A result containing the pointer to the input buffer or an NTSTATUS error code.
 pub unsafe fn get_input_buffer<T>(stack: *mut _IO_STACK_LOCATION) -> Result<*mut T, ShadowError> {
     // Retrieves the input buffer pointer from the I/O stack location.
-    let input_buffer= (*stack).Parameters.DeviceIoControl.Type3InputBuffer;
+    let input_buffer = (*stack).Parameters.DeviceIoControl.Type3InputBuffer;
     let input_length = (*stack).Parameters.DeviceIoControl.InputBufferLength;
-    
+
     // Validate that the input buffer is not null
     if input_buffer.is_null() {
         return Err(ShadowError::NullPointer("Type3InputBuffer"))
     } 
     
     // Validate that the input buffer size is sufficient
-    if input_length < size_of::<T>() as u32 || input_length % size_of::<T>() as u32 != 0 {
+    if input_length < size_of::<T>() as u32 {
         return Err(ShadowError::BufferTooSmall);
+    }
+
+    // Alignment check
+    if (input_buffer as usize) % align_of::<T>() != 0 {
+        return Err(ShadowError::MisalignedBuffer);
     }
 
     // Allocate a kernel-mode buffer in non-paged memory
