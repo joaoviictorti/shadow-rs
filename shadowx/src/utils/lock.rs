@@ -1,4 +1,6 @@
 use wdk_sys::ntddk::{ExAcquirePushLockExclusiveEx, ExReleasePushLockExclusiveEx};
+use wdk_sys::ntddk::{ExAcquireResourceExclusiveLite, ExReleaseResourceLite};
+use wdk_sys::ERESOURCE;
 
 /// Generic function that performs the operation with the lock already acquired.
 /// It will acquire the lock exclusively and guarantee its release after use.
@@ -22,6 +24,32 @@ where
     unsafe {
         // Releases the lock after the operation
         ExReleasePushLockExclusiveEx(push_lock, 0);
+    }
+
+    result
+}
+
+/// Executes an operation while holding an `ERESOURCE` lock.
+///
+/// # Arguments
+/// 
+/// * `resource` - Pointer to the `ERESOURCE` lock.
+/// * `operation` - The function to execute while holding the lock.
+pub fn with_eresource_lock<T, F>(resource: *mut ERESOURCE, operation: F) -> T
+where
+    F: FnOnce() -> T,
+{
+    unsafe {
+        // Acquire the exclusive lock before accessing the resource
+        ExAcquireResourceExclusiveLite(resource, 1);
+    }
+
+    // Execute the operation while holding the lock
+    let result = operation();
+
+    unsafe {
+        // Release the lock after the operation
+        ExReleaseResourceLite(resource);
     }
 
     result

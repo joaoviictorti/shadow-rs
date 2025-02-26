@@ -10,6 +10,10 @@ extern "C" {
     pub static mut IoDriverObjectType: *mut *mut _OBJECT_TYPE;
 }
 
+extern "C" {
+    pub static PsLoadedModuleResource: *mut ERESOURCE;
+}
+
 extern "system" {
     pub fn PsGetProcessPeb(Process: PEPROCESS) -> PPEB;
     pub fn PsSuspendProcess(Process: PEPROCESS) -> NTSTATUS;

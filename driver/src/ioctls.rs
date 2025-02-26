@@ -184,7 +184,7 @@ impl IoctlManager {
         self.register_handler(ENUMERATION_PROCESS, Box::new(|irp: *mut IRP, stack: *mut IO_STACK_LOCATION | {
             unsafe {
                 // Retrieves the output buffer to store process information.
-                let output_buffer = get_output_buffer::<TargetProcess>(irp)?;
+                let (output_buffer, max_entries) = get_output_buffer::<TargetProcess>(irp, stack)?;
                 let input_target = get_input_buffer::<TargetProcess>(stack)?;
 
                 // Based on the options, either enumerate hidden or protected processes.
@@ -198,11 +198,11 @@ impl IoctlManager {
                     _ => Vec::new(),
                 };
 
+                // Ensure we do not exceed buffer limits
+                let entries_to_copy = core::cmp::min(processes.len(), max_entries);
+
                 // Fill the output buffer with the enumerated processes' information.
-                for (index, process) in processes.iter().enumerate() {
-                    let info_ptr = output_buffer.add(index);
-                    (*info_ptr).pid = process.pid;
-                }
+                core::ptr::copy_nonoverlapping(processes.as_ptr(), output_buffer, entries_to_copy);
 
                 // Updates the IoStatus with the size of the enumerated processes.
                 (*irp).IoStatus.Information = (processes.len() * size_of::<TargetProcess>()) as u64;
@@ -338,26 +338,32 @@ impl IoctlManager {
         // Enumerate loaded modules in the target process.
         self.register_handler(ENUMERATE_MODULE, Box::new(|irp: *mut IRP, stack: *mut IO_STACK_LOCATION| {
             unsafe {
-                // Get the target process from the input buffer.
+                // Get the target process from the input buffer
                 let target_process = get_input_buffer::<TargetProcess>(stack)?;
-                let module_info = get_output_buffer::<ModuleInfo>(irp)?;
+                let (module_info, max_entries) = get_output_buffer::<ModuleInfo>(irp, stack)?;
                 let pid = (*target_process).pid;
 
                 // Enumerate modules in the process.
                 let modules = shadowx::Module::enumerate_module(pid)?;
 
-                // Populate the output buffer with module information.
-                for (index, module) in modules.iter().enumerate() {
-                    let info_ptr = module_info.add(index);
+                // Ensure we do not exceed buffer limits
+                let entries_to_copy = core::cmp::min(modules.len(), max_entries);
 
-                    // Copy module name and populate module information.
-                    core::ptr::copy_nonoverlapping(module.name.as_ptr(), (*info_ptr).name.as_mut_ptr(), module.name.len());
+                // Populate the output buffer with module information
+                for (index, module) in modules.iter().take(entries_to_copy).enumerate() {
+                    let info_ptr = module_info.add(index);
+        
+                    // Ensure the name is not copied beyond the buffer size
+                    let name_length = core::cmp::min(module.name.len(), (*info_ptr).name.len());
+                    core::ptr::copy_nonoverlapping(module.name.as_ptr(), (*info_ptr).name.as_mut_ptr(), name_length);
+        
+                    // Copy other fields safely
                     (*info_ptr).address = module.address;
                     (*info_ptr).index = index as u8;
                 }
 
                 // Update IoStatus with the number of modules enumerated.
-                (*irp).IoStatus.Information = (modules.len() * size_of::<ModuleInfo>()) as u64;
+                (*irp).IoStatus.Information = (entries_to_copy * size_of::<ModuleInfo>()) as u64;
                 Ok(STATUS_SUCCESS)
             }
         }));
@@ -508,26 +514,20 @@ impl IoctlManager {
         }));
 
         // Enumerating active drivers on the system.
-        self.register_handler(ENUMERATE_DRIVER, Box::new(|irp: *mut IRP, _: *mut IO_STACK_LOCATION| {
+        self.register_handler(ENUMERATE_DRIVER, Box::new(|irp: *mut IRP, stack: *mut IO_STACK_LOCATION| {
             unsafe {
                 // Get the output buffer for returning the driver information.
-                let driver_info = get_output_buffer::<DriverInfo>(irp)?;
+                let (driver_info, max_entries) = get_output_buffer::<DriverInfo>(irp, stack)?;
 
                 // Enumerate the drivers currently loaded in the system.
                 let drivers = shadowx::Driver::enumerate_driver()?;
 
-                // Copy driver information into the output buffer.
-                for (index, module) in drivers.iter().enumerate() {
-                    let info_ptr = driver_info.add(index);
-
-                    // Copy the driver name and other information.
-                    core::ptr::copy_nonoverlapping(module.name.as_ptr(), (*info_ptr).name.as_mut_ptr(), module.name.len());
-                    (*info_ptr).address = module.address;
-                    (*info_ptr).index = index as u8;
-                }
+                // Copy only what fits in the user buffer
+                let entries_to_copy = core::cmp::min(drivers.len(), max_entries);
+                core::ptr::copy_nonoverlapping(drivers.as_ptr(), driver_info, entries_to_copy);
 
                 // Set the size of the returned information.
-                (*irp).IoStatus.Information = (drivers.len() * size_of::<DriverInfo>()) as u64;
+                (*irp).IoStatus.Information = (entries_to_copy * size_of::<DriverInfo>()) as u64;
                 Ok(STATUS_SUCCESS)
             }
         }));
@@ -597,7 +597,7 @@ impl IoctlManager {
         self.register_handler(ENUMERATION_THREAD, Box::new(|irp: *mut IRP, stack: *mut IO_STACK_LOCATION | {
             unsafe {
                 // Retrieves the output buffer to store thread information.
-                let output_buffer = get_output_buffer::<TargetThread>(irp)?;
+                let (output_buffer, max_entries) = get_output_buffer::<TargetThread>(irp, stack)?;
                 let input_target = get_input_buffer::<TargetThread>(stack)?;
 
                 // Based on the options, either enumerate hidden or protected threads.
@@ -611,14 +611,12 @@ impl IoctlManager {
                     _ => Vec::new(),
                 };
 
-                // Fill the output buffer with the enumerated threads' information.
-                for (index, thread) in threads.iter().enumerate() {
-                    let info_ptr = output_buffer.add(index);
-                    (*info_ptr).tid = thread.tid;
-                }
+                // Copy only what fits in the user buffer
+                let entries_to_copy = core::cmp::min(threads.len(), max_entries);
+                core::ptr::copy_nonoverlapping(threads.as_ptr(), output_buffer, entries_to_copy);
 
                 // Updates the IoStatus with the size of the enumerated threads.
-                (*irp).IoStatus.Information = (threads.len() * size_of::<TargetThread>()) as u64;
+                (*irp).IoStatus.Information = (entries_to_copy * size_of::<TargetThread>()) as u64;
                 Ok(STATUS_SUCCESS)
             }
         }));
@@ -654,7 +652,7 @@ impl IoctlManager {
         self.register_handler(ENUMERATE_CALLBACK, Box::new(|irp: *mut IRP, stack: *mut IO_STACK_LOCATION | {
             unsafe {
                 let target_callback = get_input_buffer::<CallbackInfoInput>(stack)?;
-                let callback_info = get_output_buffer::<CallbackInfoOutput>(irp)?;
+                let (callback_info, max_entries) = get_output_buffer::<CallbackInfoOutput>(irp, stack)?;
                 let callbacks = match (*target_callback).callback {
                     Callbacks::PsSetCreateProcessNotifyRoutine 
                     | Callbacks::PsSetCreateThreadNotifyRoutine
@@ -666,10 +664,17 @@ impl IoctlManager {
                     | Callbacks::ObThread => shadowx::CallbackOb::enumerate((*target_callback).callback)?,
                 };
 
-                for (index, callback) in callbacks.iter().enumerate() {
+                // Ensure we do not exceed buffer limits
+                let entries_to_copy = core::cmp::min(callbacks.len(), max_entries);
+
+                for (index, callback) in callbacks.iter().take(entries_to_copy).enumerate() {
                     let info_ptr = callback_info.add(index);
-                    
-                    core::ptr::copy_nonoverlapping(callback.name.as_ptr(), (*info_ptr).name.as_mut_ptr(), callback.name.len());
+    
+                    // Ensure the name is not copied beyond the buffer size
+                    let name_length = core::cmp::min(callback.name.len(), (*info_ptr).name.len());
+                    core::ptr::copy_nonoverlapping(callback.name.as_ptr(), (*info_ptr).name.as_mut_ptr(), name_length);
+    
+                    // Copy other fields safely
                     (*info_ptr).address = callback.address;
                     (*info_ptr).index = index as u8;
                     (*info_ptr).pre_operation = callback.pre_operation;
@@ -677,7 +682,7 @@ impl IoctlManager {
                 }
 
                 // Set the size of the returned information.
-                (*irp).IoStatus.Information = (callbacks.len() * size_of::<CallbackInfoOutput>()) as u64;
+                (*irp).IoStatus.Information = (entries_to_copy * size_of::<CallbackInfoOutput>()) as u64;
                 Ok(STATUS_SUCCESS)
             }
         }));
@@ -728,7 +733,7 @@ impl IoctlManager {
         self.register_handler(ENUMERATE_REMOVED_CALLBACK, Box::new(|irp: *mut IRP, stack: *mut IO_STACK_LOCATION | {
             unsafe {
                 let target_callback = get_input_buffer::<CallbackInfoInput>(stack)?;
-                let callback_info = get_output_buffer::<CallbackInfoOutput>(irp)?;
+                let (callback_info, max_entries) = get_output_buffer::<CallbackInfoOutput>(irp, stack)?;
                 let callbacks = match (*target_callback).callback {
                     Callbacks::PsSetCreateProcessNotifyRoutine 
                     | Callbacks::PsSetCreateThreadNotifyRoutine
@@ -740,10 +745,16 @@ impl IoctlManager {
                     | Callbacks::ObThread => shadowx::CallbackOb::enumerate_removed()?,
                 };
 
-                for (index, callback) in callbacks.iter().enumerate() {
+                // Ensure we do not exceed buffer limits
+                let entries_to_copy = core::cmp::min(callbacks.len(), max_entries);
+                for (index, callback) in callbacks.iter().take(entries_to_copy).enumerate() {
                     let info_ptr = callback_info.add(index);
-                    
-                    core::ptr::copy_nonoverlapping(callback.name.as_ptr(), (*info_ptr).name.as_mut_ptr(), callback.name.len());
+        
+                    // Ensure the name is not copied beyond the buffer size
+                    let name_length = core::cmp::min(callback.name.len(), (*info_ptr).name.len());
+                    core::ptr::copy_nonoverlapping(callback.name.as_ptr(), (*info_ptr).name.as_mut_ptr(), name_length);
+        
+                    // Copy other fields safely
                     (*info_ptr).address = callback.address;
                     (*info_ptr).index = callback.index;
                     (*info_ptr).pre_operation = callback.pre_operation;
@@ -751,7 +762,7 @@ impl IoctlManager {
                 }
             
                 // Set the size of the returned information.
-                (*irp).IoStatus.Information = (callbacks.len() * size_of::<CallbackInfoOutput>()) as u64;
+                (*irp).IoStatus.Information = (entries_to_copy * size_of::<CallbackInfoOutput>()) as u64;
                 Ok(STATUS_SUCCESS)
             }
         }));

@@ -132,6 +132,7 @@ impl Module {
                 (*list_entry).FullDllName.Buffer,
                 ((*list_entry).FullDllName.Length / 2) as usize,
             );
+            
             if buffer.is_empty() {
                 return Err(ShadowError::StringConversionFailed((*list_entry).FullDllName.Buffer as usize));
             }
