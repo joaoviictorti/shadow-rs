@@ -205,7 +205,7 @@ impl IoctlManager {
                 core::ptr::copy_nonoverlapping(processes.as_ptr(), output_buffer, entries_to_copy);
 
                 // Updates the IoStatus with the size of the enumerated processes.
-                (*irp).IoStatus.Information = (processes.len() * size_of::<TargetProcess>()) as u64;
+                (*irp).IoStatus.Information = (entries_to_copy * size_of::<TargetProcess>()) as u64;
                 Ok(STATUS_SUCCESS)
             }
         }));
