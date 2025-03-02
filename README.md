@@ -7,7 +7,7 @@
 ![License](https://img.shields.io/github/license/joaoviictorti/shadow-rs)
 
 <p align="center">
-    <img height="450" alt="shadow-rs" src="img/shadow.png">
+    <img height="450" alt="shadow-rs" src="shadow.png">
 </p>
 
 `shadow-rs` is a Windows kernel rootkit written in Rust, demonstrating advanced techniques for kernel manipulation while leveraging Rust’s safety and performance features. This project is intended for educational and research purposes.
@@ -85,7 +85,7 @@ The documentation on how to execute CLI commands can be found on the [**Wiki**](
 
 ### Module Features
 
-- ✅ Hide and unhide modules from process memory listings.
+- ✅ Hide modules from process memory listings.
 - ✅ Enumerate all loaded modules.
 
 ### Registry Features
@@ -110,7 +110,7 @@ The documentation on how to execute CLI commands can be found on the [**Wiki**](
 
 #### Driver
 
-Navigate to the driver directory and build the kernel driver:
+Navigate to the [driver](/driver) directory and build the kernel driver:
 
 ```cmd
 cargo make default --release
@@ -126,7 +126,7 @@ cargo make default --release --features mapper
 
 #### Client
 
-Navigate to the `client` directory and build the user-mode client:
+Navigate to the [client](/client) directory and build the user-mode client:
 ```cmd
 cargo build --release
 ```
