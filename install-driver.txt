@@ -1,1 +1,0 @@
-rundll32.exe setupapi,InstallHinfSection DefaultInstall.NTamd64 132 C:\path\to\shadow.inf
