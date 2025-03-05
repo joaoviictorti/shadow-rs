@@ -40,5 +40,5 @@ Write-Output "Executing: $scCommand"
 Invoke-Expression $scCommand
 
 # Query the service to verify it was created
-Write-Output "Querying service $ServiceName:"
+Write-Output "Querying service $ServiceName"
 sc.exe query $ServiceName
