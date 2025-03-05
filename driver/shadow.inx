@@ -5,7 +5,7 @@
 [Version]
 Signature   = "$WINDOWS NT$"
 Class       = System ; TODO: specify appropriate Class
-ClassGuid   = {E7C2B7F0-3F3D-4EC8-B98A-123456789ABC} ; TODO: specify appropriate ClassGuid
+ClassGuid   = {4d36e97d-e325-11ce-bfc1-08002be10318} ; TODO: specify appropriate ClassGuid
 Provider    = %ManufacturerName%
 CatalogFile = shadow.cat
 DriverVer   = ; TODO: set DriverVer in stampinf property pages
@@ -23,9 +23,6 @@ shadow.sys  = 1,,
 ;*****************************************
 ; Install Section
 ;*****************************************
-[DefaultInstall]
-CopyFiles = File_Copy
-AddService = shadow, 0x00000002, shadow_Service_Inst
 
 [Manufacturer]
 %ManufacturerName% = Standard,NT$ARCH$.10.0...16299 ; %13% support introduced in build 16299
