@@ -6,7 +6,7 @@ if (-not ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdent
 }
 
 # Set the path to your INF file (update this path as needed)
-$InfPath = "C:\path\to\shadow.inf"
+$InfPath = ".\driver\target\release\shadow_package\shadow.inf"
 $InfFullPath = Resolve-Path $InfPath
 
 Write-Output "Installing INF from: $InfFullPath"
