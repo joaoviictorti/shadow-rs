@@ -16,6 +16,7 @@ wdk-sys = "^0.3.0"
 wdk-alloc = "^0.3.0"
 spin = "0.9.8"
 obfstr = "0.4.4"
+log = "0.4.22"
 bitfield = "0.17.0"
 ntapi = { version = "0.4.1", default-features = false }
 thiserror = { version = "2.0.10", default-features = false }
