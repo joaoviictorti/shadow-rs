@@ -145,6 +145,10 @@ pub enum ShadowError {
     /// This occurs when the system fails to remove a callback that was previously registered.
     #[error("Error removing a callback")]
     RemoveFailureCallback,
+    /// Represents an error when the process's active list entry is invalid,
+    /// such as when both the forward and backward pointers are null.
+    #[error("Invalid list entry encountered")]
+    InvalidListEntry,
 
     /// Error indicating that a failure occurred while restoring a callback.
     ///
