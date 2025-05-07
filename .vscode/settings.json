@@ -1,6 +1,7 @@
 {
     "rust-analyzer.linkedProjects": [
         "Cargo.toml",
-        "driver/Cargo.toml"
+        "driver/Cargo.toml",
+        "client/Cargo.toml"
     ]
 }
