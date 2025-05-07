@@ -1,3 +1,12 @@
 [workspace]
-members = ["client", "common", "shadowx"]
-exclude = ["driver"]
+members = ["shadowx"]
+exclude = ["driver", "client", "common"]
+resolver = "2"
+
+[profile.dev]
+panic = "abort"
+lto = true
+
+[profile.release]
+panic = "abort"
+lto = true
