@@ -23,14 +23,14 @@ driver:
     @if (-not ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")) { \
         throw "[-] You must run this as Administrator"; \
     } \
-    cd {{driver}}; cargo make default --release
+    cd {{ driver }}; cargo make default --release
 
 # Build the driver with `mapper` feature
 driver-mapper:
     @if (-not ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")) { \
         throw "[-] You must run this as Administrator"; \
     } \
-    cd {{driver}}; cargo make default --release --features mapper
+    cd {{ driver }}; cargo make default --release --features mapper
 
 # Clean everything in the workspace
 clean:
