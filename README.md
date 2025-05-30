@@ -33,6 +33,7 @@ The documentation on how to execute CLI commands can be found on the [**Wiki**](
 * [Contributing to shadow-rs](#contributing-to-shadow-rs)
 * [References](#references)
 * [License](#license)
+* [Contributors](#contributors)
 
 ## Notice
 
@@ -199,3 +200,7 @@ These materials and research have been invaluable in deepening my understanding 
 ## License
 
 This project is licensed under the [**MIT License**](/LICENSE). See the LICENSE file for details.
+
+## Contributors
+
+[![contributors](https://contrib.rocks/image?repo=joaoviictorti/shadow-rs) ](https://github.com/joaoviictorti/shadow-rs/graphs/contributors)
