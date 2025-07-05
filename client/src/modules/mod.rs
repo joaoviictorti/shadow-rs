@@ -1,12 +1,22 @@
 #![allow(static_mut_refs)]
 
-pub mod callback;
-pub mod driver;
-pub mod injection;
-pub mod misc;
-pub mod module;
-pub mod network;
-pub mod process;
+mod callback;
+mod driver;
+mod injection;
+mod misc;
+mod module;
+mod network;
+mod process;
+mod thread;
+
+pub use callback::*;
+pub use driver::*;
+pub use injection::*;
+pub use misc::*;
+pub use module::*;
+pub use network::*;
+pub use process::*;
+pub use thread::*;
+
 #[cfg(not(feature = "mapper"))]
 pub mod registry;
-pub mod thread;

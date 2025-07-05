@@ -1,14 +1,21 @@
+use std::{io::Write, path::Path, ptr::null_mut};
+
 use colored::Colorize;
 use env_logger::Builder;
 use log::{Level, LevelFilter};
-
-use std::{io::Write, path::Path, ptr::null_mut};
 use sysinfo::System;
 use windows_sys::{
     w,
     Win32::{
-        Foundation::{GetLastError, GENERIC_READ, GENERIC_WRITE, HANDLE, INVALID_HANDLE_VALUE},
-        Storage::FileSystem::{CreateFileW, FILE_ATTRIBUTE_NORMAL, OPEN_EXISTING},
+        Foundation::{
+            GetLastError, GENERIC_READ, 
+            GENERIC_WRITE, INVALID_HANDLE_VALUE,
+            HANDLE, 
+        },
+        Storage::FileSystem::{
+            CreateFileW, FILE_ATTRIBUTE_NORMAL, 
+            OPEN_EXISTING
+        },
     },
 };
 
@@ -60,9 +67,7 @@ pub fn open_driver() -> Result<HANDLE, &'static str> {
     };
 
     if h_file == INVALID_HANDLE_VALUE {
-        log::error!("CreateFileW failed with error: {}", unsafe {
-            GetLastError()
-        });
+        log::error!("CreateFileW failed with error: {}", unsafe { GetLastError() });
         return Err("Failed to open the driver.");
     }
 

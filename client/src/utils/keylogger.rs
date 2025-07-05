@@ -1,15 +1,21 @@
 use super::VK_CHARS;
 use crate::{
-    is_key_down,
-    modules::misc::{KEY_PREVIOUS, KEY_RECENT, KEY_STATE},
+    is_key_down, 
     set_key_down,
+    modules::{
+        KEY_PREVIOUS, 
+        KEY_RECENT, 
+        KEY_STATE
+    },
 };
 
 /// Updates the status of the keys.
-pub unsafe fn update_key_state() {
-    for i in 0..256 {
-        if is_key_down!(KEY_STATE, i) && !(is_key_down!(KEY_PREVIOUS, i)) {
-            set_key_down!(KEY_RECENT, i, true);
+pub fn update_key_state() {
+    unsafe {
+        for i in 0..256 {
+            if is_key_down!(KEY_STATE, i) && !(is_key_down!(KEY_PREVIOUS, i)) {
+                set_key_down!(KEY_RECENT, i, true);
+            }
         }
     }
 }
@@ -23,10 +29,12 @@ pub unsafe fn update_key_state() {
 /// # Returns
 ///
 /// * `bool` - if the key was pressed, otherwise `false`.
-pub unsafe fn key_pressed(key: u8) -> bool {
-    let result = is_key_down!(KEY_RECENT, key);
-    set_key_down!(KEY_RECENT, key, false);
-    result
+pub fn key_pressed(key: u8) -> bool {
+    unsafe {
+        let result = is_key_down!(KEY_RECENT, key);
+        set_key_down!(KEY_RECENT, key, false);
+        result
+    }
 }
 
 /// Converts a virtual key code to a character.

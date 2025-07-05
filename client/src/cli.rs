@@ -1,7 +1,14 @@
 #![allow(non_camel_case_types)]
 
-use crate::utils::{validate_sys_extension, Callbacks, Options, PortType, Protocol, BANNER};
 use clap::{arg, ArgAction, Parser, Subcommand, ValueHint};
+use crate::utils::{
+    validate_sys_extension, 
+    Callbacks, 
+    Options, 
+    PortType, 
+    Protocol, 
+    BANNER
+};
 
 /// The main command-line interface struct.
 #[derive(Parser)]
@@ -79,7 +86,7 @@ pub enum Commands {
 
         /// Type Port
         #[arg(long, required = true)]
-        type_: PortType,
+        r#type: PortType,
 
         /// Number port.
         #[arg(short, required = true)]
@@ -204,7 +211,7 @@ pub enum InjectionCommands {
 
         /// Type shellcode
         #[arg(long, short, required = true)]
-        type_: InjectionTypes,
+        r#type: InjectionTypes,
     },
 
     /// Shellcode Injection
@@ -219,7 +226,7 @@ pub enum InjectionCommands {
 
         /// Type shellcode
         #[arg(long, short, required = true)]
-        type_: InjectionTypes,
+        r#type: InjectionTypes,
     },
 }
 
@@ -292,7 +299,7 @@ pub enum ProcessCommands {
 
         // Types Enumerate
         #[arg(long, short, required = true)]
-        type_: Options,
+        r#type: Options,
     },
 }
 
@@ -391,7 +398,7 @@ pub enum ThreadCommands {
 
         // Types Enumerate
         #[arg(long, short, required = true)]
-        type_: Options,
+        r#type: Options,
     },
 }
 

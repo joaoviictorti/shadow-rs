@@ -1,18 +1,18 @@
-use common::structs::TargetProcess;
 use std::{ffi::c_void, mem::size_of, ptr::null_mut};
+use log::{info, error, debug};
 use windows_sys::Win32::{
     Foundation::{CloseHandle, GetLastError, HANDLE},
     System::IO::DeviceIoControl,
 };
+
+use common::structs::TargetProcess;
 use crate::{
     utils::{open_driver, Options},
     PS_PROTECTED_SIGNER, PS_PROTECTED_TYPE,
 };
 
 /// Provides operations for managing processes through a driver interface.
-pub struct Process {
-    driver_handle: HANDLE,
-}
+pub struct Process(HANDLE);
 
 impl Process {
     /// Creates a new `Process` instance, opening a handle to the driver.
@@ -25,8 +25,8 @@ impl Process {
     ///
     /// Panics if the driver cannot be opened.
     pub fn new() -> Self {
-        let driver_handle = open_driver().expect("Error");
-        Process { driver_handle }
+        let h_driver = open_driver().expect("Error");
+        Self(h_driver)
     }
 
     /// Hides or unhides a Process specified by `pid`.
@@ -38,7 +38,7 @@ impl Process {
     /// * `enable` - A boolean indicating whether to hide (`true`) or unhide (`false`) the Process.
     pub fn hide_unhide_process(&mut self, pid: Option<&u32>, ioctl_code: u32, enable: bool) {
         if let Some(pid_value) = pid {
-            log::info!("Preparing to {} process: {}", if enable { "hide" } else { "unhide" }, pid_value);
+            info!("Preparing to {} process: {}", if enable { "hide" } else { "unhide" }, pid_value);
             let pid = *pid_value as usize;
             let mut target_process = TargetProcess {
                 enable,
@@ -49,7 +49,7 @@ impl Process {
 
             let status = unsafe {
                 DeviceIoControl(
-                    self.driver_handle,
+                    self.0,
                     ioctl_code,
                     &mut target_process as *mut _ as *mut c_void,
                     size_of::<TargetProcess>() as u32,
@@ -61,12 +61,12 @@ impl Process {
             };
 
             if status == 0 {
-                log::error!("DeviceIoControl Failed with status: 0x{:08X}", unsafe { GetLastError() });
+                error!("DeviceIoControl Failed with status: 0x{:08X}", unsafe { GetLastError() });
             } else {
-                log::info!("Process with PID {} successfully {}hidden", pid, if enable { "" } else { "un" });
+                info!("Process with PID {} successfully {}hidden", pid, if enable { "" } else { "un" });
             }
         } else {
-            log::error!("PID not supplied");
+            error!("PID not supplied");
         }
     }
 
@@ -78,7 +78,7 @@ impl Process {
     /// * `ioctl_code` - The IOCTL code for the terminate operation.
     pub fn terminate_process(&mut self, pid: Option<&u32>, ioctl_code: u32) {
         if let Some(pid_value) = pid {
-            log::info!("Preparing to terminate process: {}", pid_value);
+            info!("Preparing to terminate process: {}", pid_value);
             let pid = *pid_value as usize;
             let mut target_process = TargetProcess {
                 pid,
@@ -88,7 +88,7 @@ impl Process {
             let mut return_buffer = 0;
             let status = unsafe {
                 DeviceIoControl(
-                    self.driver_handle,
+                    self.0,
                     ioctl_code,
                     &mut target_process as *mut _ as *mut c_void,
                     size_of::<TargetProcess>() as u32,
@@ -100,12 +100,12 @@ impl Process {
             };
 
             if status == 0 {
-                log::error!("DeviceIoControl Failed with status: 0x{:08X}", unsafe { GetLastError() });
+                error!("DeviceIoControl Failed with status: 0x{:08X}", unsafe { GetLastError() });
             } else {
-                log::info!("Process with PID {} terminated successfully", pid);
+                info!("Process with PID {} terminated successfully", pid);
             }
         } else {
-            log::error!("PID not supplied");
+            error!("PID not supplied");
         }
     }
 
@@ -119,7 +119,7 @@ impl Process {
     #[cfg(not(feature = "mapper"))]
     pub fn protection_process(&mut self, pid: Option<&u32>, ioctl_code: u32, enable: bool) {
         if let Some(pid_value) = pid {
-            log::info!("Preparing to {} protection for process: {}", if enable { "enable" } else { "disable" }, pid_value);
+            info!("Preparing to {} protection for process: {}", if enable { "enable" } else { "disable" }, pid_value);
             let pid = *pid_value as usize;
             let mut target_process = TargetProcess {
                 pid,
@@ -130,7 +130,7 @@ impl Process {
             let mut return_buffer = 0;
             let status = unsafe {
                 DeviceIoControl(
-                    self.driver_handle,
+                    self.0,
                     ioctl_code,
                     &mut target_process as *mut _ as *mut c_void,
                     size_of::<TargetProcess>() as u32,
@@ -142,14 +142,14 @@ impl Process {
             };
 
             if status == 0 {
-                log::error!("DeviceIoControl Failed with status: 0x{:08X}", unsafe {
+                error!("DeviceIoControl Failed with status: 0x{:08X}", unsafe {
                     GetLastError()
                 });
             } else {
-                log::info!("Process with PID {} {} protection", pid, if enable { "enabled" } else { "disabled" });
+                info!("Process with PID {} {} protection", pid, if enable { "enabled" } else { "disabled" });
             }
         } else {
-            log::error!("PID not supplied");
+            error!("PID not supplied");
         }
     }
 
@@ -169,7 +169,7 @@ impl Process {
         let mut return_buffer = 0;
         let status = unsafe {
             DeviceIoControl(
-                self.driver_handle,
+                self.0,
                 ioctl_code,
                 &mut enumeration_input as *mut _ as *mut c_void,
                 size_of::<TargetProcess>() as u32,
@@ -181,10 +181,10 @@ impl Process {
         };
 
         if status == 0 {
-            log::error!("DeviceIoControl Failed with status: 0x{:08X}", unsafe { GetLastError() });
+            error!("DeviceIoControl Failed with status: 0x{:08X}", unsafe { GetLastError() });
         } else {
             let total_process = return_buffer as usize / size_of::<TargetProcess>();
-            log::info!("Total Processes: {}", total_process);
+            info!("Total Processes: {}", total_process);
             println!("Listing Processes:");
             for (i, process) in info_process.iter().enumerate().take(total_process) {
                 if process.pid > 0 {
@@ -210,7 +210,7 @@ impl Process {
         tp: &PS_PROTECTED_TYPE,
     ) {
         if let Some(pid_value) = pid {
-            log::info!("Preparing to apply signature protection for process: {}", pid_value);
+            info!("Preparing to apply signature protection for process: {}", pid_value);
             let pid = *pid_value as usize;
             let sg = *sg as usize;
             let tp = *tp as usize;
@@ -224,7 +224,7 @@ impl Process {
             let mut return_buffer = 0;
             let status = unsafe {
                 DeviceIoControl(
-                    self.driver_handle,
+                    self.0,
                     ioctl_code,
                     &mut info_protection_process as *mut _ as *mut c_void,
                     size_of::<TargetProcess>() as u32,
@@ -236,9 +236,9 @@ impl Process {
             };
 
             if status == 0 {
-                log::error!("DeviceIoControl Failed with status: 0x{:08X}", unsafe { GetLastError() });
+                error!("DeviceIoControl Failed with status: 0x{:08X}", unsafe { GetLastError() });
             } else {
-                log::info!("Process with PID {} successfully protected", pid);
+                info!("Process with PID {} successfully protected", pid);
             }
         }
     }
@@ -251,7 +251,7 @@ impl Process {
     /// * `ioctl_code` - The IOCTL code for the elevation operation.
     pub fn elevate_process(&mut self, pid: Option<&u32>, ioctl_code: u32) {
         if let Some(pid_value) = pid {
-            log::info!("Preparing to elevate process: {}", pid_value);
+            info!("Preparing to elevate process: {}", pid_value);
             let pid = *pid_value as usize;
             let mut target_process = TargetProcess {
                 pid,
@@ -261,7 +261,7 @@ impl Process {
             let mut return_buffer = 0;
             let status = unsafe {
                 DeviceIoControl(
-                    self.driver_handle,
+                    self.0,
                     ioctl_code,
                     &mut target_process as *mut _ as *mut c_void,
                     size_of::<TargetProcess>() as u32,
@@ -273,12 +273,12 @@ impl Process {
             };
 
             if status == 0 {
-                log::error!("DeviceIoControl Failed with status: 0x{:08X}", unsafe { GetLastError() });
+                error!("DeviceIoControl Failed with status: 0x{:08X}", unsafe { GetLastError() });
             } else {
-                log::info!("Process with PID {} elevated to System", pid);
+                info!("Process with PID {} elevated to System", pid);
             }
         } else {
-            log::error!("PID not supplied");
+            error!("PID not supplied");
         }
     }
 }
@@ -286,7 +286,7 @@ impl Process {
 impl Drop for Process {
     /// Ensures the driver handle is closed when `Thread` goes out of scope.
     fn drop(&mut self) {
-        log::debug!("Closing the driver handle");
-        unsafe { CloseHandle(self.driver_handle) };
+        debug!("Closing the driver handle");
+        unsafe { CloseHandle(self.0) };
     }
 }

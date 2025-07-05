@@ -1,15 +1,19 @@
-use crate::utils::open_driver;
-use common::structs::{ModuleInfo, TargetModule, TargetProcess};
 use std::{ffi::c_void, mem::size_of, ptr::null_mut};
+use log::{info, error, debug};
 use windows_sys::Win32::{
     Foundation::{CloseHandle, GetLastError, HANDLE},
     System::IO::DeviceIoControl,
 };
 
+use crate::utils::open_driver;
+use common::structs::{
+    ModuleInfo, 
+    TargetModule, 
+    TargetProcess
+};
+
 /// Provides operations for managing modules within a process through a driver interface.
-pub struct Module {
-    driver_handle: HANDLE,
-}
+pub struct Module(HANDLE);
 
 impl Module {
     /// Creates a new `Module` instance, opening a handle to the driver.
@@ -22,8 +26,8 @@ impl Module {
     ///
     /// Panics if the driver cannot be opened.
     pub fn new() -> Self {
-        let driver_handle = open_driver().expect("Error");
-        Module { driver_handle }
+        let h_driver = open_driver().expect("Error");
+        Self(h_driver)
     }
 
     /// Enumerates all modules within a specified process by `pid`.
@@ -33,20 +37,20 @@ impl Module {
     /// * `ioctl_code` - The IOCTL code for the enumeration operation.
     /// * `pid` - A reference to the PID of the process whose modules will be enumerated.
     pub fn enumerate_module(self, ioctl_code: u32, pid: &u32) {
-        log::info!("Attempting to enumerate modules for PID: {pid}");
+        info!("Attempting to enumerate modules for PID: {pid}");
 
-        log::debug!("Preparing structure for pid: {pid}");
+        debug!("Preparing structure for pid: {pid}");
         let mut module_info: [ModuleInfo; 400] = unsafe { std::mem::zeroed() };
         let mut input_module = TargetProcess {
             pid: *pid as usize,
             ..Default::default()
         };
 
-        log::debug!("Sending DeviceIoControl command to enumerate modules for PID: {pid}");
+        debug!("Sending DeviceIoControl command to enumerate modules for PID: {pid}");
         let mut return_buffer = 0;
         let status = unsafe {
             DeviceIoControl(
-                self.driver_handle,
+                self.0,
                 ioctl_code,
                 &mut input_module as *mut _ as *mut c_void,
                 size_of::<TargetProcess>() as u32,
@@ -58,11 +62,11 @@ impl Module {
         };
 
         if status == 0 {
-            log::error!("DeviceIoControl failed with status: 0x{:08X} for PID: {pid}", unsafe { GetLastError() } );
+            error!("DeviceIoControl failed with status: 0x{:08X} for PID: {pid}", unsafe { GetLastError() } );
         } else {
             let total_modules = return_buffer as usize / size_of::<ModuleInfo>();
-            log::info!("Total modules found for PID {pid}: {total_modules}");
-            log::info!("Listing modules:");
+            info!("Total modules found for PID {pid}: {total_modules}");
+            info!("Listing modules:");
             println!();
 
             for module in module_info.iter() {
@@ -70,7 +74,7 @@ impl Module {
                     let name = match String::from_utf16(&module.name) {
                         Ok(name) => name,
                         Err(err) => {
-                            log::error!("UTF-16 decoding error: {:?}", err);
+                            error!("UTF-16 decoding error: {:?}", err);
                             continue;
                         }
                     };
@@ -79,7 +83,7 @@ impl Module {
             }
 
             println!();
-            log::info!("Module enumeration completed for PID: {pid}");
+            info!("Module enumeration completed for PID: {pid}");
         }
     }
 
@@ -91,19 +95,19 @@ impl Module {
     /// * `name` - A reference to the module name to hide.
     /// * `pid` - The PID of the process containing the module to hide.
     pub fn hide_module(self, ioctl_code: u32, name: &String, pid: u32) {
-        log::debug!("Attempting to open the module for hide operation");
+        debug!("Attempting to open the module for hide operation");
 
-        log::debug!("Preparing structure for: {}", name);
+        debug!("Preparing structure for: {}", name);
         let mut info_driver = TargetModule {
             module_name: name.to_string(),
             pid: pid as usize,
         };
 
-        log::debug!("Sending DeviceIoControl command to hide module");
+        debug!("Sending DeviceIoControl command to hide module");
         let mut return_buffer = 0;
         let status = unsafe {
             DeviceIoControl(
-                self.driver_handle,
+                self.0,
                 ioctl_code,
                 &mut info_driver as *mut _ as *mut c_void,
                 size_of::<TargetModule>() as u32,
@@ -115,9 +119,9 @@ impl Module {
         };
 
         if status == 0 {
-            log::error!("DeviceIoControl Failed With Status: 0x{:08X}", unsafe { GetLastError() });
+            error!("DeviceIoControl Failed With Status: 0x{:08X}", unsafe { GetLastError() });
         } else {
-            log::info!("Module successfully hidden");
+            info!("Module successfully hidden");
         }
     }
 }
@@ -125,7 +129,7 @@ impl Module {
 impl Drop for Module {
     /// Ensures the driver handle is closed when `Module` goes out of scope.
     fn drop(&mut self) {
-        log::debug!("Closing the driver handle");
-        unsafe { CloseHandle(self.driver_handle) };
+        debug!("Closing the driver handle");
+        unsafe { CloseHandle(self.0) };
     }
 }

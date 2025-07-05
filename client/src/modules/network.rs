@@ -1,15 +1,19 @@
-use crate::utils::{open_driver, PortType, Protocol};
-use common::structs::TargetPort;
 use std::{ffi::c_void, ptr::null_mut};
+use log::{info, error, debug};
 use windows_sys::Win32::{
     Foundation::{CloseHandle, GetLastError, HANDLE},
     System::IO::DeviceIoControl,
 };
 
+use common::structs::TargetPort;
+use crate::utils::{
+    open_driver,
+    PortType, 
+    Protocol
+};
+
 /// Provides operations for managing network ports through a driver interface.
-pub struct Network {
-    driver_handle: HANDLE,
-}
+pub struct Network(HANDLE);
 
 impl Network {
     /// Creates a new `Port` instance, opening a handle to the driver.
@@ -22,8 +26,8 @@ impl Network {
     ///
     /// Panics if the driver cannot be opened.
     pub fn new() -> Self {
-        let driver_handle = open_driver().expect("Error");
-        Self { driver_handle }
+        let h_driver = open_driver().expect("Error");
+        Self(h_driver)
     }
 
     /// Hides or unhides a specific network port.
@@ -53,7 +57,7 @@ impl Network {
         let mut return_buffer = 0;
         let status = unsafe {
             DeviceIoControl(
-                self.driver_handle,
+                self.0,
                 ioctl_code,
                 &mut port_info as *mut _ as *mut c_void,
                 size_of::<TargetPort>() as u32,
@@ -65,9 +69,9 @@ impl Network {
         };
 
         if status == 0 {
-            log::error!("DeviceIoControl failed with status: 0x{:08X}", unsafe { GetLastError() });
+            error!("DeviceIoControl failed with status: 0x{:08X}", unsafe { GetLastError() });
         } else {
-            log::info!("Port with number {} successfully {}hidden", port_number, if enable { "" } else { "un" });
+            info!("Port with number {} successfully {}hidden", port_number, if enable { "" } else { "un" });
         }
     }
 }
@@ -75,7 +79,7 @@ impl Network {
 impl Drop for Network {
     /// Ensures the driver handle is closed when `Port` goes out of scope.
     fn drop(&mut self) {
-        log::debug!("Closing the driver handle");
-        unsafe { CloseHandle(self.driver_handle) };
+        debug!("Closing the driver handle");
+        unsafe { CloseHandle(self.0) };
     }
 }
